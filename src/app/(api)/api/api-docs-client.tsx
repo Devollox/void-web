@@ -54,10 +54,10 @@ export function ApiDocsClient({ initialEndpoints }: Props) {
 				title='Authentication'
 				lines={[
 					'Most public endpoints do not require authentication.',
-					'Session-related endpoints rely on your next-auth session and Firebase tokens.',
+					'You can inspect all HTTP API references directly in the web source.',
 				]}
-				linkHref='https://voidpresence.site/profile'
-				linkLabel='Check my session'
+				linkHref='https://github.com/Devollox/void-web/tree/main/src/app/(api)/api'
+				linkLabel='View API references on GitHub'
 			/>
 			<InfoBox
 				variant='muted'
