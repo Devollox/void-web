@@ -30,6 +30,8 @@ export function ApiDocsClient({ initialEndpoints }: Props) {
 		[initialEndpoints, searchTerm]
 	)
 
+	const totalCount = initialEndpoints.length
+
 	const left = (
 		<>
 			<InfoBox
@@ -93,7 +95,10 @@ export function ApiDocsClient({ initialEndpoints }: Props) {
 				</form>
 
 				<div className={styles.stats_summary}>
-					<span>{filteredEndpoints.length} endpoints found</span>
+					<span>
+						{filteredEndpoints.length} endpoints found
+						{searchTerm && ` (of ${totalCount})`}
+					</span>
 				</div>
 			</div>
 		</>

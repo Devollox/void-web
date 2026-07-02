@@ -114,8 +114,10 @@ export function StatusDetailsClient({ statusId, initialPreviewTick }: Props) {
 		)}&data=${encodeURIComponent(JSON.stringify(status.configData ?? {}))}`
 
 		try {
-			await fetch(`/api/v1/statuses/${status.id}/track-open`, {
+			await fetch('/api/v1/analytics', {
 				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ type: 'status_download', id: status.id }),
 			})
 		} catch (err) {
 			console.error('Failed to track open in app', err)

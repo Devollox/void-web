@@ -40,8 +40,10 @@ export function DownloadJsonButton({ configId }: Props) {
 		}
 
 		try {
-			await fetch(`/api/v1/statuses/${configId}/track-open`, {
+			await fetch('/api/v1/analytics', {
 				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ type: 'status_download', id: configId }),
 			})
 		} catch (err) {
 			console.error('Failed to track open in app', err)

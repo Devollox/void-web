@@ -20,12 +20,12 @@
 }
 
 .api_card {
-	display: flex;
+	color: inherit;
 	flex-direction: column;
 	gap: 8px;
-	padding: 12px;
+	padding: 12px 12px 6px 12px;
 	text-decoration: none;
-	color: inherit;
+	display: flex;
 }
 
 .api_card_top {
@@ -121,6 +121,34 @@
 	font-size: 11px;
 	color: hsla(0, 0%, 100%, 0.5);
 	line-height: 1.4;
+}
+
+.api_card_details {
+	max-height: 0;
+	opacity: 0;
+	transform: translateY(-4px);
+	overflow: hidden;
+	transition:
+		max-height 0.35s ease,
+		opacity 0.25s ease,
+		transform 0.35s ease,
+		padding-top 0.35s ease;
+}
+
+.api_card_details_open {
+	padding-top: 4px;
+	max-height: 2200px;
+	opacity: 1;
+	transform: translateY(0);
+
+	> div {
+		padding-bottom: 4px;
+	}
+}
+
+.release_card_changelog {
+	padding: 12px 12px 12px;
+	border-top: 1px solid hsla(0, 0%, 100%, 0.05);
 }
 
 .bg_release_stable {
@@ -357,9 +385,4 @@
 	50% {
 		opacity: 0.4;
 	}
-}
-
-.release_card_changelog {
-	padding: 12px 12px 12px;
-	border-top: 1px solid hsla(0, 0%, 100%, 0.05);
 }

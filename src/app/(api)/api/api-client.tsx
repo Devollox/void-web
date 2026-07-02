@@ -18,6 +18,7 @@ export interface ApiEndpoint {
 	hasExample?: boolean
 	hasChangelog?: boolean
 	samplePayload?: unknown
+	fetchPayload?: string
 }
 
 interface ApiSectionBaseProps {
@@ -26,6 +27,14 @@ interface ApiSectionBaseProps {
 	endpoints: ApiEndpoint[]
 	basePath: string
 	title: string
+}
+
+const GROUP_LABELS: Record<ApiGroupType, string> = {
+	presence: 'Presence configs',
+	statuses: 'Status configs',
+	auth: 'Authentication',
+	analytics: 'Analytics',
+	internal: 'Internal helpers',
 }
 
 function getVersionLabel(endpoints: ApiEndpoint[]): string {
@@ -51,6 +60,7 @@ function getDotClass(method: ApiEndpoint['method']): string {
 }
 
 function ApiCardItem({ endpoint }: { endpoint: ApiEndpoint }) {
+	const [open, setOpen] = useState(false)
 	const [copied, setCopied] = useState(false)
 	const dotClass = getDotClass(endpoint.method)
 
@@ -65,13 +75,18 @@ function ApiCardItem({ endpoint }: { endpoint: ApiEndpoint }) {
 		return API_ORIGIN_V0
 	}
 
-	const handleCopyPath = async (e: React.MouseEvent) => {
-		e.preventDefault()
-		const origin = getApiOrigin(endpoint.path)
-		const url = `${origin}${endpoint.path}`
+	const origin = getApiOrigin(endpoint.path)
+	const fullUrl = `${origin}${endpoint.path}`
 
+	const handleCardToggle = () => {
+		setOpen(prev => !prev)
+	}
+
+	const handleCopyUrl = async (e: React.MouseEvent) => {
+		e.preventDefault()
+		e.stopPropagation()
 		try {
-			await navigator.clipboard.writeText(url)
+			await navigator.clipboard.writeText(fullUrl)
 			setCopied(true)
 			setTimeout(() => setCopied(false), 2000)
 		} catch (err) {
@@ -79,24 +94,30 @@ function ApiCardItem({ endpoint }: { endpoint: ApiEndpoint }) {
 		}
 	}
 
-	const notes = '```json\n' + JSON.stringify(endpoint.samplePayload, null, 2) + '\n```'
+	const resultNotes =
+		endpoint.samplePayload != null
+			? '```json\n' + JSON.stringify(endpoint.samplePayload, null, 2) + '\n```'
+			: ''
+
+	const fetchNotes =
+		endpoint.fetchPayload != null ? '```ts\n' + endpoint.fetchPayload + '\n```' : ''
 
 	return (
 		<li className={apiStyles.api_item}>
-			<a className={apiStyles.api_card} onClick={handleCopyPath} style={{ cursor: 'pointer' }}>
+			<div className={apiStyles.api_card} onClick={handleCardToggle} style={{ cursor: 'pointer' }}>
 				<div className={apiStyles.api_card_top}>
 					<div className={apiStyles.api_card_left}>
 						<div className={apiStyles.api_row}>
 							<span className={apiStyles.api_path}>{endpoint.path}</span>
-							<span className={apiStyles.api_method_badge}>
-								{copied ? 'Copied!' : endpoint.method}
-							</span>
+							<span className={apiStyles.api_method_badge}>{endpoint.method}</span>
 						</div>
 					</div>
 
-					<span className={apiStyles.api_card_date}>
-						{endpoint.authRequired ? 'Auth required' : 'Public'}
-					</span>
+					<div className={apiStyles.api_row}>
+						<span className={apiStyles.api_card_date}>
+							{endpoint.authRequired ? 'Auth required' : 'Public'}
+						</span>
+					</div>
 				</div>
 
 				<div className={apiStyles.api_card_meta}>
@@ -104,26 +125,102 @@ function ApiCardItem({ endpoint }: { endpoint: ApiEndpoint }) {
 						<div className={apiStyles.dot_wrap}>
 							<span className={`${apiStyles.dot} ${dotClass}`} />
 						</div>
-						<span className={apiStyles.electron_versions}>{endpoint.description}</span>
+						<span className={apiStyles.electron_versions}>{endpoint.title}</span>
 					</div>
-					<span className={apiStyles.api_card_meta_item}>JSON response</span>
-					{endpoint.hasExample && <span className={apiStyles.api_card_meta_item}>Has example</span>}
+					<span className={apiStyles.api_card_meta_item}>{endpoint.description}</span>
 				</div>
-			</a>
 
-			<div className={apiStyles.release_card_changelog}>
-				<ChangelogClient
-					release={{
-						version: '',
-						date: '',
-						notes,
-						assets: [],
-						versionType: 'api',
-					}}
-				/>
+				<div
+					className={
+						open
+							? `${apiStyles.api_card_details} ${apiStyles.api_card_details_open}`
+							: apiStyles.api_card_details
+					}
+				>
+					<div className={apiStyles.api_card_meta}>
+						<div className={apiStyles.api_row} style={{ justifyContent: 'space-between' }}>
+							<div style={{ minWidth: 0 }}>
+								<div
+									onClick={handleCopyUrl}
+									className={apiStyles.api_card_meta_item}
+									style={{ fontFamily: 'monospace' }}
+								>
+									{fullUrl} {copied ? 'Copied!' : 'Copy URL'}
+								</div>
+							</div>
+						</div>
+
+						<div className={apiStyles.api_row}>
+							<span className={apiStyles.api_card_meta_item}>JSON response</span>
+							{endpoint.hasExample && (
+								<span className={apiStyles.api_card_meta_item}>Has example</span>
+							)}
+						</div>
+					</div>
+
+					{(fetchNotes || resultNotes) && (
+						<div className={apiStyles.release_card_changelog} onClick={e => e.stopPropagation()}>
+							{fetchNotes && (
+								<>
+									{' '}
+									<ChangelogClient
+										release={{
+											version: '',
+											date: '',
+											notes: fetchNotes,
+											assets: [],
+											versionType: 'apiBody',
+										}}
+									/>
+									<div style={{ marginTop: 8, fontSize: 12, color: '#888' }} />
+								</>
+							)}
+							{resultNotes && (
+								<ChangelogClient
+									release={{
+										version: '',
+										date: '',
+										notes: resultNotes,
+										assets: [],
+										versionType: 'api',
+									}}
+								/>
+							)}
+						</div>
+					)}
+				</div>
 			</div>
 		</li>
 	)
+}
+
+function renderGroupedEndpoints(list: ApiEndpoint[]) {
+	const groups: Record<ApiGroupType, ApiEndpoint[]> = {
+		presence: [],
+		statuses: [],
+		auth: [],
+		analytics: [],
+		internal: [],
+	}
+
+	for (const ep of list) {
+		groups[ep.group].push(ep)
+	}
+
+	return Object.entries(groups)
+		.filter(([, items]) => items.length > 0)
+		.map(([groupKey, items]) => {
+			const group = groupKey as ApiGroupType
+			return (
+				<div key={group} style={{ marginBottom: 16 }}>
+					<ul className={apiStyles.api_list}>
+						{items.map(endpoint => (
+							<ApiCardItem key={endpoint.id} endpoint={endpoint} />
+						))}
+					</ul>
+				</div>
+			)
+		})
 }
 
 export function ApiSectionBase({ left, right, endpoints, basePath, title }: ApiSectionBaseProps) {
@@ -149,11 +246,7 @@ export function ApiSectionBase({ left, right, endpoints, basePath, title }: ApiS
 										</div>
 									</div>
 
-									<ul className={apiStyles.api_list}>
-										{versionedEndpoints.map(endpoint => (
-											<ApiCardItem key={endpoint.id} endpoint={endpoint} />
-										))}
-									</ul>
+									{renderGroupedEndpoints(versionedEndpoints)}
 								</>
 							)}
 
@@ -166,11 +259,7 @@ export function ApiSectionBase({ left, right, endpoints, basePath, title }: ApiS
 										</div>
 									</div>
 
-									<ul className={apiStyles.api_list}>
-										{legacyEndpoints.map(endpoint => (
-											<ApiCardItem key={endpoint.id} endpoint={endpoint} />
-										))}
-									</ul>
+									{renderGroupedEndpoints(legacyEndpoints)}
 								</>
 							)}
 

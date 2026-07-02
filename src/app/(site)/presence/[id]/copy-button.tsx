@@ -28,8 +28,10 @@ export function CopyJsonButton({ configId }: Props) {
 			setTimeout(() => setStatus('idle'), 2000)
 		}
 		try {
-			await fetch(`/api/v1/presence/${configId}/track-open`, {
+			await fetch('/api/v1/analytics', {
 				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ type: 'presence_download', id: configId }),
 			})
 		} catch (err) {
 			console.error('Failed to track open in app', err)

@@ -16,6 +16,8 @@ export const metadata: Metadata = {
 	},
 }
 
+const API_BASE_V1 = 'https://api.voidpresence.site'
+
 const endpoints: ApiEndpoint[] = [
 	{
 		id: 'application',
@@ -33,6 +35,9 @@ const endpoints: ApiEndpoint[] = [
 				'https://github.com/Devollox/void-presence/releases/download/vX.Y.Z/Void.Presence.Setup.X.Y.Z.exe',
 			body: 'vX.Y.Z release notes body text here.',
 		},
+		fetchPayload: `fetch('${API_BASE_V1}/v1/github/application')
+  .then(res => res.json())
+  .then(data => console.log(data))`,
 	},
 	{
 		id: 'updates',
@@ -50,6 +55,9 @@ const endpoints: ApiEndpoint[] = [
 				'https://github.com/Devollox/void-updates/releases/download/vX.Y.Z/Void.Presence.Updates.X.Y.Z.exe',
 			body: 'vX.Y.Z release notes body text here.',
 		},
+		fetchPayload: `fetch('${API_BASE_V1}/v1/github/updates')
+  .then(res => res.json())
+  .then(data => console.log(data))`,
 	},
 	{
 		id: 'installer',
@@ -67,7 +75,11 @@ const endpoints: ApiEndpoint[] = [
 				'https://github.com/Devollox/void-installer/releases/download/vX.Y.Z/Void.Presence.Installer.X.Y.Z.exe',
 			body: 'vX.Y.Z release notes body text here.',
 		},
+		fetchPayload: `fetch('${API_BASE_V1}/v1/github/installer')
+  .then(res => res.json())
+  .then(data => console.log(data))`,
 	},
+
 	{
 		id: 'presence-get-all',
 		method: 'GET',
@@ -113,6 +125,9 @@ const endpoints: ApiEndpoint[] = [
 				},
 			},
 		],
+		fetchPayload: `fetch('${API_BASE_V1}/v1/presence')
+  .then(res => res.json())
+  .then(configs => console.log(configs))`,
 	},
 	{
 		id: 'presence-get-config',
@@ -148,6 +163,9 @@ const endpoints: ApiEndpoint[] = [
 				},
 			],
 		},
+		fetchPayload: `fetch('${API_BASE_V1}/v1/presence/presence-id')
+  .then(res => res.json())
+  .then(config => console.log(config))`,
 	},
 	{
 		id: 'presence-copy',
@@ -164,6 +182,9 @@ const endpoints: ApiEndpoint[] = [
 			id: 'new-presence-id',
 			sourceId: 'original-presence-id',
 		},
+		fetchPayload: `fetch('${API_BASE_V1}/v1/presence/presence-id/copy')
+  .then(res => res.json())
+  .then(result => console.log(result))`,
 	},
 	{
 		id: 'presence-download-json',
@@ -198,6 +219,9 @@ const endpoints: ApiEndpoint[] = [
 				},
 			],
 		},
+		fetchPayload: `fetch('${API_BASE_V1}/v1/presence/presence-id/download')
+  .then(res => res.json())
+  .then(config => console.log(config))`,
 	},
 	{
 		id: 'presence-by-author-get',
@@ -247,19 +271,9 @@ const endpoints: ApiEndpoint[] = [
 				},
 			],
 		},
-	},
-	{
-		id: 'presence-track-open',
-		method: 'POST',
-		path: '/v1/presence/{id}/track-open',
-		title: 'Track presence open',
-		description:
-			'Signals that a presence config has been opened in the app and increments analytics counters.',
-		group: 'analytics',
-		hasExample: true,
-		samplePayload: {
-			ok: true,
-		},
+		fetchPayload: `fetch('${API_BASE_V1}/v1/presence/author-id/user')
+  .then(res => res.json())
+  .then(result => console.log(result.configs))`,
 	},
 	{
 		id: 'presence-delete',
@@ -274,7 +288,11 @@ const endpoints: ApiEndpoint[] = [
 		samplePayload: {
 			ok: true,
 		},
+		fetchPayload: `fetch('${API_BASE_V1}/v1/presence/presence-id', { method: 'DELETE' })
+  .then(res => res.json())
+  .then(result => console.log(result))`,
 	},
+
 	{
 		id: 'statuses-get-all',
 		method: 'GET',
@@ -297,6 +315,9 @@ const endpoints: ApiEndpoint[] = [
 				},
 			},
 		],
+		fetchPayload: `fetch('${API_BASE_V1}/v1/statuses')
+  .then(res => res.json())
+  .then(configs => console.log(configs))`,
 	},
 	{
 		id: 'statuses-get-config',
@@ -311,6 +332,9 @@ const endpoints: ApiEndpoint[] = [
 		samplePayload: {
 			statusCycles: [{ text: 'First status line' }, { text: 'Second status line' }],
 		},
+		fetchPayload: `fetch('${API_BASE_V1}/v1/statuses/status-id')
+  .then(res => res.json())
+  .then(config => console.log(config))`,
 	},
 	{
 		id: 'statuses-copy',
@@ -327,6 +351,9 @@ const endpoints: ApiEndpoint[] = [
 			id: 'new-status-id',
 			sourceId: 'original-status-id',
 		},
+		fetchPayload: `fetch('${API_BASE_V1}/v1/statuses/status-id/copy')
+  .then(res => res.json())
+  .then(result => console.log(result))`,
 	},
 	{
 		id: 'statuses-download-json',
@@ -340,6 +367,9 @@ const endpoints: ApiEndpoint[] = [
 		samplePayload: {
 			statusCycles: [{ text: 'First status line' }, { text: 'Second status line' }],
 		},
+		fetchPayload: `fetch('${API_BASE_V1}/v1/statuses/status-id/download')
+  .then(res => res.json())
+  .then(config => console.log(config))`,
 	},
 	{
 		id: 'statuses-by-author-get',
@@ -367,19 +397,9 @@ const endpoints: ApiEndpoint[] = [
 				},
 			],
 		},
-	},
-	{
-		id: 'statuses-track-open',
-		method: 'POST',
-		path: '/v1/statuses/{id}/track-open',
-		title: 'Track status open',
-		description:
-			'Signals that a status config has been opened in the app and increments analytics counters.',
-		group: 'analytics',
-		hasExample: true,
-		samplePayload: {
-			ok: true,
-		},
+		fetchPayload: `fetch('${API_BASE_V1}/v1/statuses/author-id/user')
+  .then(res => res.json())
+  .then(result => console.log(result.configs))`,
 	},
 	{
 		id: 'statuses-delete',
@@ -394,7 +414,43 @@ const endpoints: ApiEndpoint[] = [
 		samplePayload: {
 			ok: true,
 		},
+		fetchPayload: `fetch('${API_BASE_V1}/v1/statuses/status-id', { method: 'DELETE' })
+  .then(res => res.json())
+  .then(result => console.log(result))`,
 	},
+
+	{
+		id: 'analytics-track',
+		method: 'POST',
+		path: '/v1/analytics',
+		title: 'Track analytics event',
+		description:
+			'Records analytics events such as downloads for presence configs and statuses using a unified payload.',
+		group: 'analytics',
+		hasExample: true,
+		samplePayload: {
+			requestBody: {
+				type: 'status_download',
+				id: 'status-id',
+				client: 'void-desktop',
+				meta: {
+					platform: 'windows',
+					version: '2.5.0',
+				},
+			},
+			responseBody: {
+				ok: true,
+			},
+		},
+		fetchPayload: `fetch('${API_BASE_V1}/v1/analytics', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ type: 'status_download', id: 'status-id' }),
+})
+  .then(res => res.json())
+  .then(result => console.log(result))`,
+	},
+
 	{
 		id: 'auth-session',
 		method: 'GET',
@@ -415,6 +471,9 @@ const endpoints: ApiEndpoint[] = [
 			accessToken: 'access-token',
 			firebaseToken: 'firebase-custom-token',
 		},
+		fetchPayload: `fetch('https://voidpresence.site/api/auth/session')
+  .then(res => res.json())
+  .then(session => console.log(session))`,
 	},
 	{
 		id: 'auth-signin-provider',
@@ -430,6 +489,7 @@ const endpoints: ApiEndpoint[] = [
 			provider: 'discord',
 			url: 'https://discord.com/oauth2/authorize?...',
 		},
+		fetchPayload: `window.location.href = 'https://voidpresence.site/api/auth/signin/discord'`,
 	},
 	{
 		id: 'auth-callback-provider',
@@ -443,6 +503,9 @@ const endpoints: ApiEndpoint[] = [
 			ok: true,
 			provider: 'discord',
 		},
+		fetchPayload: `fetch('https://voidpresence.site/api/auth/callback/discord')
+  .then(res => res.json())
+  .then(result => console.log(result))`,
 	},
 	{
 		id: 'auth-steam-bridge',
@@ -462,6 +525,9 @@ const endpoints: ApiEndpoint[] = [
 				redirectUri: 'https://example.com/callback',
 			},
 		},
+		fetchPayload: `fetch('https://voidpresence.site/api/auth/fuckoffnextauth/steam?state=state-value&code=authorization-code&redirectUri=https://example.com/callback')
+  .then(res => res.json())
+  .then(result => console.log(result.normalizedParams))`,
 	},
 ]
 
