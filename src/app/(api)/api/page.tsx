@@ -18,6 +18,54 @@ export const metadata: Metadata = {
 
 const endpoints: ApiEndpoint[] = [
 	{
+		id: 'application-version',
+		method: 'GET',
+		path: '/v1/github/application-version',
+		title: 'Get application version',
+		description:
+			'Returns the latest release tag and Windows installer asset for the main Void Presence application from GitHub.',
+		group: 'internal',
+		hasExample: true,
+		samplePayload: {
+			tag: 'vX.V.Z',
+			assetName: 'Void.Presence.Setup.exe',
+			downloadUrl:
+				'https://github.com/Devollox/void-presence/releases/download/vX.V.Z/Void.Presence.Setup.exe',
+		},
+	},
+	{
+		id: 'updates-version',
+		method: 'GET',
+		path: '/v1/github/updates-version',
+		title: 'Get updates app version',
+		description:
+			'Returns the latest release tag and Windows installer asset for the Void Presence Updates helper app from GitHub.',
+		group: 'internal',
+		hasExample: true,
+		samplePayload: {
+			tag: 'vX.V.Z',
+			assetName: 'Void.Presence.Updates.X.V.Z.exe',
+			downloadUrl:
+				'https://github.com/Devollox/void-updates/releases/download/vX.V.Z/Void.Presence.Updates.X.V.Z.exe',
+		},
+	},
+	{
+		id: 'installer-version',
+		method: 'GET',
+		path: '/v1/github/installer-version',
+		title: 'Get installer app version',
+		description:
+			'Returns the latest release tag and Windows installer asset for the Void Presence Installer app from GitHub.',
+		group: 'internal',
+		hasExample: true,
+		samplePayload: {
+			tag: 'vX.V.Z',
+			assetName: 'Void.Installer.X.V.Z.exe',
+			downloadUrl:
+				'https://github.com/Devollox/void-installer/releases/download/vX.V.Z/Void.Installer.X.V.Z.exe',
+		},
+	},
+	{
 		id: 'presence-get-all',
 		method: 'GET',
 		path: '/v1/presence',
