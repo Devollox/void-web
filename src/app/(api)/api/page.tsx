@@ -62,9 +62,9 @@ const endpoints: ApiEndpoint[] = [
 		hasExample: true,
 		samplePayload: {
 			tag: 'vX.Y.Z',
-			assetName: 'Void.Installer.X.Y.Z.exe',
+			assetName: 'Void.Presence.Installer.X.Y.Z.exe',
 			downloadUrl:
-				'https://github.com/Devollox/void-installer/releases/download/vX.Y.Z/Void.Installer.X.Y.Z.exe',
+				'https://github.com/Devollox/void-installer/releases/download/vX.Y.Z/Void.Presence.Installer.X.Y.Z.exe',
 			body: 'vX.Y.Z release notes body text here.',
 		},
 	},
