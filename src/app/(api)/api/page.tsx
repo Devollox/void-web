@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 	title: 'API endpoints',
 	description: 'HTTP endpoints for Void Presence.',
 	openGraph: {
-		title: 'Void Presence - API endpoints',
+		title: 'Void Presence API endpoints',
 		description:
 			'Browse the HTTP API endpoints for Void Presence, including presence configs, status cycles and session info.',
 		url: '/api',
