@@ -41,22 +41,25 @@ export async function GET() {
 
 		const data = (await res.json()) as GithubRelease
 
-		if (!data.assets || data.assets.length === 0) {
-			return NextResponse.json({ error: 'No assets in latest release' }, { status: 500 })
-		}
+		let assetName = ''
+		let downloadUrl = ''
 
-		let selected = data.assets[0]
-		for (const a of data.assets) {
-			if (a.name.toLowerCase().endsWith('.exe')) {
-				selected = a
-				break
+		if (Array.isArray(data.assets) && data.assets.length > 0) {
+			let selected = data.assets[0]
+			for (const a of data.assets) {
+				if (a.name.toLowerCase().endsWith('.exe')) {
+					selected = a
+					break
+				}
 			}
+			assetName = selected.name
+			downloadUrl = selected.browser_download_url
 		}
 
 		const info: LatestReleaseInfo = {
-			tag: data.tag_name,
-			assetName: selected.name,
-			downloadUrl: selected.browser_download_url,
+			tag: data.tag_name ?? '',
+			assetName,
+			downloadUrl,
 		}
 
 		return NextResponse.json(info, { status: 200 })

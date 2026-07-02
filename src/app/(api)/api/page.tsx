@@ -18,51 +18,51 @@ export const metadata: Metadata = {
 
 const endpoints: ApiEndpoint[] = [
 	{
-		id: 'application-version',
+		id: 'application',
 		method: 'GET',
-		path: '/v1/github/application-version',
-		title: 'Get application version',
+		path: '/v1/github/application',
+		title: 'Get application release',
 		description:
 			'Returns the latest release tag and Windows installer asset for the main Void Presence application from GitHub.',
 		group: 'internal',
 		hasExample: true,
 		samplePayload: {
-			tag: 'vX.V.Z',
+			tag: 'vX.Y.Z',
 			assetName: 'Void.Presence.Setup.exe',
 			downloadUrl:
-				'https://github.com/Devollox/void-presence/releases/download/vX.V.Z/Void.Presence.Setup.exe',
+				'https://github.com/Devollox/void-presence/releases/download/vX.Y.Z/Void.Presence.Setup.exe',
 		},
 	},
 	{
-		id: 'updates-version',
+		id: 'updates',
 		method: 'GET',
-		path: '/v1/github/updates-version',
-		title: 'Get updates app version',
+		path: '/v1/github/updates',
+		title: 'Get updates app release',
 		description:
 			'Returns the latest release tag and Windows installer asset for the Void Presence Updates helper app from GitHub.',
 		group: 'internal',
 		hasExample: true,
 		samplePayload: {
-			tag: 'vX.V.Z',
-			assetName: 'Void.Presence.Updates.X.V.Z.exe',
+			tag: 'vX.Y.Z',
+			assetName: 'Void.Presence.Updates.X.Y.Z.exe',
 			downloadUrl:
-				'https://github.com/Devollox/void-updates/releases/download/vX.V.Z/Void.Presence.Updates.X.V.Z.exe',
+				'https://github.com/Devollox/void-updates/releases/download/vX.Y.Z/Void.Presence.Updates.X.Y.Z.exe',
 		},
 	},
 	{
-		id: 'installer-version',
+		id: 'installer',
 		method: 'GET',
-		path: '/v1/github/installer-version',
-		title: 'Get installer app version',
+		path: '/v1/github/installer',
+		title: 'Get installer app release',
 		description:
 			'Returns the latest release tag and Windows installer asset for the Void Presence Installer app from GitHub.',
 		group: 'internal',
 		hasExample: true,
 		samplePayload: {
-			tag: 'vX.V.Z',
-			assetName: 'Void.Installer.X.V.Z.exe',
+			tag: 'vX.Y.Z',
+			assetName: 'Void.Installer.X.Y.Z.exe',
 			downloadUrl:
-				'https://github.com/Devollox/void-installer/releases/download/vX.V.Z/Void.Installer.X.V.Z.exe',
+				'https://github.com/Devollox/void-installer/releases/download/vX.Y.Z/Void.Installer.X.Y.Z.exe',
 		},
 	},
 	{
