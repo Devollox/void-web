@@ -17,7 +17,7 @@ export default function Navbar() {
 	return (
 		<header className={styles.navbar_root}>
 			<div className={styles.navbar_shell}>
-				<a href={MAIN_SITE_ORIGIN} className={styles.navbar_brand}>
+				<a href={isApiHost ? MAIN_SITE_ORIGIN : '/'} className={styles.navbar_brand}>
 					<div className={styles.navbar_logo_mark}>vP</div>
 					<div className={styles.navbar_brand_text}>
 						<span className={styles.navbar_brand_title}>Void Presence</span>
