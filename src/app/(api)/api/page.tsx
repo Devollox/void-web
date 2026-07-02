@@ -20,64 +20,33 @@ const API_BASE_V1 = 'https://api.voidpresence.site'
 
 const endpoints: ApiEndpoint[] = [
 	{
-		id: 'application',
-		method: 'GET',
-		path: '/v1/github/application',
-		title: 'Get application release',
+		id: 'github-releases',
+		method: 'POST',
+		path: '/v1/github/releases',
+		title: 'Get latest GitHub release',
 		description:
-			'Returns the latest release tag and Windows installer asset for the main Void Presence application from GitHub.',
+			'Returns latest release info from GitHub for the selected Void Presence app (application, installer or updates).',
 		group: 'internal',
 		hasExample: true,
 		samplePayload: {
-			tag: 'vX.Y.Z',
-			assetName: 'Void.Presence.Setup.X.Y.Z.exe',
-			downloadUrl:
-				'https://github.com/Devollox/void-presence/releases/download/vX.Y.Z/Void.Presence.Setup.X.Y.Z.exe',
-			body: 'vX.Y.Z release notes body text here.',
+			requestBody: {
+				app: 'void-presence',
+			},
+			responseBody: {
+				tag: 'vX.Y.Z',
+				assetName: 'Void.Presence.Setup.X.Y.Z.exe',
+				downloadUrl:
+					'https://github.com/Devollox/void-presence/releases/download/vX.Y.Z/Void.Presence.Setup.X.Y.Z.exe',
+				body: 'vX.Y.Z release notes body text here.',
+			},
 		},
-		fetchPayload: `fetch('${API_BASE_V1}/v1/github/application')
+		fetchPayload: `fetch('${API_BASE_V1}/v1/github/releases', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ app: 'void-presence' }), // or 'void-installer' / 'void-updates'
+})
   .then(res => res.json())
-  .then(data => console.log(data))`,
-	},
-	{
-		id: 'updates',
-		method: 'GET',
-		path: '/v1/github/updates',
-		title: 'Get updates app release',
-		description:
-			'Returns the latest release tag and Windows installer asset for the Void Presence Updates helper app from GitHub.',
-		group: 'internal',
-		hasExample: true,
-		samplePayload: {
-			tag: 'vX.Y.Z',
-			assetName: 'Void.Presence.Updates.X.Y.Z.exe',
-			downloadUrl:
-				'https://github.com/Devollox/void-updates/releases/download/vX.Y.Z/Void.Presence.Updates.X.Y.Z.exe',
-			body: 'vX.Y.Z release notes body text here.',
-		},
-		fetchPayload: `fetch('${API_BASE_V1}/v1/github/updates')
-  .then(res => res.json())
-  .then(data => console.log(data))`,
-	},
-	{
-		id: 'installer',
-		method: 'GET',
-		path: '/v1/github/installer',
-		title: 'Get installer app release',
-		description:
-			'Returns the latest release tag and Windows installer asset for the Void Presence Installer app from GitHub.',
-		group: 'internal',
-		hasExample: true,
-		samplePayload: {
-			tag: 'vX.Y.Z',
-			assetName: 'Void.Presence.Installer.X.Y.Z.exe',
-			downloadUrl:
-				'https://github.com/Devollox/void-installer/releases/download/vX.Y.Z/Void.Presence.Installer.X.Y.Z.exe',
-			body: 'vX.Y.Z release notes body text here.',
-		},
-		fetchPayload: `fetch('${API_BASE_V1}/v1/github/installer')
-  .then(res => res.json())
-  .then(data => console.log(data))`,
+  .then(info => console.log(info))`,
 	},
 
 	{
@@ -369,7 +338,7 @@ const endpoints: ApiEndpoint[] = [
 		},
 		fetchPayload: `fetch('${API_BASE_V1}/v1/statuses/status-id/download')
   .then(res => res.json())
-  .then(config => console.log(config))`,
+  .then	config => console.log(config))`,
 	},
 	{
 		id: 'statuses-by-author-get',
@@ -505,7 +474,7 @@ const endpoints: ApiEndpoint[] = [
 		},
 		fetchPayload: `fetch('https://voidpresence.site/api/auth/callback/discord')
   .then(res => res.json())
-  .then(result => console.log(result))`,
+  .then(result => console.log	result))`,
 	},
 	{
 		id: 'auth-steam-bridge',
