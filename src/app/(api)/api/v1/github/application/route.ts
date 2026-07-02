@@ -5,6 +5,7 @@ type LatestReleaseInfo = {
 	tag: string
 	assetName: string
 	downloadUrl: string
+	body: string
 }
 
 type GithubAsset = {
@@ -15,6 +16,7 @@ type GithubAsset = {
 type GithubRelease = {
 	tag_name: string
 	name: string
+	body?: string
 	assets: GithubAsset[]
 }
 
@@ -57,6 +59,7 @@ export async function GET() {
 			tag: data.tag_name,
 			assetName: selected.name,
 			downloadUrl: selected.browser_download_url,
+			body: (data.body || '').trim(),
 		}
 
 		return NextResponse.json(info, { status: 200 })

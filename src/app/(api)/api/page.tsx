@@ -31,6 +31,7 @@ const endpoints: ApiEndpoint[] = [
 			assetName: 'Void.Presence.Setup.exe',
 			downloadUrl:
 				'https://github.com/Devollox/void-presence/releases/download/vX.Y.Z/Void.Presence.Setup.exe',
+			body: 'vX.Y.Z release notes body text here.',
 		},
 	},
 	{
@@ -47,6 +48,7 @@ const endpoints: ApiEndpoint[] = [
 			assetName: 'Void.Presence.Updates.X.Y.Z.exe',
 			downloadUrl:
 				'https://github.com/Devollox/void-updates/releases/download/vX.Y.Z/Void.Presence.Updates.X.Y.Z.exe',
+			body: 'vX.Y.Z release notes body text here.',
 		},
 	},
 	{
@@ -63,6 +65,7 @@ const endpoints: ApiEndpoint[] = [
 			assetName: 'Void.Installer.X.Y.Z.exe',
 			downloadUrl:
 				'https://github.com/Devollox/void-installer/releases/download/vX.Y.Z/Void.Installer.X.Y.Z.exe',
+			body: 'vX.Y.Z release notes body text here.',
 		},
 	},
 	{
