@@ -7,17 +7,14 @@ import styles from './navbar.module.scss'
 
 let MAIN_SITE_ORIGIN = 'https://voidpresence.site'
 
-export default function Navbar() {
+export default function Navbar({ isApiHost }: { isApiHost?: boolean }) {
 	const { data: session, status } = useSession()
 	const isAuth = status === 'authenticated' && !!session?.user
-	const isApiHost = typeof window !== 'undefined' && window.location.hostname.startsWith('api.')
-
-	if (isApiHost == false) MAIN_SITE_ORIGIN = ''
 
 	return (
 		<header className={styles.navbar_root}>
 			<div className={styles.navbar_shell}>
-				<a href={isApiHost ? MAIN_SITE_ORIGIN : '/'} className={styles.navbar_brand}>
+				<a href={isApiHost ? '/' : MAIN_SITE_ORIGIN} className={styles.navbar_brand}>
 					<div className={styles.navbar_logo_mark}>vP</div>
 					<div className={styles.navbar_brand_text}>
 						<span className={styles.navbar_brand_title}>Void Presence</span>

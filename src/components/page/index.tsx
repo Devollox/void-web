@@ -7,10 +7,14 @@ type PageProps = {
 	home?: boolean
 }
 
-export default function Page({ children, home = false }: PageProps) {
+export default function Page({
+	children,
+	home = false,
+	isApiHost,
+}: PageProps & { isApiHost?: boolean }) {
 	return (
 		<>
-			<Header />
+			<Header isApiHost={isApiHost} />
 			<main className={`${styles.main} ${home ? styles.home : styles.normal}`}>{children}</main>
 		</>
 	)
