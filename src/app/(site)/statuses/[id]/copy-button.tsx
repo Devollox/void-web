@@ -13,7 +13,7 @@ export function CopyJsonButton({ configId }: Props) {
 	const onSubmit = async (e: FormEvent) => {
 		e.preventDefault()
 		try {
-			const res = await fetch(`/api/v1/statuses/${configId}/copy`, {
+			const res = await fetch(`/api/v1/configs/statuses/${configId}/copy`, {
 				method: 'GET',
 			})
 			if (!res.ok) {

@@ -52,7 +52,7 @@ const endpoints: ApiEndpoint[] = [
 	{
 		id: 'presence-get-all',
 		method: 'GET',
-		path: '/v1/presence',
+		path: '/v1/configs/presence',
 		title: 'Get all presence configs',
 		description:
 			'Returns a list of all presence configuration documents from the realtime database.',
@@ -94,14 +94,14 @@ const endpoints: ApiEndpoint[] = [
 				},
 			},
 		],
-		fetchPayload: `fetch('${API_BASE_V1}/v1/presence')
+		fetchPayload: `fetch('${API_BASE_V1}/v1/configs/presence')
   .then(res => res.json())
   .then(configs => console.log(configs))`,
 	},
 	{
 		id: 'presence-get-config',
 		method: 'GET',
-		path: '/v1/presence/{id}',
+		path: '/v1/configs/presence/{id}',
 		title: 'View presence config',
 		description:
 			'Returns only the raw config payload of a presence config for easy browser view or clipboard copying.',
@@ -132,14 +132,14 @@ const endpoints: ApiEndpoint[] = [
 				},
 			],
 		},
-		fetchPayload: `fetch('${API_BASE_V1}/v1/presence/presence-id')
+		fetchPayload: `fetch('${API_BASE_V1}/v1/configs/presence/presence-id')
   .then(res => res.json())
   .then(config => console.log(config))`,
 	},
 	{
 		id: 'presence-copy',
 		method: 'GET',
-		path: '/v1/presence/{id}/copy',
+		path: '/v1/configs/presence/{id}/copy',
 		title: 'Copy presence config',
 		description:
 			'Creates a duplicate of the given presence config with a new ID while preserving metadata and config.',
@@ -151,14 +151,14 @@ const endpoints: ApiEndpoint[] = [
 			id: 'new-presence-id',
 			sourceId: 'original-presence-id',
 		},
-		fetchPayload: `fetch('${API_BASE_V1}/v1/presence/presence-id/copy')
+		fetchPayload: `fetch('${API_BASE_V1}/v1/configs/presence/presence-id/copy')
   .then(res => res.json())
   .then(result => console.log(result))`,
 	},
 	{
 		id: 'presence-download-json',
 		method: 'GET',
-		path: '/v1/presence/{id}/download',
+		path: '/v1/configs/presence/{id}/download',
 		title: 'Download presence JSON',
 		description:
 			'Returns only the config of a presence config as a downloadable JSON file and increments download counters.',
@@ -188,14 +188,14 @@ const endpoints: ApiEndpoint[] = [
 				},
 			],
 		},
-		fetchPayload: `fetch('${API_BASE_V1}/v1/presence/presence-id/download')
+		fetchPayload: `fetch('${API_BASE_V1}/v1/configs/presence/presence-id/download')
   .then(res => res.json())
   .then(config => console.log(config))`,
 	},
 	{
 		id: 'presence-by-author-get',
 		method: 'GET',
-		path: '/v1/presence/{id}/user',
+		path: '/v1/configs/presence/{id}/user',
 		title: 'Get presence configs by author',
 		description:
 			'Returns all presence configs authored by the given user ID, enriched with author metadata.',
@@ -240,14 +240,14 @@ const endpoints: ApiEndpoint[] = [
 				},
 			],
 		},
-		fetchPayload: `fetch('${API_BASE_V1}/v1/presence/author-id/user')
+		fetchPayload: `fetch('${API_BASE_V1}/v1/configs/presence/author-id/user')
   .then(res => res.json())
   .then(result => console.log(result.configs))`,
 	},
 	{
 		id: 'presence-delete',
 		method: 'DELETE',
-		path: '/v1/presence/{id}',
+		path: '/v1/configs/presence/{id}',
 		title: 'Delete presence config',
 		description:
 			'Deletes a presence config by Firebase ID from the realtime database. Returns ok: true on success.',
@@ -257,7 +257,7 @@ const endpoints: ApiEndpoint[] = [
 		samplePayload: {
 			ok: true,
 		},
-		fetchPayload: `fetch('${API_BASE_V1}/v1/presence/presence-id', { method: 'DELETE' })
+		fetchPayload: `fetch('${API_BASE_V1}/v1/configs/presence/presence-id', { method: 'DELETE' })
   .then(res => res.json())
   .then(result => console.log(result))`,
 	},
@@ -265,7 +265,7 @@ const endpoints: ApiEndpoint[] = [
 	{
 		id: 'statuses-get-all',
 		method: 'GET',
-		path: '/v1/statuses',
+		path: '/v1/configs/statuses',
 		title: 'Get all status configs',
 		description: 'Returns a list of all status configuration documents from the realtime database.',
 		group: 'statuses',
@@ -284,14 +284,14 @@ const endpoints: ApiEndpoint[] = [
 				},
 			},
 		],
-		fetchPayload: `fetch('${API_BASE_V1}/v1/statuses')
+		fetchPayload: `fetch('${API_BASE_V1}/v1/configs/statuses')
   .then(res => res.json())
   .then(configs => console.log(configs))`,
 	},
 	{
 		id: 'statuses-get-config',
 		method: 'GET',
-		path: '/v1/statuses/{id}',
+		path: '/v1/configs/statuses/{id}',
 		title: 'View status config',
 		description:
 			'Returns only the raw config payload of a status config for easy browser view or clipboard copying.',
@@ -301,14 +301,14 @@ const endpoints: ApiEndpoint[] = [
 		samplePayload: {
 			statusCycles: [{ text: 'First status line' }, { text: 'Second status line' }],
 		},
-		fetchPayload: `fetch('${API_BASE_V1}/v1/statuses/status-id')
+		fetchPayload: `fetch('${API_BASE_V1}/v1/configs/statuses/status-id')
   .then(res => res.json())
   .then(config => console.log(config))`,
 	},
 	{
 		id: 'statuses-copy',
 		method: 'GET',
-		path: '/v1/statuses/{id}/copy',
+		path: '/v1/configs/statuses/{id}/copy',
 		title: 'Copy status config',
 		description:
 			'Creates a duplicate of the given status config with a new ID while preserving metadata and config.',
@@ -320,14 +320,14 @@ const endpoints: ApiEndpoint[] = [
 			id: 'new-status-id',
 			sourceId: 'original-status-id',
 		},
-		fetchPayload: `fetch('${API_BASE_V1}/v1/statuses/status-id/copy')
+		fetchPayload: `fetch('${API_BASE_V1}/v1/configs/statuses/status-id/copy')
   .then(res => res.json())
   .then(result => console.log(result))`,
 	},
 	{
 		id: 'statuses-download-json',
 		method: 'GET',
-		path: '/v1/statuses/{id}/download',
+		path: '/v1/configs/statuses/{id}/download',
 		title: 'Download status JSON',
 		description:
 			'Returns only the config of a status config as a downloadable JSON file and increments download counters.',
@@ -336,14 +336,14 @@ const endpoints: ApiEndpoint[] = [
 		samplePayload: {
 			statusCycles: [{ text: 'First status line' }, { text: 'Second status line' }],
 		},
-		fetchPayload: `fetch('${API_BASE_V1}/v1/statuses/status-id/download')
+		fetchPayload: `fetch('${API_BASE_V1}/v1/configs/statuses/status-id/download')
   .then(res => res.json())
   .then	config => console.log(config))`,
 	},
 	{
 		id: 'statuses-by-author-get',
 		method: 'GET',
-		path: '/v1/statuses/{id}/user',
+		path: '/v1/configs/statuses/{id}/user',
 		title: 'Get status configs by author',
 		description:
 			'Returns all status configs authored by the given user ID, enriched with author metadata.',
@@ -366,14 +366,14 @@ const endpoints: ApiEndpoint[] = [
 				},
 			],
 		},
-		fetchPayload: `fetch('${API_BASE_V1}/v1/statuses/author-id/user')
+		fetchPayload: `fetch('${API_BASE_V1}/v1/configs/statuses/author-id/user')
   .then(res => res.json())
   .then(result => console.log(result.configs))`,
 	},
 	{
 		id: 'statuses-delete',
 		method: 'DELETE',
-		path: '/v1/statuses/{id}',
+		path: '/v1/configs/statuses/{id}',
 		title: 'Delete status config',
 		description:
 			'Deletes a status config by Firebase ID from the realtime database. Returns ok: true on success.',
@@ -383,7 +383,7 @@ const endpoints: ApiEndpoint[] = [
 		samplePayload: {
 			ok: true,
 		},
-		fetchPayload: `fetch('${API_BASE_V1}/v1/statuses/status-id', { method: 'DELETE' })
+		fetchPayload: `fetch('${API_BASE_V1}/v1/configs/statuses/status-id', { method: 'DELETE' })
   .then(res => res.json())
   .then(result => console.log(result))`,
 	},
