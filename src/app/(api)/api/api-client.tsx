@@ -207,20 +207,22 @@ function renderGroupedEndpoints(list: ApiEndpoint[]) {
 		groups[ep.group].push(ep)
 	}
 
-	return Object.entries(groups)
-		.filter(([, items]) => items.length > 0)
-		.map(([groupKey, items]) => {
-			const group = groupKey as ApiGroupType
-			return (
-				<div key={group} style={{ marginBottom: 16 }}>
-					<ul className={apiStyles.api_list}>
-						{items.map(endpoint => (
-							<ApiCardItem key={endpoint.id} endpoint={endpoint} />
-						))}
-					</ul>
-				</div>
-			)
-		})
+	const entries = Object.entries(groups).filter(([, items]) => items.length > 0)
+
+	return entries.map(([groupKey, items], idx) => {
+		const group = groupKey as ApiGroupType
+		const isLast = idx === entries.length - 1
+
+		return (
+			<div key={group} style={{ marginBottom: isLast ? 0 : 16 }}>
+				<ul className={apiStyles.api_list}>
+					{items.map(endpoint => (
+						<ApiCardItem key={endpoint.id} endpoint={endpoint} />
+					))}
+				</ul>
+			</div>
+		)
+	})
 }
 
 export function ApiSectionBase({ left, right, endpoints, basePath, title }: ApiSectionBaseProps) {
