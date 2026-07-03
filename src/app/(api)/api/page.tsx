@@ -50,6 +50,110 @@ const endpoints: ApiEndpoint[] = [
 	},
 
 	{
+		id: 'authors-resolve-get',
+		method: 'GET',
+		path: '/v1/authors/resolve',
+		title: 'Resolve author by username and tag',
+		description:
+			'Resolves author profile and configs by username and tag. Query: ?username=User&tag=1234. Used by /profile/{username}?tag=XXXX.',
+		group: 'authors',
+		hasExample: true,
+		samplePayload: {
+			user: {
+				name: 'Author Name',
+				avatar: 'https://example.com/avatar.png',
+				tag: '1234',
+				provider: 'discord',
+				createdAt: 123456789,
+				lastSeen: 123456789,
+			},
+			presenceConfigs: [],
+			statusConfigs: [],
+		},
+		fetchPayload: `fetch('${API_BASE_V1}/v1/authors/resolve?username=Author%20Name&tag=1234')
+  .then(res => res.json())
+  .then(data => console.log(data))`,
+	},
+	{
+		id: 'authors-resolve-post',
+		method: 'POST',
+		path: '/v1/authors/resolve',
+		title: 'Resolve author by username and tag (JSON)',
+		description:
+			'Same as GET /v1/authors/resolve but accepts JSON body { username, tag } instead of query parameters.',
+		group: 'authors',
+		hasExample: true,
+		samplePayload: {
+			requestBody: {
+				username: 'Author Name',
+				tag: '1234',
+			},
+			responseBody: {
+				user: {
+					name: 'Author Name',
+					avatar: 'https://example.com/avatar.png',
+					tag: '1234',
+					provider: 'discord',
+					createdAt: 123456789,
+					lastSeen: 123456789,
+				},
+				presenceConfigs: [],
+				statusConfigs: [],
+			},
+		},
+		fetchPayload: `fetch('${API_BASE_V1}/v1/authors/resolve', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ username: 'Author Name', tag: '1234' }),
+})
+  .then(res => res.json())
+  .then(data => console.log(data))`,
+	},
+	{
+		id: 'authors-stream-handle',
+		method: 'GET',
+		path: '/api/v1/authors/stream',
+		title: 'Stream author configs by handle',
+		description:
+			'Streams live updates for an author profile and their configs via SSE, resolved by username and tag. Query: username=User&tag=1234. Events: ready, update, not-found, ping.',
+		group: 'authors',
+		authRequired: false,
+		hasExample: true,
+		samplePayload: {
+			events: ['ready', 'update', 'not-found', 'ping'],
+			exampleReadyEvent: {
+				user: {
+					name: 'Author Name',
+					avatar: 'https://example.com/avatar.png',
+					tag: '1234',
+					provider: 'discord',
+					createdAt: 123456789,
+					lastSeen: 123456789,
+				},
+				presenceConfigs: [],
+				statusConfigs: [],
+			},
+		},
+		fetchPayload: `const es = new EventSource('${API_BASE_V1.replace(
+			'https://api.voidpresence.site',
+			'https://voidpresence.site'
+		)}/api/v1/authors/stream?username=Author%20Name&tag=1234')
+
+es.addEventListener('ready', event => {
+  const data = JSON.parse(event.data)
+  console.log('initial configs', data)
+})
+
+es.addEventListener('update', event => {
+  const data = JSON.parse(event.data)
+  console.log('updated configs', data)
+})
+
+es.addEventListener('not-found', () => {
+  console.log('author not found')
+})`,
+	},
+	{
 		id: 'authors-create-config',
 		method: 'POST',
 		path: '/v1/authors/{authorId}/configs',
@@ -164,110 +268,6 @@ const endpoints: ApiEndpoint[] = [
 		group: 'authors',
 		authRequired: false,
 		hasExample: false,
-	},
-	{
-		id: 'authors-resolve-get',
-		method: 'GET',
-		path: '/v1/authors/resolve',
-		title: 'Resolve author by username and tag',
-		description:
-			'Resolves author profile and configs by username and tag. Query: ?username=User&tag=1234. Used by /profile/{username}?tag=XXXX.',
-		group: 'authors',
-		hasExample: true,
-		samplePayload: {
-			user: {
-				name: 'Author Name',
-				avatar: 'https://example.com/avatar.png',
-				tag: '1234',
-				provider: 'discord',
-				createdAt: 123456789,
-				lastSeen: 123456789,
-			},
-			presenceConfigs: [],
-			statusConfigs: [],
-		},
-		fetchPayload: `fetch('${API_BASE_V1}/v1/authors/resolve?username=Author%20Name&tag=1234')
-  .then(res => res.json())
-  .then(data => console.log(data))`,
-	},
-	{
-		id: 'authors-resolve-post',
-		method: 'POST',
-		path: '/v1/authors/resolve',
-		title: 'Resolve author by username and tag (JSON)',
-		description:
-			'Same as GET /v1/authors/resolve but accepts JSON body { username, tag } instead of query parameters.',
-		group: 'authors',
-		hasExample: true,
-		samplePayload: {
-			requestBody: {
-				username: 'Author Name',
-				tag: '1234',
-			},
-			responseBody: {
-				user: {
-					name: 'Author Name',
-					avatar: 'https://example.com/avatar.png',
-					tag: '1234',
-					provider: 'discord',
-					createdAt: 123456789,
-					lastSeen: 123456789,
-				},
-				presenceConfigs: [],
-				statusConfigs: [],
-			},
-		},
-		fetchPayload: `fetch('${API_BASE_V1}/v1/authors/resolve', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ username: 'Author Name', tag: '1234' }),
-})
-  .then(res => res.json())
-  .then(data => console.log(data))`,
-	},
-	{
-		id: 'authors-stream-handle',
-		method: 'GET',
-		path: '/api/v1/authors/stream',
-		title: 'Stream author configs by handle',
-		description:
-			'Streams live updates for an author profile and their configs via SSE, resolved by username and tag. Query: username=User&tag=1234. Events: ready, update, not-found, ping.',
-		group: 'authors',
-		authRequired: false,
-		hasExample: true,
-		samplePayload: {
-			events: ['ready', 'update', 'not-found', 'ping'],
-			exampleReadyEvent: {
-				user: {
-					name: 'Author Name',
-					avatar: 'https://example.com/avatar.png',
-					tag: '1234',
-					provider: 'discord',
-					createdAt: 123456789,
-					lastSeen: 123456789,
-				},
-				presenceConfigs: [],
-				statusConfigs: [],
-			},
-		},
-		fetchPayload: `const es = new EventSource('${API_BASE_V1.replace(
-			'https://api.voidpresence.site',
-			'https://voidpresence.site'
-		)}/api/v1/authors/stream?username=Author%20Name&tag=1234')
-
-es.addEventListener('ready', event => {
-  const data = JSON.parse(event.data)
-  console.log('initial configs', data)
-})
-
-es.addEventListener('update', event => {
-  const data = JSON.parse(event.data)
-  console.log('updated configs', data)
-})
-
-es.addEventListener('not-found', () => {
-  console.log('author not found')
-})`,
 	},
 
 	{
