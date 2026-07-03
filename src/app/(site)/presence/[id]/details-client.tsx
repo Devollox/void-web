@@ -1,7 +1,6 @@
 'use client'
 
-import type { Config } from '@/service/firebase'
-import { onConfigByIdChange } from '@/service/firebase'
+import { Config } from '@/app/(api)/api/v1/configs/route'
 import RpcPreview from '@components/rpc-preview/rpc-user'
 import { useEffect, useState } from 'react'
 import styles from './config-details.module.scss'
@@ -24,17 +23,37 @@ export function ConfigDetailsClient({ configId, initialPreviewTick }: Props) {
 	const [loading, setLoading] = useState(true)
 
 	useEffect(() => {
-		const unsubscribe = onConfigByIdChange(configId, next => {
-			setConfig(next)
-			setLoading(false)
-		})
+		let cancelled = false
+
+		async function loadConfig() {
+			try {
+				const res = await fetch(`/api/v1/configs/${configId}`, {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ kind: 'presence' }),
+				})
+
+				if (!res.ok) {
+					setConfig(null)
+					return
+				}
+
+				const data = (await res.json()) as Config
+				if (cancelled) return
+				setConfig(data)
+			} finally {
+				if (!cancelled) setLoading(false)
+			}
+		}
+
+		loadConfig()
 
 		const interval = setInterval(() => {
 			setPreviewTick(prev => getNextTick(prev))
 		}, 3000)
 
 		return () => {
-			unsubscribe()
+			cancelled = true
 			clearInterval(interval)
 		}
 	}, [configId])
@@ -142,7 +161,7 @@ export function ConfigDetailsClient({ configId, initialPreviewTick }: Props) {
 			<div className={styles.theme_view_panel}>
 				<img
 					key={firstImage.largeImage || null}
-					src={firstImage.largeImage || null}
+					src={firstImage.largeImage || undefined}
 					className={styles.addon_backdrop}
 					alt=''
 				/>

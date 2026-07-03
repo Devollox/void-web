@@ -1,4 +1,4 @@
-import { incrementDownloadsConfigs, incrementDownloadsStatuses } from '@/service/firebase-admin'
+import { admin } from '@/service/firebase-admin'
 import { NextResponse } from 'next/server'
 
 type AnalyticsEventType = 'status_download' | 'presence_download' | 'status_open' | 'presence_open'
@@ -8,6 +8,18 @@ interface AnalyticsPayload {
 	id: string
 	client?: string
 	meta?: Record<string, unknown>
+}
+
+const db = admin.database()
+
+async function incrementDownloadsConfigs(configId: string): Promise<void> {
+	const downloadsRef = db.ref(`presence-configs/${configId}/downloads`)
+	await downloadsRef.transaction((current: any) => (Number(current) || 0) + 1)
+}
+
+async function incrementDownloadsStatuses(statusId: string): Promise<void> {
+	const downloadsRef = db.ref(`status-configs/${statusId}/downloads`)
+	await downloadsRef.transaction((current: any) => (Number(current) || 0) + 1)
 }
 
 export async function POST(req: Request) {

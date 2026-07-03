@@ -39,27 +39,55 @@ export async function incrementDownloadsStatuses(statusId: string): Promise<numb
 export async function incrementVisitorsStats(): Promise<{ count: number; lastUpdated: number }> {
 	const countRef = db.ref('stats/visitors/count')
 	const lastUpdatedRef = db.ref('stats/visitors/lastUpdated')
-
 	const txResult = await countRef.transaction((count: unknown) => (Number(count) || 0) + 1)
 	const newCountRaw = txResult.snapshot?.val()
 	const newCount = typeof newCountRaw === 'number' ? newCountRaw : Number(newCountRaw) || 0
-
 	const now = Date.now()
 	await lastUpdatedRef.set(now)
-
 	return { count: newCount, lastUpdated: now }
 }
 
 export async function incrementDownloadsStats(): Promise<{ count: number; lastUpdated: number }> {
 	const countRef = db.ref('stats/downloads/count')
 	const lastUpdatedRef = db.ref('stats/downloads/lastUpdated')
-
 	const txResult = await countRef.transaction((count: unknown) => (Number(count) || 0) + 1)
 	const newCountRaw = txResult.snapshot?.val()
 	const newCount = typeof newCountRaw === 'number' ? newCountRaw : Number(newCountRaw) || 0
-
 	const now = Date.now()
 	await lastUpdatedRef.set(now)
-
 	return { count: newCount, lastUpdated: now }
+}
+
+export async function createPresenceConfig(authorId: string, body: any): Promise<string> {
+	const ref = db.ref('presence-configs').push()
+
+	const { kind, ...rest } = body
+
+	await ref.set({
+		...rest,
+	})
+
+	const id = ref.key || 'unknown'
+
+	const userConfigsRef = db.ref(`users/configs/presence/${authorId}/${id}`)
+	await userConfigsRef.set(true)
+
+	return id
+}
+
+export async function createStatusConfig(authorId: string, body: any): Promise<string> {
+	const ref = db.ref('status-configs').push()
+
+	const { kind, ...rest } = body
+
+	await ref.set({
+		...rest,
+	})
+
+	const id = ref.key || 'unknown'
+
+	const userConfigsRef = db.ref(`users/configs/status/${authorId}/${id}`)
+	await userConfigsRef.set(true)
+
+	return id
 }

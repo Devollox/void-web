@@ -1,4 +1,4 @@
-import { incrementDownloadsStats, incrementVisitorsStats } from '@/service/firebase-admin'
+import { admin } from '@/service/firebase-admin'
 import { NextRequest, NextResponse } from 'next/server'
 
 type AppAnalyticsEventType = 'app_download' | 'app_visitors'
@@ -7,6 +7,45 @@ interface AppAnalyticsPayload {
 	type: AppAnalyticsEventType
 	channel: string
 	meta?: Record<string, unknown>
+}
+
+const db = admin.database()
+
+type CounterValue = {
+	count: number
+	lastUpdated: number
+}
+
+async function incrementDownloadsStats(): Promise<{ downloads: CounterValue }> {
+	const ref = db.ref('stats/downloads')
+	const result = await ref.transaction((current: { count: number }) => {
+		const now = Date.now()
+		const count = current && typeof current.count === 'number' ? current.count + 1 : 1
+		return { count, lastUpdated: now }
+	})
+
+	const val = (result.snapshot.val() as CounterValue | null) ?? {
+		count: 0,
+		lastUpdated: Date.now(),
+	}
+
+	return { downloads: val }
+}
+
+async function incrementVisitorsStats(): Promise<{ visitors: CounterValue }> {
+	const ref = db.ref('stats/visitors')
+	const result = await ref.transaction((current: { count: number }) => {
+		const now = Date.now()
+		const count = current && typeof current.count === 'number' ? current.count + 1 : 1
+		return { count, lastUpdated: now }
+	})
+
+	const val = (result.snapshot.val() as CounterValue | null) ?? {
+		count: 0,
+		lastUpdated: Date.now(),
+	}
+
+	return { visitors: val }
 }
 
 export async function POST(req: NextRequest) {

@@ -50,12 +50,98 @@ const endpoints: ApiEndpoint[] = [
 	},
 
 	{
+		id: 'author-add-config-presence',
+		method: 'POST',
+		path: '/v1/authors/{id}/add-config',
+		title: 'Create presence or status config',
+		description:
+			'Creates a new presence or status config for the given author ID. The author ID is taken from the URL, and configs are linked under users/configs while public configs do not contain authorId.',
+		group: 'presence',
+		authRequired: true,
+		hasExample: true,
+		samplePayload: {
+			requestBody: {
+				kind: 'presence',
+				title: 'Presence title',
+				author: 'Author name',
+				description: 'Presence description',
+				configData: {
+					cycles: [
+						{
+							details: 'Details line',
+							state: 'State line',
+						},
+					],
+					imageCycles: [
+						{
+							largeImage: 'https://example.com/large-image.png',
+							largeText: 'Large image text',
+							smallImage: 'https://example.com/small-image.png',
+							smallText: 'Small image text',
+						},
+					],
+					buttonPairs: [
+						{
+							label1: 'Button 1 label',
+							url1: 'https://example.com/button-1',
+							label2: 'Button 2 label',
+							url2: 'https://example.com/button-2',
+						},
+					],
+				},
+				downloads: 0,
+				uploadedAt: 1719950000000,
+				averageColor: '#ffffff',
+			},
+			responseBody: {
+				id: 'new-config-id',
+			},
+		},
+		fetchPayload: `fetch('${API_BASE_V1}/v1/authors/author-id/add-config', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    kind: 'presence',
+    title: 'Presence title',
+    author: 'Author name',
+    description: 'Presence description',
+    configData: {
+      cycles: [
+        { details: 'Details line', state: 'State line' }
+      ],
+      imageCycles: [
+        {
+          largeImage: 'https://example.com/large-image.png',
+          largeText: 'Large image text',
+          smallImage: 'https://example.com/small-image.png',
+          smallText: 'Small image text'
+        }
+      ],
+      buttonPairs: [
+        {
+          label1: 'Button 1 label',
+          url1: 'https://example.com/button-1',
+          label2: 'Button 2 label',
+          url2: 'https://example.com/button-2'
+        }
+      ]
+    },
+    downloads: 0,
+    uploadedAt: Date.now(),
+    averageColor: '#ffffff'
+  }),
+})
+  .then(res => res.json())
+  .then(result => console.log(result.id))`,
+	},
+
+	{
 		id: 'presence-get-all',
 		method: 'GET',
 		path: '/v1/configs/presence',
 		title: 'Get all presence configs',
 		description:
-			'Returns a list of all presence configuration documents from the realtime database.',
+			'Returns a list of all presence configuration documents from the realtime database, without exposing internal author IDs.',
 		group: 'presence',
 		hasExample: true,
 		samplePayload: [
@@ -63,7 +149,6 @@ const endpoints: ApiEndpoint[] = [
 				id: 'presence-id',
 				title: 'Presence title',
 				author: 'Author name',
-				authorId: 'author-id',
 				authorAvatar: 'https://example.com/avatar.png',
 				downloads: 0,
 				description: 'Presence description',
@@ -198,7 +283,7 @@ const endpoints: ApiEndpoint[] = [
 		path: '/v1/configs/presence/{id}/user',
 		title: 'Get presence configs by author',
 		description:
-			'Returns all presence configs authored by the given user ID, enriched with author metadata.',
+			'Returns all presence configs authored by the given user ID, enriched with author metadata while keeping internal IDs hidden from config documents.',
 		group: 'presence',
 		authRequired: false,
 		hasExample: true,
@@ -208,7 +293,6 @@ const endpoints: ApiEndpoint[] = [
 					id: 'presence-id',
 					title: 'Presence title',
 					author: 'Author name',
-					authorId: 'author-id',
 					authorAvatar: 'https://example.com/avatar.png',
 					downloads: 0,
 					description: 'Presence description',
@@ -250,7 +334,7 @@ const endpoints: ApiEndpoint[] = [
 		path: '/v1/configs/presence/{id}',
 		title: 'Delete presence config',
 		description:
-			'Deletes a presence config by Firebase ID from the realtime database. Returns ok: true on success.',
+			'Deletes a presence config by Firebase ID from the realtime database and unlinks it from user configs. Returns ok: true on success.',
 		group: 'presence',
 		authRequired: true,
 		hasExample: true,
@@ -275,7 +359,6 @@ const endpoints: ApiEndpoint[] = [
 				id: 'status-id',
 				title: 'Status title',
 				author: 'Author name',
-				authorId: 'author-id',
 				authorAvatar: 'https://example.com/avatar.png',
 				downloads: 0,
 				description: 'Status description',
@@ -338,7 +421,7 @@ const endpoints: ApiEndpoint[] = [
 		},
 		fetchPayload: `fetch('${API_BASE_V1}/v1/configs/statuses/status-id/download')
   .then(res => res.json())
-  .then	config => console.log(config))`,
+  .then(config => console.log(config))`,
 	},
 	{
 		id: 'statuses-by-author-get',
@@ -356,7 +439,6 @@ const endpoints: ApiEndpoint[] = [
 					id: 'status-id',
 					title: 'Status title',
 					author: 'Author name',
-					authorId: 'author-id',
 					authorAvatar: 'https://example.com/avatar.png',
 					downloads: 0,
 					description: 'Status description',
@@ -376,7 +458,7 @@ const endpoints: ApiEndpoint[] = [
 		path: '/v1/configs/statuses/{id}',
 		title: 'Delete status config',
 		description:
-			'Deletes a status config by Firebase ID from the realtime database. Returns ok: true on success.',
+			'Deletes a status config by Firebase ID from the realtime database and unlinks it from user configs. Returns ok: true on success.',
 		group: 'statuses',
 		authRequired: true,
 		hasExample: true,
@@ -512,7 +594,7 @@ const endpoints: ApiEndpoint[] = [
 		},
 		fetchPayload: `fetch('https://voidpresence.site/api/auth/callback/discord')
   .then(res => res.json())
-  .then(result => console.log	result))`,
+  .then(result => console.log(result))`,
 	},
 	{
 		id: 'auth-steam-bridge',

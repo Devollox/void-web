@@ -1,18 +1,17 @@
 'use client'
 
+import { Config } from '@/app/(api)/api/v1/configs/route'
 import { PresenceGrid } from '@/components/activity-grid/presence'
-import type { Config } from '@/service/firebase'
-import { onConfigsChange } from '@/service/firebase'
 import { Search, X } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import styles from './presence.module.scss'
 
-type Props = {
+export type Props = {
 	initialConfigs?: Config[]
 	initialSearchTerm: string
 }
 
-function filterConfigs(configs: Config[], searchTerm: string) {
+export function filterConfigs(configs: Config[], searchTerm: string) {
 	const term = searchTerm.toLowerCase()
 	if (!term) return configs
 	return configs.filter(
@@ -23,11 +22,10 @@ function filterConfigs(configs: Config[], searchTerm: string) {
 	)
 }
 
-function sortConfigs(configs: Config[]) {
+export function sortConfigs(configs: Config[]) {
 	return [...configs].sort((a, b) => {
 		const aDownloads =
 			typeof a.downloads === 'number' ? a.downloads : parseInt(String(a.downloads ?? '0')) || 0
-
 		const bDownloads =
 			typeof b.downloads === 'number' ? b.downloads : parseInt(String(b.downloads ?? '0')) || 0
 
@@ -41,13 +39,33 @@ export function ConfigsClient({ initialConfigs = [], initialSearchTerm }: Props)
 	const [loading, setLoading] = useState(true)
 
 	useEffect(() => {
-		const unsubscribe = onConfigsChange(next => {
-			setConfigs(next)
-			setLoading(false)
-		})
+		let cancelled = false
+
+		async function loadConfigs() {
+			try {
+				const res = await fetch('/api/v1/configs', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ kind: 'presence' }),
+				})
+
+				if (!res.ok) {
+					setConfigs([])
+					return
+				}
+
+				const data = (await res.json()) as Config[]
+				if (cancelled) return
+				setConfigs(data)
+			} finally {
+				if (!cancelled) setLoading(false)
+			}
+		}
+
+		loadConfigs()
 
 		return () => {
-			unsubscribe()
+			cancelled = true
 		}
 	}, [])
 

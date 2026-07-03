@@ -71,6 +71,19 @@ export interface UserRecordWithId extends UserRecord {
 	id: string
 }
 
+export interface AuthorConfigsResponse {
+	user: {
+		id: string
+		name: string | null
+		avatar: string | null
+		provider: string | null
+		createdAt: number | null
+		lastSeen: number | null
+	} | null
+	presenceConfigs: Config[]
+	statusConfigs: Status[]
+}
+
 function mapRawToConfig(
 	id: string,
 	data: any,
@@ -160,6 +173,7 @@ export function onConfigsChange(
 			callback([])
 			return
 		}
+
 		const allConfigs: Config[] = Object.entries(data).map(([id, raw]) => mapRawToConfig(id, raw))
 		const filtered = authorId
 			? allConfigs.filter(cfg => String(cfg.authorId) === String(authorId))
