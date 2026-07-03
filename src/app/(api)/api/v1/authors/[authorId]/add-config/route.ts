@@ -1,4 +1,4 @@
-import { createPresenceConfig, createStatusConfig } from '@/service/firebase-admin'
+import { admin } from '@/service/firebase-admin'
 import { NextResponse } from 'next/server'
 
 type Params = { authorId: string }
@@ -12,6 +12,40 @@ type AddConfigBody = {
 	downloads: number
 	uploadedAt: number
 	averageColor?: string
+}
+
+const db = admin.database()
+
+export async function createPresenceConfig(authorId: string, body: AddConfigBody): Promise<string> {
+	const ref = db.ref('presence-configs').push()
+	const { kind, ...rest } = body
+
+	await ref.set({
+		...rest,
+	})
+
+	const id = ref.key || 'unknown'
+
+	const userConfigsRef = db.ref(`users/${authorId}/configs/presence/${id}`)
+	await userConfigsRef.set(true)
+
+	return id
+}
+
+export async function createStatusConfig(authorId: string, body: AddConfigBody): Promise<string> {
+	const ref = db.ref('status-configs').push()
+	const { kind, ...rest } = body
+
+	await ref.set({
+		...rest,
+	})
+
+	const id = ref.key || 'unknown'
+
+	const userConfigsRef = db.ref(`users/${authorId}/configs/status/${id}`)
+	await userConfigsRef.set(true)
+
+	return id
 }
 
 export async function POST(req: Request, ctx: { params: Promise<Params> | Params }) {
@@ -38,6 +72,14 @@ export async function POST(req: Request, ctx: { params: Promise<Params> | Params
 			return NextResponse.json(
 				{ error: 'InvalidPayload', message: 'title and configData are required' },
 				{ status: 400 }
+			)
+		}
+
+		const userSnap = await db.ref(`users/${authorId}`).get()
+		if (!userSnap.exists()) {
+			return NextResponse.json(
+				{ error: 'AuthorNotFound', message: 'Author does not exist' },
+				{ status: 404 }
 			)
 		}
 

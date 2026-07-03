@@ -57,37 +57,3 @@ export async function incrementDownloadsStats(): Promise<{ count: number; lastUp
 	await lastUpdatedRef.set(now)
 	return { count: newCount, lastUpdated: now }
 }
-
-export async function createPresenceConfig(authorId: string, body: any): Promise<string> {
-	const ref = db.ref('presence-configs').push()
-
-	const { kind, ...rest } = body
-
-	await ref.set({
-		...rest,
-	})
-
-	const id = ref.key || 'unknown'
-
-	const userConfigsRef = db.ref(`users/configs/presence/${authorId}/${id}`)
-	await userConfigsRef.set(true)
-
-	return id
-}
-
-export async function createStatusConfig(authorId: string, body: any): Promise<string> {
-	const ref = db.ref('status-configs').push()
-
-	const { kind, ...rest } = body
-
-	await ref.set({
-		...rest,
-	})
-
-	const id = ref.key || 'unknown'
-
-	const userConfigsRef = db.ref(`users/configs/status/${authorId}/${id}`)
-	await userConfigsRef.set(true)
-
-	return id
-}
