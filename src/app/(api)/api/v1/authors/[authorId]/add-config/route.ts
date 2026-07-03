@@ -16,6 +16,12 @@ type AddConfigBody = {
 
 const db = admin.database()
 
+function buildAuthorTag(authorId: string) {
+	const digitsOnly = authorId.replace(/\D/g, '')
+	const tail = digitsOnly.slice(-4)
+	return tail.padStart(4, '0')
+}
+
 export async function createPresenceConfig(authorId: string, body: AddConfigBody): Promise<string> {
 	const userSnap = await db.ref(`users/${authorId}`).get()
 	const user = userSnap.exists() ? (userSnap.val() as any) : null
@@ -26,7 +32,7 @@ export async function createPresenceConfig(authorId: string, body: AddConfigBody
 	await ref.set({
 		...rest,
 		author: user?.name || author || 'Unknown',
-		authorAvatar: user?.avatar || user?.image || undefined,
+		authorTag: buildAuthorTag(authorId),
 	})
 
 	const id = ref.key || 'unknown'
@@ -47,6 +53,7 @@ export async function createStatusConfig(authorId: string, body: AddConfigBody):
 	await ref.set({
 		...rest,
 		author: user?.name || author || 'Unknown',
+		authorTag: buildAuthorTag(authorId),
 		authorAvatar: user?.avatar || user?.image || undefined,
 	})
 
