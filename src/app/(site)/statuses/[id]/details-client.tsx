@@ -114,7 +114,7 @@ export function StatusDetailsClient({ statusId, initialPreviewTick }: Props) {
 		)}&data=${encodeURIComponent(JSON.stringify(status.configData ?? {}))}`
 
 		try {
-			await fetch('/api/v1/analytics', {
+			await fetch('/api/v1/analytics/configs', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ type: 'status_download', id: status.id }),

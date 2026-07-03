@@ -40,7 +40,7 @@ export function DownloadJsonButton({ configId }: Props) {
 		}
 
 		try {
-			await fetch('/api/v1/analytics', {
+			await fetch('/api/v1/analytics/configs', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ type: 'status_download', id: configId }),

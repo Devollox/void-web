@@ -389,9 +389,47 @@ const endpoints: ApiEndpoint[] = [
 	},
 
 	{
+		id: 'analytics-app',
+		method: 'POST',
+		path: '/v1/analytics/app',
+		title: 'Track app analytics',
+		description: 'Tracks global app analytics such as total visitors and installer downloads.',
+		group: 'analytics',
+		hasExample: true,
+		authRequired: true,
+		samplePayload: {
+			requestBody: {
+				type: 'app_download',
+				channel: 'installer',
+				meta: {
+					platform: 'windows',
+					version: '2.5.0',
+				},
+			},
+			responseBody: {
+				ok: true,
+				type: 'app_download',
+				stats: {
+					count: 123,
+					lastUpdated: 1719950000000,
+				},
+			},
+		},
+		fetchPayload: `fetch('${API_BASE_V1}/v1/analytics/app', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    type: 'app_download',
+    channel: 'installer',
+  }),
+})
+  .then(res => res.json())
+  .then(result => console.log(result))`,
+	},
+	{
 		id: 'analytics-track',
 		method: 'POST',
-		path: '/v1/analytics',
+		path: '/v1/analytics/configs',
 		title: 'Track analytics event',
 		description:
 			'Records analytics events such as downloads for presence configs and statuses using a unified payload.',
@@ -411,7 +449,7 @@ const endpoints: ApiEndpoint[] = [
 				ok: true,
 			},
 		},
-		fetchPayload: `fetch('${API_BASE_V1}/v1/analytics', {
+		fetchPayload: `fetch('${API_BASE_V1}/v1/analytics/configs', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({ type: 'status_download', id: 'status-id' }),

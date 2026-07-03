@@ -1,5 +1,5 @@
+import { admin } from '@/service/firebase-admin'
 import { UpstashRedisAdapter } from '@auth/upstash-redis-adapter'
-import { admin } from '@lib/firebase-admin'
 import { redis } from '@service/redis'
 import NextAuth from 'next-auth'
 import DiscordProvider from 'next-auth/providers/discord'

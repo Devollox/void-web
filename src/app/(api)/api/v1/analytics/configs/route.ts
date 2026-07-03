@@ -1,4 +1,4 @@
-import { incrementDownloadsConfigs, incrementDownloadsStatuses } from '@/service/firebase'
+import { incrementDownloadsConfigs, incrementDownloadsStatuses } from '@/service/firebase-admin'
 import { NextResponse } from 'next/server'
 
 type AnalyticsEventType = 'status_download' | 'presence_download' | 'status_open' | 'presence_open'

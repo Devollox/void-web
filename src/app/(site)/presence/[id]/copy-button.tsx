@@ -28,7 +28,7 @@ export function CopyJsonButton({ configId }: Props) {
 			setTimeout(() => setStatus('idle'), 2000)
 		}
 		try {
-			await fetch('/api/v1/analytics', {
+			await fetch('/api/v1/analytics/configs', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ type: 'presence_download', id: configId }),

@@ -1,7 +1,7 @@
 'use client'
 
+import { onStatsChange, type Stats } from '@/service/firebase'
 import CountUp from '@lib/count-up'
-import { incrementVisitors, onStatsChange, type Stats } from '@service/firebase'
 import { useEffect, useState } from 'react'
 import styles from './stats.module.scss'
 
@@ -14,7 +14,17 @@ export default function Stats() {
 	const [loaded, setLoaded] = useState(false)
 
 	useEffect(() => {
-		incrementVisitors()
+		async function trackVisitor() {
+			try {
+				await fetch('/api/v1/analytics/app', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ type: 'app_visitors', channel: 'site' }),
+				})
+			} catch {}
+		}
+
+		trackVisitor()
 
 		const unsubscribe = onStatsChange(next => {
 			setStats(next)

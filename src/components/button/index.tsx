@@ -1,6 +1,5 @@
 'use client'
 
-import { incrementDownloadsStats } from '@service/firebase'
 import { Book, Download } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
@@ -29,7 +28,7 @@ export default function Button() {
 					setDownloadUrl(exeAsset.browser_download_url)
 				}
 			} catch (error) {
-				console.error('Error:', error)
+				console.error('Error fetching latest installer release:', error)
 			} finally {
 				setLoading(false)
 			}
@@ -44,10 +43,16 @@ export default function Button() {
 		e.preventDefault()
 		setIsRedirecting(true)
 
+		window.dispatchEvent(new CustomEvent('void-download-click'))
+
 		try {
-			await incrementDownloadsStats()
+			await fetch('/api/v1/analytics/app', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ type: 'app_download', channel: 'installer' }),
+			})
 		} catch (error) {
-			console.error(error)
+			console.error('Failed to track app_download analytics:', error)
 		} finally {
 			const link = document.createElement('a')
 			link.href = downloadUrl
@@ -63,7 +68,9 @@ export default function Button() {
 	return (
 		<div className={`${styles.btn_container} ${styles.btn_width}`}>
 			<button
-				className={`${styles.btn} ${styles.btn_primary} ${loading || isRedirecting ? styles.disabled : ''}`}
+				className={`${styles.btn} ${styles.btn_primary} ${
+					loading || isRedirecting ? styles.disabled : ''
+				}`}
 				id='hero-download-button'
 				disabled={loading || !downloadUrl || isRedirecting}
 				onClick={handleDownloadClick}

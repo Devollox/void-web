@@ -272,24 +272,6 @@ export async function incrementDownloadsStatuses(configId: string): Promise<void
 	await runTransaction(downloadsRef, current => (Number(current) || 0) + 1)
 }
 
-export async function incrementVisitors(): Promise<void> {
-	try {
-		const countRef = ref(db, 'stats/visitors/count')
-		const lastUpdatedRef = ref(db, 'stats/visitors/lastUpdated')
-		await runTransaction(countRef, count => (Number(count) || 0) + 1)
-		await runTransaction(lastUpdatedRef, () => Date.now())
-	} catch {}
-}
-
-export async function incrementDownloadsStats(): Promise<void> {
-	try {
-		const countRef = ref(db, 'stats/downloads/count')
-		const lastUpdatedRef = ref(db, 'stats/downloads/lastUpdated')
-		await runTransaction(countRef, count => (Number(count) || 0) + 1)
-		await runTransaction(lastUpdatedRef, () => Date.now())
-	} catch {}
-}
-
 export interface Stats {
 	visitors: { count: number; lastUpdated: number }
 	downloads: { count: number; lastUpdated: number }
