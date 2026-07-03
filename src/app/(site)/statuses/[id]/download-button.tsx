@@ -15,7 +15,7 @@ export function DownloadJsonButton({ configId }: Props) {
 		setStatus('downloading')
 
 		try {
-			const res = await fetch(`/api/v1/configs/statuses/${configId}/download`, {
+			const res = await fetch(`/api/v1/configs/${configId}/download?kind=status`, {
 				method: 'GET',
 			})
 

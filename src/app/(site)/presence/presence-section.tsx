@@ -1,3 +1,4 @@
+import type { Config } from '@/app/(api)/api/v1/configs/route'
 import Footer from '@components/footer'
 import Page from '@components/page'
 import PageHeader from '@components/page-header'
@@ -6,9 +7,10 @@ import styles from './presence.module.scss'
 
 type Props = {
 	initialSearchTerm: string
+	initialConfigs: Config[]
 }
 
-export function ConfigsSection({ initialSearchTerm }: Props) {
+export function ConfigsSection({ initialSearchTerm, initialConfigs }: Props) {
 	return (
 		<Page>
 			<PageHeader
@@ -18,7 +20,7 @@ export function ConfigsSection({ initialSearchTerm }: Props) {
 
 			<section className={styles.section_themes_panel}>
 				<div className={styles.themes_panel}>
-					<ConfigsClient initialConfigs={[]} initialSearchTerm={initialSearchTerm} />
+					<ConfigsClient initialConfigs={initialConfigs} initialSearchTerm={initialSearchTerm} />
 				</div>
 			</section>
 

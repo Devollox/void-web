@@ -1,3 +1,4 @@
+import type { Status } from '@service/firebase'
 import type { Metadata } from 'next'
 import { StatusSection } from './statuses-section'
 
@@ -19,9 +20,23 @@ export const metadata: Metadata = {
 	},
 }
 
+async function fetchInitialStatuses(): Promise<Status[]> {
+	const res = await fetch(`${process.env.NEXTAUTH_URL}/api/v1/configs`, {
+		method: 'POST',
+		cache: 'no-store',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({ kind: 'status' }),
+	})
+
+	if (!res.ok) return []
+	return (await res.json()) as Status[]
+}
+
 export default async function StatusPage(props: PageProps) {
 	const { q = '' } = await props.searchParams
 	const searchTerm = q || ''
 
-	return <StatusSection initialSearchTerm={searchTerm} />
+	const initialStatuses = await fetchInitialStatuses()
+
+	return <StatusSection initialSearchTerm={searchTerm} initialStatuses={initialStatuses} />
 }

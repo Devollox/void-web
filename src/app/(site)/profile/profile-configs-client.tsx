@@ -3,13 +3,27 @@
 import { PresenceGrid } from '@/components/activity-grid/presence'
 import { StatusesGrid } from '@/components/activity-grid/statuses'
 import type { Config, Status } from '@/service/firebase'
-import { onConfigsChange, onStatusesChange } from '@/service/firebase'
 import { Search, X } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import styles from './profile-configs.module.scss'
 
 type Props = {
 	userId: string
+	initialConfigs?: Config[]
+	initialStatuses?: Status[]
+}
+
+type AuthorConfigsResponse = {
+	user: {
+		id: string
+		name: string | null
+		avatar: string | null
+		provider: string | null
+		createdAt: number | null
+		lastSeen: number | null
+	} | null
+	presenceConfigs: Config[]
+	statusConfigs: Status[]
 }
 
 function filterConfigs(configs: Config[], searchTerm: string) {
@@ -32,40 +46,112 @@ function filterStatuses(statuses: Status[], searchTerm: string) {
 	)
 }
 
-export function ProfileConfigsClient({ userId }: Props) {
+export function ProfileConfigsClient({ userId, initialConfigs = [], initialStatuses = [] }: Props) {
 	const [searchTerm, setSearchTerm] = useState('')
-	const [liveConfigs, setLiveConfigs] = useState<Config[]>([])
-	const [liveStatuses, setLiveStatuses] = useState<Status[]>([])
-	const [hasLoadedConfigs, setHasLoadedConfigs] = useState(false)
-	const [hasLoadedStatuses, setHasLoadedStatuses] = useState(false)
+	const [liveConfigs, setLiveConfigs] = useState<Config[]>(initialConfigs)
+	const [liveStatuses, setLiveStatuses] = useState<Status[]>(initialStatuses)
+	const [hasLoadedConfigs, setHasLoadedConfigs] = useState(initialConfigs.length > 0)
+	const [hasLoadedStatuses, setHasLoadedStatuses] = useState(initialStatuses.length > 0)
 
 	const loadingConfigs = !hasLoadedConfigs
 	const loadingStatuses = !hasLoadedStatuses
 
 	useEffect(() => {
-		const unsubscribeConfigs = onConfigsChange(
-			next => {
-				setLiveConfigs(next)
-				setHasLoadedConfigs(true)
-			},
-			undefined,
-			userId
-		)
+		let cancelled = false
+		let eventSource: EventSource | null = null
+		let hideLoadingTimeoutConfigs: NodeJS.Timeout | null = null
+		let hideLoadingTimeoutStatuses: NodeJS.Timeout | null = null
 
-		const unsubscribeStatuses = onStatusesChange(
-			next => {
-				setLiveStatuses(next)
-				setHasLoadedStatuses(true)
-			},
-			undefined,
-			userId
-		)
+		function finishLoadingConfigs() {
+			if (hideLoadingTimeoutConfigs) clearTimeout(hideLoadingTimeoutConfigs)
+			hideLoadingTimeoutConfigs = setTimeout(() => {
+				if (!cancelled) setHasLoadedConfigs(true)
+			}, 100)
+		}
+
+		function finishLoadingStatuses() {
+			if (hideLoadingTimeoutStatuses) clearTimeout(hideLoadingTimeoutStatuses)
+			hideLoadingTimeoutStatuses = setTimeout(() => {
+				if (!cancelled) setHasLoadedStatuses(true)
+			}, 100)
+		}
+
+		async function loadInitialAuthorConfigs() {
+			if (initialConfigs.length > 0 || initialStatuses.length > 0) {
+				finishLoadingConfigs()
+				finishLoadingStatuses()
+				return true
+			}
+
+			try {
+				const res = await fetch(`/api/v1/authors/${encodeURIComponent(String(userId))}/configs`, {
+					method: 'GET',
+					headers: { 'Content-Type': 'application/json' },
+				})
+
+				if (!res.ok) {
+					if (cancelled) return false
+					setLiveConfigs([])
+					setLiveStatuses([])
+					finishLoadingConfigs()
+					finishLoadingStatuses()
+					return false
+				}
+
+				const data = (await res.json()) as AuthorConfigsResponse
+				if (cancelled) return false
+
+				setLiveConfigs(data.presenceConfigs || [])
+				setLiveStatuses(data.statusConfigs || [])
+				finishLoadingConfigs()
+				finishLoadingStatuses()
+				return true
+			} catch {
+				if (cancelled) return false
+				setLiveConfigs([])
+				setLiveStatuses([])
+				finishLoadingConfigs()
+				finishLoadingStatuses()
+				return false
+			}
+		}
+
+		async function startStream() {
+			const ok = await loadInitialAuthorConfigs()
+			if (!ok || cancelled) return
+
+			eventSource = new EventSource(`/api/v1/authors/${encodeURIComponent(String(userId))}/stream`)
+
+			eventSource.addEventListener('ready', event => {
+				if (cancelled) return
+				const next = JSON.parse((event as MessageEvent).data) as AuthorConfigsResponse
+				setLiveConfigs(next.presenceConfigs || [])
+				setLiveStatuses(next.statusConfigs || [])
+			})
+
+			eventSource.addEventListener('update', event => {
+				if (cancelled) return
+				const next = JSON.parse((event as MessageEvent).data) as AuthorConfigsResponse
+				setLiveConfigs(next.presenceConfigs || [])
+				setLiveStatuses(next.statusConfigs || [])
+			})
+
+			eventSource.addEventListener('not-found', () => {
+				if (cancelled) return
+				setLiveConfigs([])
+				setLiveStatuses([])
+			})
+		}
+
+		startStream()
 
 		return () => {
-			unsubscribeConfigs()
-			unsubscribeStatuses()
+			cancelled = true
+			eventSource?.close()
+			if (hideLoadingTimeoutConfigs) clearTimeout(hideLoadingTimeoutConfigs)
+			if (hideLoadingTimeoutStatuses) clearTimeout(hideLoadingTimeoutStatuses)
 		}
-	}, [userId])
+	}, [userId, initialConfigs, initialStatuses])
 
 	const filteredConfigs = useMemo(
 		() => filterConfigs(liveConfigs, searchTerm),

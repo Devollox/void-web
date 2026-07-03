@@ -1,14 +1,16 @@
 import Footer from '@components/footer'
 import Page from '@components/page'
 import PageHeader from '@components/page-header'
+import type { Status } from '@service/firebase'
 import { StatusClient } from './statuses-client'
 import styles from './statuses.module.scss'
 
 type Props = {
 	initialSearchTerm: string
+	initialStatuses: Status[]
 }
 
-export function StatusSection({ initialSearchTerm }: Props) {
+export function StatusSection({ initialSearchTerm, initialStatuses }: Props) {
 	return (
 		<Page>
 			<PageHeader
@@ -18,7 +20,7 @@ export function StatusSection({ initialSearchTerm }: Props) {
 
 			<section className={styles.section_themes_panel}>
 				<div className={styles.themes_panel}>
-					<StatusClient initialStatuses={[]} initialSearchTerm={initialSearchTerm} />
+					<StatusClient initialStatuses={initialStatuses} initialSearchTerm={initialSearchTerm} />
 				</div>
 			</section>
 			<Footer />

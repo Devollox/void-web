@@ -1,6 +1,6 @@
 'use client'
 
-import { onStatsChange, type Stats } from '@/service/firebase'
+import { type Stats } from '@/service/firebase'
 import CountUp from '@lib/count-up'
 import { useEffect, useState } from 'react'
 import styles from './stats.module.scss'
@@ -26,12 +26,28 @@ export default function Stats() {
 
 		trackVisitor()
 
-		const unsubscribe = onStatsChange(next => {
-			setStats(next)
-			setLoaded(true)
-		})
+		const es = new EventSource('/api/v1/analytics/stream')
 
-		return unsubscribe
+		const handleReady = (ev: MessageEvent) => {
+			const data = JSON.parse(ev.data) as Stats
+			setStats(data)
+			setLoaded(true)
+		}
+
+		const handleUpdate = (ev: MessageEvent) => {
+			const data = JSON.parse(ev.data) as Stats
+			setStats(data)
+			setLoaded(true)
+		}
+
+		es.addEventListener('ready', handleReady)
+		es.addEventListener('update', handleUpdate)
+
+		return () => {
+			es.removeEventListener('ready', handleReady)
+			es.removeEventListener('update', handleUpdate)
+			es.close()
+		}
 	}, [])
 
 	return (

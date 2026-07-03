@@ -24,8 +24,9 @@ export function ConfigDetailsClient({ configId, initialPreviewTick }: Props) {
 
 	useEffect(() => {
 		let cancelled = false
+		let eventSource: EventSource | null = null
 
-		async function loadConfig() {
+		async function loadInitialConfig() {
 			try {
 				const res = await fetch(`/api/v1/configs/${configId}`, {
 					method: 'POST',
@@ -34,19 +35,47 @@ export function ConfigDetailsClient({ configId, initialPreviewTick }: Props) {
 				})
 
 				if (!res.ok) {
-					setConfig(null)
-					return
+					if (!cancelled) setConfig(null)
+					return false
 				}
 
 				const data = (await res.json()) as Config
-				if (cancelled) return
-				setConfig(data)
+				if (!cancelled) setConfig(data)
+				return true
 			} finally {
 				if (!cancelled) setLoading(false)
 			}
 		}
 
-		loadConfig()
+		async function startStream() {
+			const ok = await loadInitialConfig()
+			if (!ok || cancelled) return
+
+			eventSource = new EventSource(`/api/v1/configs/${configId}/stream?kind=presence`)
+
+			eventSource.addEventListener('ready', event => {
+				if (cancelled) return
+				const next = JSON.parse((event as MessageEvent).data) as Config
+				setConfig(next)
+			})
+
+			eventSource.addEventListener('update', event => {
+				if (cancelled) return
+				const next = JSON.parse((event as MessageEvent).data) as Config
+				setConfig(next)
+			})
+
+			eventSource.addEventListener('not-found', () => {
+				if (cancelled) return
+				setConfig(null)
+			})
+
+			eventSource.onerror = () => {
+				if (cancelled) return
+			}
+		}
+
+		startStream()
 
 		const interval = setInterval(() => {
 			setPreviewTick(prev => getNextTick(prev))
@@ -55,6 +84,7 @@ export function ConfigDetailsClient({ configId, initialPreviewTick }: Props) {
 		return () => {
 			cancelled = true
 			clearInterval(interval)
+			eventSource?.close()
 		}
 	}, [configId])
 
@@ -176,7 +206,12 @@ export function ConfigDetailsClient({ configId, initialPreviewTick }: Props) {
 								<div className={styles.title_description}>{config.description}</div>
 								<section className={styles.addon_actions}>
 									<div className={styles.btn_container}>
-										<a href={`/profile/${config.author}`} className={styles.download_btn_primary}>
+										<a
+											href={`/profile/${encodeURIComponent(config.author)}?tag=${encodeURIComponent(
+												String(config.authorTag ?? '').padStart(4, '0')
+											)}`}
+											className={styles.download_btn_primary}
+										>
 											Open profile
 										</a>
 									</div>
@@ -193,7 +228,7 @@ export function ConfigDetailsClient({ configId, initialPreviewTick }: Props) {
 						<div className={styles.addon_details_middle_column}>
 							<div className={styles.rpc_card_preview}>
 								<RpcPreview
-									discriminator={`#${config.authorId!.slice(0, 4)}` || '#0001'}
+									discriminator={`#${String(config.authorTag ?? '') || '0001'}`}
 									username={config.author || 'User'}
 									avatarSrc={avatarSrc}
 									currentCycle={firstCycle}

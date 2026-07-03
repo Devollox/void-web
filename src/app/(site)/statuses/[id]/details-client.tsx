@@ -1,8 +1,7 @@
 'use client'
 
+import type { Status } from '@/service/firebase'
 import StatusPreview from '@components/statuses-preview/status-user'
-import type { Status } from '@service/firebase'
-import { onStatusByIdChange } from '@service/firebase'
 import { useEffect, useState } from 'react'
 import styles from '../../presence/[id]/config-details.module.scss'
 import { CopyJsonButton } from './copy-button'
@@ -24,18 +23,64 @@ export function StatusDetailsClient({ statusId, initialPreviewTick }: Props) {
 	const [loading, setLoading] = useState(true)
 
 	useEffect(() => {
-		const unsubscribe = onStatusByIdChange(statusId, next => {
-			setStatus(next)
-			setLoading(false)
-		})
+		let cancelled = false
+		let eventSource: EventSource | null = null
+
+		async function loadInitialStatus() {
+			try {
+				const res = await fetch(`/api/v1/configs/${statusId}`, {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ kind: 'status' }),
+				})
+
+				if (!res.ok) {
+					if (!cancelled) setStatus(null)
+					return false
+				}
+
+				const data = (await res.json()) as Status
+				if (!cancelled) setStatus(data)
+				return true
+			} finally {
+				if (!cancelled) setLoading(false)
+			}
+		}
+
+		async function startStream() {
+			const ok = await loadInitialStatus()
+			if (!ok || cancelled) return
+
+			eventSource = new EventSource(`/api/v1/configs/${statusId}/stream?kind=status`)
+
+			eventSource.addEventListener('ready', event => {
+				if (cancelled) return
+				const next = JSON.parse((event as MessageEvent).data) as Status
+				setStatus(next)
+			})
+
+			eventSource.addEventListener('update', event => {
+				if (cancelled) return
+				const next = JSON.parse((event as MessageEvent).data) as Status
+				setStatus(next)
+			})
+
+			eventSource.addEventListener('not-found', () => {
+				if (cancelled) return
+				setStatus(null)
+			})
+		}
+
+		startStream()
 
 		const interval = setInterval(() => {
 			setPreviewTick(prev => getNextTick(prev))
 		}, 3000)
 
 		return () => {
-			unsubscribe()
+			cancelled = true
 			clearInterval(interval)
+			eventSource?.close()
 		}
 	}, [statusId])
 
@@ -138,7 +183,12 @@ export function StatusDetailsClient({ statusId, initialPreviewTick }: Props) {
 								<div className={styles.title_description}>{status.description}</div>
 								<section className={styles.addon_actions}>
 									<div className={styles.btn_container}>
-										<a href={`/profile/${status.author}`} className={styles.download_btn_primary}>
+										<a
+											href={`/profile/${encodeURIComponent(status.author)}?tag=${encodeURIComponent(
+												String(status.authorTag ?? '').padStart(4, '0')
+											)}`}
+											className={styles.download_btn_primary}
+										>
 											Open profile
 										</a>
 									</div>
@@ -156,7 +206,7 @@ export function StatusDetailsClient({ statusId, initialPreviewTick }: Props) {
 							<div className={styles.rpc_card_preview}>
 								<StatusPreview
 									username={status.author || 'User'}
-									discriminator={`#${String(status.authorTag ?? '').slice(0, 4) || '0001'}`}
+									discriminator={`#${String(status.authorTag ?? '') || '0001'}`}
 									avatarSrc={avatarSrc}
 									currentStatus={currentCycle}
 									currentIndex={localIndex}

@@ -1,49 +1,54 @@
+import { leftNotFound, rightNotFound } from '@/app/not-found'
 import Footer from '@components/footer'
 import Page from '@components/page'
 import PageHeader from '@components/page-header'
 import { PanelLayout } from '@components/panel-layout'
-import { fetchAuthorByName } from '@service/firebase'
-import { Metadata } from 'next'
-import { leftNotFound, rightNotFound } from '../../../not-found'
 import { default as styles } from '../../download/download.module.scss'
 import { ProfileClient } from './profile-client'
 
-type Params = {
-	id: string
-}
-
 type Props = {
-	params: Params
+	params: Promise<{ id: string }>
+	searchParams: Promise<{ tag?: string }>
 }
 
-export async function generateMetadata(props: Props): Promise<Metadata> {
-	const { id } = await props.params
-	const user = await fetchAuthorByName(id)
+type AuthorConfigsResponse = {
+	user: {
+		name: string | null
+		avatar: string | null
+		tag: string | null
+		provider: string | null
+		createdAt: number | null
+		lastSeen: number | null
+	} | null
+	presenceConfigs: any[]
+	statusConfigs: any[]
+}
 
-	if (!user) {
-		return {
-			title: 'User not found – Void Presence',
-			description: 'The requested Void Presence profile could not be found.',
-		}
-	}
+async function fetchAuthorConfigsByHandle(
+	username: string,
+	tag: string
+): Promise<AuthorConfigsResponse | null> {
+	const res = await fetch(`${process.env.NEXTAUTH_URL}/api/v1/authors/resolve`, {
+		method: 'POST',
+		cache: 'no-store',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({ username, tag }),
+	})
 
-	return {
-		title: `${user.name}'s Profile`,
-		description: `View Discord Rich Presence configs, status cycles, and custom styles created by ${user.name}.`,
-		openGraph: {
-			title: `Void Presence – ${user.name}'s Profile`,
-			description: `Explore custom Discord Rich Presence setups linked to ${user.name}'s Author ID.`,
-			url: `/profile/${id}`,
-		},
-	}
+	if (!res.ok) return null
+	return (await res.json()) as AuthorConfigsResponse
 }
 
 export default async function ProfilePage(props: Props) {
 	const { id } = await props.params
+	const { tag } = await props.searchParams
 
-	const user = await fetchAuthorByName(id)
+	const username = decodeURIComponent(id)
+	const normalizedTag = String(tag ?? '').padStart(4, '0')
 
-	if (!user) {
+	const data = await fetchAuthorConfigsByHandle(username, normalizedTag)
+
+	if (!data?.user) {
 		return (
 			<Page>
 				<PageHeader title='User Profile' subtitle='User not found' />
@@ -57,10 +62,20 @@ export default async function ProfilePage(props: Props) {
 		)
 	}
 
+	const { user, presenceConfigs, statusConfigs } = data
+
 	return (
 		<Page>
-			<PageHeader title='User Profile' subtitle={`User configs from ${user.name}`} />
-			<ProfileClient userId={user.id} />
+			<PageHeader
+				title='User Profile'
+				subtitle={`User configs from ${user.name}#${user.tag ?? '0000'}`}
+			/>
+			<ProfileClient
+				user={user}
+				presenceConfigs={presenceConfigs}
+				statusConfigs={statusConfigs}
+				profileTag={normalizedTag}
+			/>
 			<Footer />
 		</Page>
 	)

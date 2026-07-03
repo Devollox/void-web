@@ -16,10 +16,10 @@ type AddConfigBody = {
 
 const db = admin.database()
 
-function buildAuthorTag(authorId: string) {
+export function buildAuthorTag(authorId: string) {
 	const digitsOnly = authorId.replace(/\D/g, '')
-	const tail = digitsOnly.slice(-4)
-	return tail.padStart(4, '0')
+	const head = digitsOnly.slice(0, 4)
+	return head.padStart(4, '0')
 }
 
 export async function createPresenceConfig(authorId: string, body: AddConfigBody): Promise<string> {

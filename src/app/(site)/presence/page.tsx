@@ -20,9 +20,25 @@ export const metadata: Metadata = {
 	},
 }
 
+type PresenceConfig = import('@/app/(api)/api/v1/configs/route').Config
+
+async function fetchInitialPresence(): Promise<PresenceConfig[]> {
+	const res = await fetch(`${process.env.NEXTAUTH_URL}/api/v1/configs`, {
+		method: 'POST',
+		cache: 'no-store',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({ kind: 'presence' }),
+	})
+
+	if (!res.ok) return []
+	return (await res.json()) as PresenceConfig[]
+}
+
 export default async function ConfigsPage(props: PageProps) {
 	const { q = '' } = await props.searchParams
 	const searchTerm = q || ''
 
-	return <ConfigsSection initialSearchTerm={searchTerm} />
+	const initialConfigs = await fetchInitialPresence()
+
+	return <ConfigsSection initialSearchTerm={searchTerm} initialConfigs={initialConfigs} />
 }

@@ -41,7 +41,6 @@ export function ProfileDetailsClient({ user, lastConfig, authorID }: Props) {
 		: [{ label1: '', url1: '' }]
 
 	const maxLen = Math.max(cycles.length || 1, images.length || 1, buttonsList.length || 1)
-
 	const localIndex = maxLen ? previewTick % maxLen : 0
 
 	const cycleIndex = localIndex % cycles.length
@@ -67,7 +66,7 @@ export function ProfileDetailsClient({ user, lastConfig, authorID }: Props) {
 			<div className={styles.theme_view_panel}>
 				<img
 					key={firstImage.largeImage || null}
-					src={firstImage.largeImage || null}
+					src={firstImage.largeImage || undefined}
 					className={styles.addon_backdrop}
 					alt=''
 				/>
@@ -107,7 +106,7 @@ export function ProfileDetailsClient({ user, lastConfig, authorID }: Props) {
 							<div className={styles.rpc_card_preview}>
 								{lastConfig && configData ? (
 									<RpcPreview
-										discriminator={`#${user.id.slice(0, 4)}` || '#0001'}
+										discriminator={`#${String(user.id ?? '').slice(0, 4) || '0001'}`}
 										username={user.name || 'User'}
 										avatarSrc={avatarSrc}
 										currentCycle={firstCycle}

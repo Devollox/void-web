@@ -3,13 +3,25 @@
 import { PresenceGrid } from '@/components/activity-grid/presence'
 import { StatusesGrid } from '@/components/activity-grid/statuses'
 import type { Config, Status } from '@/service/firebase'
-import { getConfigsByAuthor, getStatusesByAuthor } from '@/service/firebase'
 import { Search, X } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useSession } from 'next-auth/react'
+import { useMemo, useState } from 'react'
 import styles from './profile.module.scss'
 
+type UserInfo = {
+	name: string | null
+	avatar: string | null
+	tag: string | null
+	provider: string | null
+	createdAt: number | null
+	lastSeen: number | null
+}
+
 type Props = {
-	userId: string
+	user?: UserInfo | null
+	presenceConfigs: Config[]
+	statusConfigs: Status[]
+	profileTag: string
 }
 
 function filterConfigs(configs: Config[], searchTerm: string) {
@@ -25,10 +37,8 @@ function sortConfigs(configs: Config[]) {
 	return [...configs].sort((a, b) => {
 		const aDownloads =
 			typeof a.downloads === 'number' ? a.downloads : parseInt(String(a.downloads ?? '0')) || 0
-
 		const bDownloads =
 			typeof b.downloads === 'number' ? b.downloads : parseInt(String(b.downloads ?? '0')) || 0
-
 		return bDownloads - aDownloads
 	})
 }
@@ -46,49 +56,35 @@ function sortStatuses(statuses: Status[]) {
 	return [...statuses].sort((a, b) => {
 		const aDownloads =
 			typeof a.downloads === 'number' ? a.downloads : parseInt(String(a.downloads ?? '0')) || 0
-
 		const bDownloads =
 			typeof b.downloads === 'number' ? b.downloads : parseInt(String(b.downloads ?? '0')) || 0
-
 		return bDownloads - aDownloads
 	})
 }
 
-export function ProfileClient({ userId }: Props) {
-	const [configs, setConfigs] = useState<Config[]>([])
-	const [statuses, setStatuses] = useState<Status[]>([])
+export function ProfileClient({ user, presenceConfigs, statusConfigs, profileTag }: Props) {
 	const [searchTerm, setSearchTerm] = useState('')
-	const [loadingConfigs, setLoadingConfigs] = useState(true)
-	const [loadingStatuses, setLoadingStatuses] = useState(true)
+	const { data: session } = useSession()
 
-	useEffect(() => {
-		async function fetchConfigs() {
-			setLoadingConfigs(true)
-			const userConfigs = await getConfigsByAuthor(userId)
-			setConfigs(userConfigs)
-			setLoadingConfigs(false)
-		}
+	const isOwner =
+		!!user &&
+		!!session &&
+		!!session.user?.id &&
+		!!session.user?.name &&
+		!!user.name &&
+		session.user.name === user.name &&
+		session.user.id.startsWith(profileTag)
 
-		async function fetchStatuses() {
-			setLoadingStatuses(true)
-			const userStatuses = await getStatusesByAuthor(userId)
-			setStatuses(userStatuses)
-			setLoadingStatuses(false)
-		}
-
-		fetchConfigs()
-		fetchStatuses()
-	}, [userId])
-
-	const filteredConfigs = useMemo(() => filterConfigs(configs, searchTerm), [configs, searchTerm])
-
+	const filteredConfigs = useMemo(
+		() => filterConfigs(presenceConfigs, searchTerm),
+		[presenceConfigs, searchTerm]
+	)
 	const sortedConfigs = useMemo(() => sortConfigs(filteredConfigs), [filteredConfigs])
 
 	const filteredStatuses = useMemo(
-		() => filterStatuses(statuses, searchTerm),
-		[statuses, searchTerm]
+		() => filterStatuses(statusConfigs, searchTerm),
+		[statusConfigs, searchTerm]
 	)
-
 	const sortedStatuses = useMemo(() => sortStatuses(filteredStatuses), [filteredStatuses])
 
 	return (
@@ -125,9 +121,9 @@ export function ProfileClient({ userId }: Props) {
 				</div>
 
 				<div className={styles.themes_right_side}>
-					<PresenceGrid configs={sortedConfigs} loading={loadingConfigs} />
+					<PresenceGrid configs={sortedConfigs} loading={false} allowDelete={isOwner} />
 					<div style={{ marginTop: '20px' }} />
-					<StatusesGrid configs={sortedStatuses} loading={loadingStatuses} />
+					<StatusesGrid configs={sortedStatuses} loading={false} allowDelete={isOwner} />
 				</div>
 			</div>
 		</section>

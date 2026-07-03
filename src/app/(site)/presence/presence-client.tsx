@@ -36,12 +36,27 @@ export function sortConfigs(configs: Config[]) {
 export function ConfigsClient({ initialConfigs = [], initialSearchTerm }: Props) {
 	const [configs, setConfigs] = useState<Config[]>(initialConfigs)
 	const [searchTerm, setSearchTerm] = useState(initialSearchTerm ?? '')
-	const [loading, setLoading] = useState(true)
+	const [loading, setLoading] = useState(initialConfigs.length === 0)
 
 	useEffect(() => {
 		let cancelled = false
+		let eventSource: EventSource | null = null
+		let hideLoadingTimeout: NodeJS.Timeout | null = null
 
-		async function loadConfigs() {
+		function safeSetLoadingFalse() {
+			if (hideLoadingTimeout) clearTimeout(hideLoadingTimeout)
+			hideLoadingTimeout = setTimeout(() => {
+				if (!cancelled) setLoading(false)
+			}, 200)
+		}
+
+		async function loadInitialConfigs() {
+			if (initialConfigs.length > 0) {
+				setConfigs(initialConfigs)
+				safeSetLoadingFalse()
+				return true
+			}
+
 			try {
 				const res = await fetch('/api/v1/configs', {
 					method: 'POST',
@@ -50,27 +65,56 @@ export function ConfigsClient({ initialConfigs = [], initialSearchTerm }: Props)
 				})
 
 				if (!res.ok) {
-					setConfigs([])
-					return
+					if (!cancelled) setConfigs([])
+					safeSetLoadingFalse()
+					return false
 				}
 
 				const data = (await res.json()) as Config[]
-				if (cancelled) return
-				setConfigs(data)
-			} finally {
-				if (!cancelled) setLoading(false)
+				if (!cancelled) setConfigs(data)
+				safeSetLoadingFalse()
+				return true
+			} catch {
+				if (!cancelled) setConfigs([])
+				safeSetLoadingFalse()
+				return false
 			}
 		}
 
-		loadConfigs()
+		async function startStream() {
+			const ok = await loadInitialConfigs()
+			if (!ok || cancelled) return
+
+			eventSource = new EventSource('/api/v1/configs/stream?kind=presence')
+
+			eventSource.addEventListener('ready', event => {
+				if (cancelled) return
+				const next = JSON.parse((event as MessageEvent).data) as Config[]
+				setConfigs(next)
+			})
+
+			eventSource.addEventListener('update', event => {
+				if (cancelled) return
+				const next = JSON.parse((event as MessageEvent).data) as Config[]
+				setConfigs(next)
+			})
+
+			eventSource.addEventListener('not-found', () => {
+				if (cancelled) return
+				setConfigs([])
+			})
+		}
+
+		startStream()
 
 		return () => {
 			cancelled = true
+			eventSource?.close()
+			if (hideLoadingTimeout) clearTimeout(hideLoadingTimeout)
 		}
-	}, [])
+	}, [initialConfigs])
 
 	const filteredConfigs = useMemo(() => filterConfigs(configs, searchTerm), [configs, searchTerm])
-
 	const sortedConfigs = useMemo(() => sortConfigs(filteredConfigs), [filteredConfigs])
 
 	return (

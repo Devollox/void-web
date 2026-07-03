@@ -5,7 +5,16 @@ import { useState } from 'react'
 import styles from '../../(site)/schedule/release-schedule.module.scss'
 import apiStyles from './api.module.scss'
 
-export type ApiGroupType = 'presence' | 'statuses' | 'auth' | 'analytics' | 'internal'
+export type ApiGroupType =
+	| 'presence'
+	| 'statuses'
+	| 'auth'
+	| 'internal'
+	| 'authors'
+	| 'configs'
+	| 'github'
+	| 'users'
+	| 'analytics'
 
 export interface ApiEndpoint {
 	id: string
@@ -27,14 +36,6 @@ interface ApiSectionBaseProps {
 	endpoints: ApiEndpoint[]
 	basePath: string
 	title: string
-}
-
-const GROUP_LABELS: Record<ApiGroupType, string> = {
-	presence: 'Presence configs',
-	statuses: 'Status configs',
-	auth: 'Authentication',
-	analytics: 'Analytics',
-	internal: 'Internal helpers',
 }
 
 function getVersionLabel(endpoints: ApiEndpoint[]): string {
@@ -199,8 +200,12 @@ function renderGroupedEndpoints(list: ApiEndpoint[]) {
 		presence: [],
 		statuses: [],
 		auth: [],
-		analytics: [],
 		internal: [],
+		authors: [],
+		configs: [],
+		github: [],
+		users: [],
+		analytics: [],
 	}
 
 	for (const ep of list) {

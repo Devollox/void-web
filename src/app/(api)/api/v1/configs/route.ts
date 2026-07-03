@@ -1,3 +1,4 @@
+import { mapRawToConfig, mapRawToStatus } from '@/service/firebase'
 import { admin } from '@/service/firebase-admin'
 import { NextResponse } from 'next/server'
 
@@ -27,8 +28,8 @@ export interface Config {
 	id: string
 	title: string
 	author: string
-	authorId: string
 	authorAvatar?: string
+	authorTag?: string
 	downloads: number
 	description: string
 	configData: ConfigData
@@ -40,7 +41,6 @@ export interface Status {
 	id: string
 	title: string
 	author: string
-	authorId: string
 	authorAvatar?: string
 	authorTag?: string
 	downloads: number
@@ -53,56 +53,6 @@ export interface Status {
 
 type GetAllPayload = {
 	kind: ConfigKind
-}
-
-export function mapRawToConfig(
-	id: string,
-	data: any,
-	overriddenAvatar?: string,
-	overriddenAuthor?: string
-): Config {
-	return {
-		id,
-		title: data?.title || 'Unnamed',
-		author: overriddenAuthor || data?.author || 'Unknown',
-		authorId: data?.authorId ?? null,
-		authorAvatar: overriddenAvatar || data?.authorAvatar || '',
-		downloads:
-			typeof data?.downloads === 'number'
-				? data.downloads
-				: parseInt(String(data?.downloads ?? '0')) || 0,
-		description: data?.description || '',
-		averageColor: data?.averageColor || '#5b5b5b',
-		configData: data?.configData || {
-			cycles: [{ details: 'Idling in the void', state: 'Just vibing' }],
-			imageCycles: [],
-			buttonPairs: [],
-		},
-		uploadedAt: data?.uploadedAt || 0,
-	}
-}
-
-export function mapRawToStatus(
-	id: string,
-	data: any,
-	overriddenAvatar?: string,
-	overriddenAuthor?: string
-): Status {
-	return {
-		id,
-		title: data?.title || 'Unnamed',
-		author: overriddenAuthor || data?.author || 'Unknown',
-		authorId: data?.authorId ?? null,
-		authorAvatar: overriddenAvatar || data?.authorAvatar || '',
-		authorTag: data?.authorTag || undefined,
-		downloads:
-			typeof data?.downloads === 'number'
-				? data.downloads
-				: parseInt(String(data?.downloads ?? '0')) || 0,
-		description: data?.description || '',
-		configData: data?.configData || { statusCycles: [] },
-		uploadedAt: data?.uploadedAt || 0,
-	}
 }
 
 export async function fetchAllUsers(): Promise<Record<string, any>> {
@@ -130,13 +80,24 @@ export async function POST(req: Request) {
 			if (!snap.exists()) return NextResponse.json([], { status: 200 })
 
 			const data = snap.val() as Record<string, any>
+
 			const list: Config[] = Object.entries(data).map(([id, raw]) => {
 				const r = raw as any
-				const user = r.authorId ? users[r.authorId] : null
+
+				let user: any = null
+
+				for (const [, userData] of Object.entries(users)) {
+					const configs = (userData as any).configs || {}
+					if (configs.presence && configs.presence[id]) {
+						user = userData
+						break
+					}
+				}
+
 				return mapRawToConfig(
 					id,
 					r,
-					user?.avatar || user?.image || r?.authorAvatar || '',
+					user?.avatar || user?.image || '',
 					user?.name || r?.author || 'Unknown'
 				)
 			})
@@ -149,13 +110,24 @@ export async function POST(req: Request) {
 			if (!snap.exists()) return NextResponse.json([], { status: 200 })
 
 			const data = snap.val() as Record<string, any>
+
 			const list: Status[] = Object.entries(data).map(([id, raw]) => {
 				const r = raw as any
-				const user = r.authorId ? users[r.authorId] : null
+
+				let user: any = null
+
+				for (const [, userData] of Object.entries(users)) {
+					const configs = (userData as any).configs || {}
+					if (configs.status && configs.status[id]) {
+						user = userData
+						break
+					}
+				}
+
 				return mapRawToStatus(
 					id,
 					r,
-					user?.avatar || user?.image || r?.authorAvatar || '',
+					user?.avatar || user?.image || '',
 					user?.name || r?.author || 'Unknown'
 				)
 			})
@@ -169,6 +141,6 @@ export async function POST(req: Request) {
 		)
 	} catch (err) {
 		const message = err instanceof Error ? err.message : JSON.stringify(err)
-		return NextResponse.json({ error: 'InternalError', message }, { status: 500 })
+		return NextResponse.json({ error: 'InternalInternalError', message }, { status: 500 })
 	}
 }

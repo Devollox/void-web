@@ -18,6 +18,35 @@ export const metadata: Metadata = {
 	},
 }
 
+type AuthorConfigsResponse = {
+	user: {
+		id: string
+		name: string | null
+		avatar: string | null
+		provider: string | null
+		createdAt: number | null
+		lastSeen: number | null
+	} | null
+	presenceConfigs: any[]
+	statusConfigs: any[]
+}
+
+async function fetchSelfConfigs(userId: string): Promise<AuthorConfigsResponse | null> {
+	if (!userId) return null
+
+	const res = await fetch(
+		`${process.env.NEXTAUTH_URL}/api/v1/authors/${encodeURIComponent(userId)}/configs`,
+		{
+			method: 'GET',
+			cache: 'no-store',
+			headers: { 'Content-Type': 'application/json' },
+		}
+	)
+
+	if (!res.ok) return null
+	return (await res.json()) as AuthorConfigsResponse
+}
+
 export default async function ProfilePage() {
 	const session = await auth()
 
@@ -25,7 +54,6 @@ export default async function ProfilePage() {
 		return (
 			<Page>
 				<PageHeader title='Not signed in' subtitle='You need to sign in to view your profile.' />
-
 				<section id='addon-details' className={styles.page_section}>
 					<div className={styles.theme_view_panel}>
 						<div className={styles.skel_backdrop} />
@@ -75,13 +103,21 @@ export default async function ProfilePage() {
 	const user = session.user as any
 	const userId = String(user.id ?? '')
 
+	const configsData = await fetchSelfConfigs(userId)
+
 	return (
 		<Page>
 			<PageHeader title='Your profile' subtitle='Session data and your configs.' />
 
 			<SaveUserOnMount />
 
-			<ProfileContainerClient initialConfigs={[]} user={user} session={session} userId={userId} />
+			<ProfileContainerClient
+				initialConfigs={configsData?.presenceConfigs ?? []}
+				initialStatuses={configsData?.statusConfigs ?? []}
+				user={user}
+				session={session}
+				userId={userId}
+			/>
 		</Page>
 	)
 }

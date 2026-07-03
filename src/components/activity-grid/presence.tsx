@@ -1,7 +1,6 @@
 'use client'
 
 import type { Config } from '@service/firebase'
-import { deleteConfig } from '@service/firebase'
 import { Download, Trash } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import RpcPreview from '../rpc-preview/rpc-user'
@@ -16,6 +15,7 @@ type CustomRpcPreviewProps = {
 
 function CustomRpcPreview({ config, previewIndex, avatarSrc }: CustomRpcPreviewProps) {
 	const configData: any = config.configData
+	const authorTag: any = config.authorTag
 	const cycles = configData.cycles ?? []
 	const images = configData.imageCycles ?? []
 	const buttonPairs = configData.buttonPairs ?? []
@@ -29,7 +29,7 @@ function CustomRpcPreview({ config, previewIndex, avatarSrc }: CustomRpcPreviewP
 		<div className={`${styles.rpc_card_presence} ${styles.rpc_card_preview}`}>
 			<div className={styles.rpc_card_preview_inner}>
 				<RpcPreview
-					discriminator={config.authorId ? `#${config.authorId.slice(0, 4)}` : '#0001'}
+					discriminator={authorTag ? `#${authorTag}` : '#0001'}
 					username={config.author || 'User'}
 					avatarSrc={avatarSrc}
 					currentCycle={cycle}
@@ -83,7 +83,7 @@ export function PresenceGrid({ configs, loading, allowDelete }: PresenceGridProp
 			setShowEmpty(false)
 			return
 		}
-		const timer = setTimeout(() => setShowEmpty(true), 1000)
+		const timer = setTimeout(() => setShowEmpty(true), 500)
 		return () => clearTimeout(timer)
 	}, [loading, localConfigs.length])
 
@@ -109,7 +109,18 @@ export function PresenceGrid({ configs, loading, allowDelete }: PresenceGridProp
 		if (!allowDelete) return
 		setDeletingId(config.id)
 		try {
-			await deleteConfig(config.id)
+			const res = await fetch(
+				`/api/v1/configs/${encodeURIComponent(String(config.id))}/delete?kind=presence`,
+				{
+					method: 'DELETE',
+				}
+			)
+
+			if (!res.ok) {
+				const data = await res.json().catch(() => null)
+				throw new Error(data?.message || `Failed to delete config (${res.status})`)
+			}
+
 			setLocalConfigs(prev => prev.filter(c => c.id !== config.id))
 		} catch (err) {
 			console.error('Failed to delete config', err)

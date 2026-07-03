@@ -1,7 +1,6 @@
 'use client'
 
 import type { Status } from '@/service/firebase'
-import { deleteStatus } from '@/service/firebase'
 import { Download, Trash } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import StatusPreview from '../statuses-preview/status-user'
@@ -24,7 +23,7 @@ function CustomStatusPreview({ config, previewIndex }: CustomStatusPreviewProps)
 		<div className={styles.rpc_card_preview}>
 			<div className={styles.rpc_card_preview_inner}>
 				<StatusPreview
-					discriminator={`#${String(config.authorTag ?? '').slice(0, 4) || '0001'}`}
+					discriminator={config.authorTag ? `#${config.authorTag}` : '#0001'}
 					username={config.author || 'User'}
 					currentStatus={cycle}
 					currentIndex={localIndex}
@@ -76,7 +75,7 @@ export function StatusesGrid({ configs, loading, allowDelete }: StatusesGridProp
 			setShowEmpty(false)
 			return
 		}
-		const timer = setTimeout(() => setShowEmpty(true), 1000)
+		const timer = setTimeout(() => setShowEmpty(true), 500)
 		return () => clearTimeout(timer)
 	}, [loading, localStatuses.length])
 
@@ -102,8 +101,17 @@ export function StatusesGrid({ configs, loading, allowDelete }: StatusesGridProp
 		if (!allowDelete) return
 		setDeletingId(config.id)
 		try {
-			await deleteStatus(config.id)
-			setLocalStatuses(prev => prev.filter(s => s.id !== config.id))
+			const res = await fetch(
+				`/api/v1/configs/${encodeURIComponent(String(config.id))}/delete?kind=status`,
+				{
+					method: 'DELETE',
+				}
+			)
+
+			if (!res.ok) {
+				const data = await res.json().catch(() => null)
+				throw new Error(data?.message || `Failed to delete config (${res.status})`)
+			}
 		} catch (err) {
 			console.error('Failed to delete status', err)
 		} finally {
