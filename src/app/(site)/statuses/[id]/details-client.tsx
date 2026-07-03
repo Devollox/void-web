@@ -156,7 +156,7 @@ export function StatusDetailsClient({ statusId, initialPreviewTick }: Props) {
 							<div className={styles.rpc_card_preview}>
 								<StatusPreview
 									username={status.author || 'User'}
-									discriminator={`#${String(status.authorId ?? '').slice(0, 4) || '0001'}`}
+									discriminator={`#${String(status.authorTag ?? '').slice(0, 4) || '0001'}`}
 									avatarSrc={avatarSrc}
 									currentStatus={currentCycle}
 									currentIndex={localIndex}

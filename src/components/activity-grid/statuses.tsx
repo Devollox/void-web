@@ -24,7 +24,7 @@ function CustomStatusPreview({ config, previewIndex }: CustomStatusPreviewProps)
 		<div className={styles.rpc_card_preview}>
 			<div className={styles.rpc_card_preview_inner}>
 				<StatusPreview
-					discriminator={`#${String(config.authorId ?? '').slice(0, 4) || '0001'}`}
+					discriminator={`#${String(config.authorTag ?? '').slice(0, 4) || '0001'}`}
 					username={config.author || 'User'}
 					currentStatus={cycle}
 					currentIndex={localIndex}

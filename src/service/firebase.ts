@@ -59,6 +59,7 @@ export interface Status {
 	title: string
 	author: string
 	authorId: string
+	authorTag: string
 	authorAvatar?: string
 	downloads: number
 	description: string
