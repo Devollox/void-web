@@ -1,6 +1,5 @@
 'use client'
 
-import { incrementDownloadsStats } from '@/service/firebase'
 import { Download } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import styles from './download.module.scss'
@@ -20,7 +19,12 @@ export default function DownloadButtons({ assets }: Props) {
 
 	const handleDownload = async (asset: ReleaseAsset) => {
 		try {
-			incrementDownloadsStats()
+			await fetch('/api/v1/analytics/app', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ type: 'app_download', channel: 'docs' }),
+			})
+		} catch {
 		} finally {
 			const link = document.createElement('a')
 			link.href = asset.downloadUrl
