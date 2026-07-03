@@ -54,7 +54,6 @@ export async function createStatusConfig(authorId: string, body: AddConfigBody):
 		...rest,
 		author: user?.name || author || 'Unknown',
 		authorTag: buildAuthorTag(authorId),
-		authorAvatar: user?.avatar || user?.image || undefined,
 	})
 
 	const id = ref.key || 'unknown'
