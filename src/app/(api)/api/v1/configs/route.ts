@@ -42,6 +42,7 @@ export interface Status {
 	author: string
 	authorId: string
 	authorAvatar?: string
+	authorTag?: string
 	downloads: number
 	description: string
 	configData: {
@@ -93,6 +94,7 @@ export function mapRawToStatus(
 		author: overriddenAuthor || data?.author || 'Unknown',
 		authorId: data?.authorId ?? null,
 		authorAvatar: overriddenAvatar || data?.authorAvatar || '',
+		authorTag: data?.authorTag || undefined,
 		downloads:
 			typeof data?.downloads === 'number'
 				? data.downloads

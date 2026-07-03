@@ -59,13 +59,14 @@ export interface Status {
 	title: string
 	author: string
 	authorId: string
-	authorTag: string
 	authorAvatar?: string
+	authorTag?: string
 	downloads: number
 	description: string
 	configData: {
 		statusCycles: Array<{ text: string }>
 	}
+	uploadedAt?: number
 }
 
 export interface UserRecordWithId extends UserRecord {
@@ -123,12 +124,14 @@ function mapRawToStatus(
 		author: overriddenAuthor || data?.author || 'Unknown',
 		authorId: data?.authorId ?? null,
 		authorAvatar: overriddenAvatar || data?.authorAvatar || '',
+		authorTag: data?.authorTag || undefined,
 		downloads:
 			typeof data?.downloads === 'number'
 				? data.downloads
 				: parseInt(String(data?.downloads ?? '0')) || 0,
 		description: data?.description || '',
 		configData: data?.configData || { statusCycles: [] },
+		uploadedAt: data?.uploadedAt || 0,
 	}
 }
 
