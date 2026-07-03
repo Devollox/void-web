@@ -48,9 +48,16 @@ type PresenceGridProps = {
 	loading?: boolean
 	allowDelete?: boolean
 	ownConfigIds?: Set<string>
+	forceOwnerMode?: boolean
 }
 
-export function PresenceGrid({ configs, loading, allowDelete, ownConfigIds }: PresenceGridProps) {
+export function PresenceGrid({
+	configs,
+	loading,
+	allowDelete,
+	ownConfigIds,
+	forceOwnerMode,
+}: PresenceGridProps) {
 	const [previewTick, setPreviewTick] = useState(0)
 	const [mounted, setMounted] = useState(false)
 	const [animateColors, setAnimateColors] = useState(false)
@@ -110,7 +117,9 @@ export function PresenceGrid({ configs, loading, allowDelete, ownConfigIds }: Pr
 		if (!allowDelete) return
 
 		const isOwn =
-			(config as any).isOwn === true || (!!ownConfigIds && ownConfigIds.has(String(config.id)))
+			forceOwnerMode ||
+			(config as any).isOwn === true ||
+			(!!ownConfigIds && ownConfigIds.has(String(config.id)))
 
 		if (!isOwn) return
 
@@ -118,9 +127,7 @@ export function PresenceGrid({ configs, loading, allowDelete, ownConfigIds }: Pr
 		try {
 			const res = await fetch(
 				`/api/v1/configs/${encodeURIComponent(String(config.id))}/delete?kind=presence`,
-				{
-					method: 'DELETE',
-				}
+				{ method: 'DELETE' }
 			)
 
 			if (!res.ok) {
@@ -158,7 +165,8 @@ export function PresenceGrid({ configs, loading, allowDelete, ownConfigIds }: Pr
 						const avatarSrc = config.authorAvatar || '/logo.png'
 						const canDelete =
 							allowDelete &&
-							((config as any).isOwn === true ||
+							(forceOwnerMode ||
+								(config as any).isOwn === true ||
 								(!!ownConfigIds && ownConfigIds.has(String(config.id))))
 
 						return (

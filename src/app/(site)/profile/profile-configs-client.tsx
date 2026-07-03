@@ -199,9 +199,19 @@ export function ProfileConfigsClient({ userId, initialConfigs = [], initialStatu
 				</div>
 
 				<div className={styles.themes_right_side}>
-					<PresenceGrid configs={filteredConfigs} loading={loadingConfigs} allowDelete={true} />
+					<PresenceGrid
+						configs={filteredConfigs}
+						loading={loadingConfigs}
+						allowDelete={true}
+						forceOwnerMode={true}
+					/>
 					<div style={{ marginTop: '20px' }} />
-					<StatusesGrid configs={filteredStatuses} loading={loadingStatuses} allowDelete={true} />
+					<StatusesGrid
+						configs={filteredStatuses}
+						loading={loadingStatuses}
+						allowDelete={true}
+						forceOwnerMode={true}
+					/>
 				</div>
 			</div>
 		</section>

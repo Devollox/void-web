@@ -40,9 +40,16 @@ type StatusesGridProps = {
 	loading?: boolean
 	allowDelete?: boolean
 	ownStatusIds?: Set<string>
+	forceOwnerMode?: boolean
 }
 
-export function StatusesGrid({ configs, loading, allowDelete, ownStatusIds }: StatusesGridProps) {
+export function StatusesGrid({
+	configs,
+	loading,
+	allowDelete,
+	ownStatusIds,
+	forceOwnerMode,
+}: StatusesGridProps) {
 	const [previewTick, setPreviewTick] = useState(0)
 	const [mounted, setMounted] = useState(false)
 	const [animateColors, setAnimateColors] = useState(false)
@@ -102,7 +109,9 @@ export function StatusesGrid({ configs, loading, allowDelete, ownStatusIds }: St
 		if (!allowDelete) return
 
 		const isOwn =
-			(config as any).isOwn === true || (!!ownStatusIds && ownStatusIds.has(String(config.id)))
+			forceOwnerMode ||
+			(config as any).isOwn === true ||
+			(!!ownStatusIds && ownStatusIds.has(String(config.id)))
 
 		if (!isOwn) return
 
@@ -110,9 +119,7 @@ export function StatusesGrid({ configs, loading, allowDelete, ownStatusIds }: St
 		try {
 			const res = await fetch(
 				`/api/v1/configs/${encodeURIComponent(String(config.id))}/delete?kind=status`,
-				{
-					method: 'DELETE',
-				}
+				{ method: 'DELETE' }
 			)
 
 			if (!res.ok) {
@@ -146,7 +153,8 @@ export function StatusesGrid({ configs, loading, allowDelete, ownStatusIds }: St
 						const baseIndex = mounted ? previewTick + index : 0
 						const canDelete =
 							allowDelete &&
-							((config as any).isOwn === true ||
+							(forceOwnerMode ||
+								(config as any).isOwn === true ||
 								(!!ownStatusIds && ownStatusIds.has(String(config.id))))
 
 						return (
