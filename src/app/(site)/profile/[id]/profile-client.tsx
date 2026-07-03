@@ -5,7 +5,7 @@ import { StatusesGrid } from '@/components/activity-grid/statuses'
 import type { Config, Status } from '@/service/firebase'
 import { Search, X } from 'lucide-react'
 import { useSession } from 'next-auth/react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import styles from './profile.module.scss'
 
 type UserInfo = {
@@ -22,6 +22,20 @@ type Props = {
 	presenceConfigs: Config[]
 	statusConfigs: Status[]
 	profileTag: string
+	username: string
+}
+
+type AuthorConfigsResponse = {
+	user: {
+		name: string | null
+		avatar: string | null
+		tag: string | null
+		provider: string | null
+		createdAt: number | null
+		lastSeen: number | null
+	} | null
+	presenceConfigs: Config[]
+	statusConfigs: Status[]
 }
 
 function filterConfigs(configs: Config[], searchTerm: string) {
@@ -62,9 +76,58 @@ function sortStatuses(statuses: Status[]) {
 	})
 }
 
-export function ProfileClient({ user, presenceConfigs, statusConfigs, profileTag }: Props) {
+export function ProfileClient({
+	user,
+	presenceConfigs,
+	statusConfigs,
+	profileTag,
+	username,
+}: Props) {
 	const [searchTerm, setSearchTerm] = useState('')
 	const { data: session } = useSession()
+
+	const [liveConfigs, setLiveConfigs] = useState<Config[]>(presenceConfigs)
+	const [liveStatuses, setLiveStatuses] = useState<Status[]>(statusConfigs)
+
+	useEffect(() => {
+		let cancelled = false
+		let es: EventSource | null = null
+
+		function startStream() {
+			const url = `/api/v1/authors/stream?username=${encodeURIComponent(
+				username
+			)}&tag=${encodeURIComponent(profileTag)}`
+
+			es = new EventSource(url)
+
+			es.addEventListener('ready', event => {
+				if (cancelled) return
+				const next = JSON.parse((event as MessageEvent).data) as AuthorConfigsResponse
+				setLiveConfigs(next.presenceConfigs || [])
+				setLiveStatuses(next.statusConfigs || [])
+			})
+
+			es.addEventListener('update', event => {
+				if (cancelled) return
+				const next = JSON.parse((event as MessageEvent).data) as AuthorConfigsResponse
+				setLiveConfigs(next.presenceConfigs || [])
+				setLiveStatuses(next.statusConfigs || [])
+			})
+
+			es.addEventListener('not-found', () => {
+				if (cancelled) return
+				setLiveConfigs([])
+				setLiveStatuses([])
+			})
+		}
+
+		startStream()
+
+		return () => {
+			cancelled = true
+			es?.close()
+		}
+	}, [username, profileTag])
 
 	const isOwner =
 		!!user &&
@@ -76,14 +139,14 @@ export function ProfileClient({ user, presenceConfigs, statusConfigs, profileTag
 		session.user.id.startsWith(profileTag)
 
 	const filteredConfigs = useMemo(
-		() => filterConfigs(presenceConfigs, searchTerm),
-		[presenceConfigs, searchTerm]
+		() => filterConfigs(liveConfigs, searchTerm),
+		[liveConfigs, searchTerm]
 	)
 	const sortedConfigs = useMemo(() => sortConfigs(filteredConfigs), [filteredConfigs])
 
 	const filteredStatuses = useMemo(
-		() => filterStatuses(statusConfigs, searchTerm),
-		[statusConfigs, searchTerm]
+		() => filterStatuses(liveStatuses, searchTerm),
+		[liveStatuses, searchTerm]
 	)
 	const sortedStatuses = useMemo(() => sortStatuses(filteredStatuses), [filteredStatuses])
 

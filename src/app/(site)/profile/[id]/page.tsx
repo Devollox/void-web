@@ -75,6 +75,7 @@ export default async function ProfilePage(props: Props) {
 				presenceConfigs={presenceConfigs}
 				statusConfigs={statusConfigs}
 				profileTag={normalizedTag}
+				username={username}
 			/>
 			<Footer />
 		</Page>
