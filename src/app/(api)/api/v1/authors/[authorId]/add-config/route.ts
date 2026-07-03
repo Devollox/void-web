@@ -1,7 +1,7 @@
 import { createPresenceConfig, createStatusConfig } from '@/service/firebase-admin'
 import { NextResponse } from 'next/server'
 
-type Params = { id: string }
+type Params = { authorId: string }
 
 type AddConfigBody = {
 	kind: 'presence' | 'status'
@@ -16,9 +16,9 @@ type AddConfigBody = {
 
 export async function POST(req: Request, ctx: { params: Promise<Params> | Params }) {
 	try {
-		const { id } = await ctx.params
+		const { authorId } = await ctx.params
 
-		if (!id) {
+		if (!authorId) {
 			return NextResponse.json(
 				{ error: 'MissingAuthorId', message: 'Author id is required in path' },
 				{ status: 400 }
@@ -43,8 +43,8 @@ export async function POST(req: Request, ctx: { params: Promise<Params> | Params
 
 		const createdId =
 			body.kind === 'presence'
-				? await createPresenceConfig(id, body)
-				: await createStatusConfig(id, body)
+				? await createPresenceConfig(authorId, body)
+				: await createStatusConfig(authorId, body)
 
 		return NextResponse.json({ id: createdId }, { status: 200 })
 	} catch (err) {
