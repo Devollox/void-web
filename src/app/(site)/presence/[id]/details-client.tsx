@@ -2,7 +2,8 @@
 
 import { Config } from '@/app/(api)/api/v1/configs/route'
 import RpcPreview from '@components/rpc-preview/rpc-user'
-import { useEffect, useState } from 'react'
+import { useSession } from 'next-auth/react'
+import { useEffect, useMemo, useState } from 'react'
 import styles from './config-details.module.scss'
 import { CopyJsonButton } from './copy-button'
 import { DownloadJsonButton } from './download-button'
@@ -21,6 +22,10 @@ export function ConfigDetailsClient({ configId, initialPreviewTick }: Props) {
 	const [config, setConfig] = useState<Config | null>(null)
 	const [previewTick, setPreviewTick] = useState(initialPreviewTick)
 	const [loading, setLoading] = useState(true)
+	const [deleting, setDeleting] = useState(false)
+	const [deleted, setDeleted] = useState(false)
+
+	const { data: session } = useSession()
 
 	useEffect(() => {
 		let cancelled = false
@@ -68,6 +73,7 @@ export function ConfigDetailsClient({ configId, initialPreviewTick }: Props) {
 			eventSource.addEventListener('not-found', () => {
 				if (cancelled) return
 				setConfig(null)
+				setDeleted(true)
 			})
 
 			eventSource.onerror = () => {
@@ -87,6 +93,47 @@ export function ConfigDetailsClient({ configId, initialPreviewTick }: Props) {
 			eventSource?.close()
 		}
 	}, [configId])
+
+	const isOwnerClient = useMemo(() => {
+		if (!config) return false
+		if (!session?.user?.id || !session.user.name) return false
+
+		const tag = String(config.authorTag ?? '').padStart(4, '0')
+		const sessionIdStartsWithTag = session.user.id.startsWith(tag)
+		const sameName = session.user.name === config.author
+
+		return sessionIdStartsWithTag && sameName
+	}, [config, session?.user?.id, session?.user?.name])
+
+	const isOwn = !!config && ((config as any).isOwn === true || isOwnerClient)
+
+	const handleDelete = async () => {
+		if (!config) return
+		if (deleting) return
+		if (!isOwn) return
+
+		setDeleting(true)
+		try {
+			const res = await fetch(
+				`/api/v1/configs/${encodeURIComponent(String(config.id))}/delete?kind=presence`,
+				{
+					method: 'DELETE',
+				}
+			)
+
+			if (!res.ok) {
+				const data = await res.json().catch(() => null)
+				throw new Error(data?.message || `Failed to delete config (${res.status})`)
+			}
+
+			setDeleted(true)
+			setConfig(null)
+		} catch (err) {
+			console.error('Failed to delete config', err)
+		} finally {
+			setDeleting(false)
+		}
+	}
 
 	if (loading) {
 		return (
@@ -116,6 +163,7 @@ export function ConfigDetailsClient({ configId, initialPreviewTick }: Props) {
 									<div className={styles.skel_btn} />
 									<div className={styles.skel_btn} />
 									<div className={styles.skel_btn} />
+									<div className={styles.skel_btn} />
 								</div>
 							</div>
 						</div>
@@ -128,7 +176,7 @@ export function ConfigDetailsClient({ configId, initialPreviewTick }: Props) {
 		)
 	}
 
-	if (!config) {
+	if (!config || deleted) {
 		return (
 			<section id='addon-details' className={styles.page_section}>
 				<div className={styles.theme_view_panel}>
@@ -138,9 +186,11 @@ export function ConfigDetailsClient({ configId, initialPreviewTick }: Props) {
 								<a href='/presence' className={styles.back_link}>
 									← Back to Presence
 								</a>
-								<h1 className={styles.title}>Config not found</h1>
+								<h1 className={styles.title}>{deleted ? 'Config deleted' : 'Config not found'}</h1>
 								<div className={styles.title_description}>
-									This config may have been removed or is not available.
+									{deleted
+										? 'This config was deleted.'
+										: 'This config may have been removed or is not available.'}
 								</div>
 							</div>
 						</div>
@@ -253,6 +303,16 @@ export function ConfigDetailsClient({ configId, initialPreviewTick }: Props) {
 									</a>
 									<DownloadJsonButton configId={config.id} />
 									<CopyJsonButton configId={config.id} />
+									{isOwn && (
+										<button
+											className={styles.action_btn_primary}
+											disabled={deleting}
+											onClick={handleDelete}
+										>
+											{deleting ? 'Deleting…' : 'Delete config'}
+											<span className={styles.action_btn_hint}>delete .json</span>
+										</button>
+									)}
 								</div>
 							</div>
 						</div>

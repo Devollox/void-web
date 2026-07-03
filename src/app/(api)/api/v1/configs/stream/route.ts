@@ -1,13 +1,16 @@
+import { auth } from '@/lib/auth'
 import { mapRawToConfig, mapRawToStatus } from '@/service/firebase'
 import { admin } from '@/service/firebase-admin'
 import { NextResponse } from 'next/server'
-import { Config, ConfigKind, fetchAllUsers, Status } from '../route'
+import { Config as BaseConfig, Status as BaseStatus, ConfigKind, fetchAllUsers } from '../route'
 
 const db = admin.database()
 
 type QueryKind = ConfigKind
+type Config = BaseConfig & { isOwn?: boolean }
+type Status = BaseStatus & { isOwn?: boolean }
 
-async function loadAllByKind(kind: QueryKind) {
+async function loadAllByKind(kind: QueryKind, currentUserId?: string | null) {
 	const users = await fetchAllUsers()
 
 	if (kind === 'presence') {
@@ -20,21 +23,27 @@ async function loadAllByKind(kind: QueryKind) {
 			const r = raw as any
 
 			let user: any = null
+			let ownerId: string | null = null
 
-			for (const [, userData] of Object.entries(users)) {
+			for (const [uid, userData] of Object.entries(users)) {
 				const configs = (userData as any).configs || {}
 				if (configs.presence && configs.presence[id]) {
 					user = userData
+					ownerId = String(uid)
 					break
 				}
 			}
 
-			return mapRawToConfig(
-				id,
-				r,
-				user?.avatar || user?.image || '',
-				user?.name || r?.author || 'Unknown'
-			)
+			const avatar = user?.avatar || user?.image || r?.authorAvatar || ''
+			const authorName = user?.name || r?.author || 'Unknown'
+
+			const cfg = mapRawToConfig(id, r, avatar, authorName) as Config
+
+			if (currentUserId && ownerId && currentUserId === ownerId) {
+				cfg.isOwn = true
+			}
+
+			return cfg
 		})
 
 		return list
@@ -49,21 +58,27 @@ async function loadAllByKind(kind: QueryKind) {
 		const r = raw as any
 
 		let user: any = null
+		let ownerId: string | null = null
 
-		for (const [, userData] of Object.entries(users)) {
+		for (const [uid, userData] of Object.entries(users)) {
 			const configs = (userData as any).configs || {}
 			if (configs.status && configs.status[id]) {
 				user = userData
+				ownerId = String(uid)
 				break
 			}
 		}
 
-		return mapRawToStatus(
-			id,
-			r,
-			user?.avatar || user?.image || '',
-			user?.name || r?.author || 'Unknown'
-		)
+		const avatar = user?.avatar || user?.image || r?.authorAvatar || ''
+		const authorName = user?.name || r?.author || 'Unknown'
+
+		const st = mapRawToStatus(id, r, avatar, authorName) as Status
+
+		if (currentUserId && ownerId && currentUserId === ownerId) {
+			st.isOwn = true
+		}
+
+		return st
 	})
 
 	return list
@@ -79,6 +94,9 @@ export async function GET(req: Request) {
 		)
 	}
 
+	const session = await auth()
+	const currentUserId = session?.user?.id ? String(session.user.id) : null
+
 	const encoder = new TextEncoder()
 	let closed = false
 
@@ -88,7 +106,7 @@ export async function GET(req: Request) {
 				controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`))
 			}
 
-			const initial = await loadAllByKind(kind)
+			const initial = await loadAllByKind(kind, currentUserId)
 			send('ready', initial)
 
 			const refPath = kind === 'presence' ? 'presence-configs' : 'status-configs'
@@ -96,7 +114,7 @@ export async function GET(req: Request) {
 
 			const onValueHandler = async () => {
 				if (closed) return
-				const next = await loadAllByKind(kind)
+				const next = await loadAllByKind(kind, currentUserId)
 				send('update', next)
 			}
 

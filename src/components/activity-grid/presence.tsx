@@ -47,9 +47,10 @@ type PresenceGridProps = {
 	configs: Config[]
 	loading?: boolean
 	allowDelete?: boolean
+	ownConfigIds?: Set<string>
 }
 
-export function PresenceGrid({ configs, loading, allowDelete }: PresenceGridProps) {
+export function PresenceGrid({ configs, loading, allowDelete, ownConfigIds }: PresenceGridProps) {
 	const [previewTick, setPreviewTick] = useState(0)
 	const [mounted, setMounted] = useState(false)
 	const [animateColors, setAnimateColors] = useState(false)
@@ -107,6 +108,12 @@ export function PresenceGrid({ configs, loading, allowDelete }: PresenceGridProp
 
 	const handleDelete = async (config: Config) => {
 		if (!allowDelete) return
+
+		const isOwn =
+			(config as any).isOwn === true || (!!ownConfigIds && ownConfigIds.has(String(config.id)))
+
+		if (!isOwn) return
+
 		setDeletingId(config.id)
 		try {
 			const res = await fetch(
@@ -149,6 +156,10 @@ export function PresenceGrid({ configs, loading, allowDelete }: PresenceGridProp
 						const baseIndex = mounted ? previewTick + index : 0
 						const borderColor = `${highlight}66`
 						const avatarSrc = config.authorAvatar || '/logo.png'
+						const canDelete =
+							allowDelete &&
+							((config as any).isOwn === true ||
+								(!!ownConfigIds && ownConfigIds.has(String(config.id))))
 
 						return (
 							<div
@@ -172,7 +183,7 @@ export function PresenceGrid({ configs, loading, allowDelete }: PresenceGridProp
 													{config.downloads.toLocaleString()}
 												</span>
 											</div>
-											{allowDelete && (
+											{canDelete && (
 												<button
 													type='button'
 													className={styles.profile_delete_tag}

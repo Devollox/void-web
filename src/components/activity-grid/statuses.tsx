@@ -39,9 +39,10 @@ type StatusesGridProps = {
 	configs: Status[]
 	loading?: boolean
 	allowDelete?: boolean
+	ownStatusIds?: Set<string>
 }
 
-export function StatusesGrid({ configs, loading, allowDelete }: StatusesGridProps) {
+export function StatusesGrid({ configs, loading, allowDelete, ownStatusIds }: StatusesGridProps) {
 	const [previewTick, setPreviewTick] = useState(0)
 	const [mounted, setMounted] = useState(false)
 	const [animateColors, setAnimateColors] = useState(false)
@@ -99,6 +100,12 @@ export function StatusesGrid({ configs, loading, allowDelete }: StatusesGridProp
 
 	const handleDelete = async (config: Status) => {
 		if (!allowDelete) return
+
+		const isOwn =
+			(config as any).isOwn === true || (!!ownStatusIds && ownStatusIds.has(String(config.id)))
+
+		if (!isOwn) return
+
 		setDeletingId(config.id)
 		try {
 			const res = await fetch(
@@ -110,8 +117,10 @@ export function StatusesGrid({ configs, loading, allowDelete }: StatusesGridProp
 
 			if (!res.ok) {
 				const data = await res.json().catch(() => null)
-				throw new Error(data?.message || `Failed to delete config (${res.status})`)
+				throw new Error(data?.message || `Failed to delete status (${res.status})`)
 			}
+
+			setLocalStatuses(prev => prev.filter(s => s.id !== config.id))
 		} catch (err) {
 			console.error('Failed to delete status', err)
 		} finally {
@@ -135,6 +144,10 @@ export function StatusesGrid({ configs, loading, allowDelete }: StatusesGridProp
 				<div className={styles.cards_grid}>
 					{localStatuses.map((config, index) => {
 						const baseIndex = mounted ? previewTick + index : 0
+						const canDelete =
+							allowDelete &&
+							((config as any).isOwn === true ||
+								(!!ownStatusIds && ownStatusIds.has(String(config.id))))
 
 						return (
 							<div key={config.id} className={styles.card_wrap}>
@@ -150,7 +163,7 @@ export function StatusesGrid({ configs, loading, allowDelete }: StatusesGridProp
 													{config.downloads.toLocaleString()}
 												</span>
 											</div>
-											{allowDelete && (
+											{canDelete && (
 												<button
 													type='button'
 													className={styles.profile_delete_tag}

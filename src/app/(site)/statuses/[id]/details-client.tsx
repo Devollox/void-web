@@ -2,7 +2,8 @@
 
 import type { Status } from '@/service/firebase'
 import StatusPreview from '@components/statuses-preview/status-user'
-import { useEffect, useState } from 'react'
+import { useSession } from 'next-auth/react'
+import { useEffect, useMemo, useState } from 'react'
 import styles from '../../presence/[id]/config-details.module.scss'
 import { CopyJsonButton } from './copy-button'
 import { DownloadJsonButton } from './download-button'
@@ -21,6 +22,10 @@ export function StatusDetailsClient({ statusId, initialPreviewTick }: Props) {
 	const [status, setStatus] = useState<Status | null>(null)
 	const [previewTick, setPreviewTick] = useState(initialPreviewTick)
 	const [loading, setLoading] = useState(true)
+	const [deleting, setDeleting] = useState(false)
+	const [deleted, setDeleted] = useState(false)
+
+	const { data: session } = useSession()
 
 	useEffect(() => {
 		let cancelled = false
@@ -68,6 +73,7 @@ export function StatusDetailsClient({ statusId, initialPreviewTick }: Props) {
 			eventSource.addEventListener('not-found', () => {
 				if (cancelled) return
 				setStatus(null)
+				setDeleted(true)
 			})
 		}
 
@@ -83,6 +89,47 @@ export function StatusDetailsClient({ statusId, initialPreviewTick }: Props) {
 			eventSource?.close()
 		}
 	}, [statusId])
+
+	const isOwnerClient = useMemo(() => {
+		if (!status) return false
+		if (!session?.user?.id || !session.user.name) return false
+
+		const tag = String(status.authorTag ?? '').padStart(4, '0')
+		const sessionIdStartsWithTag = session.user.id.startsWith(tag)
+		const sameName = session.user.name === status.author
+
+		return sessionIdStartsWithTag && sameName
+	}, [status, session?.user?.id, session?.user?.name])
+
+	const isOwn = !!status && ((status as any).isOwn === true || isOwnerClient)
+
+	const handleDelete = async () => {
+		if (!status) return
+		if (deleting) return
+		if (!isOwn) return
+
+		setDeleting(true)
+		try {
+			const res = await fetch(
+				`/api/v1/configs/${encodeURIComponent(String(status.id))}/delete?kind=status`,
+				{
+					method: 'DELETE',
+				}
+			)
+
+			if (!res.ok) {
+				const data = await res.json().catch(() => null)
+				throw new Error(data?.message || `Failed to delete status (${res.status})`)
+			}
+
+			setDeleted(true)
+			setStatus(null)
+		} catch (err) {
+			console.error('Failed to delete status', err)
+		} finally {
+			setDeleting(false)
+		}
+	}
 
 	if (loading) {
 		return (
@@ -112,6 +159,7 @@ export function StatusDetailsClient({ statusId, initialPreviewTick }: Props) {
 									<div className={styles.skel_btn} />
 									<div className={styles.skel_btn} />
 									<div className={styles.skel_btn} />
+									<div className={styles.skel_btn} />
 								</div>
 							</div>
 						</div>
@@ -124,7 +172,7 @@ export function StatusDetailsClient({ statusId, initialPreviewTick }: Props) {
 		)
 	}
 
-	if (!status) {
+	if (!status || deleted) {
 		return (
 			<section id='status-details' className={styles.page_section}>
 				<div className={styles.theme_view_panel}>
@@ -134,9 +182,11 @@ export function StatusDetailsClient({ statusId, initialPreviewTick }: Props) {
 								<a href='/statuses' className={styles.back_link}>
 									← Back to Statuses
 								</a>
-								<h1 className={styles.title}>Status not found</h1>
+								<h1 className={styles.title}>{deleted ? 'Status deleted' : 'Status not found'}</h1>
 								<div className={styles.title_description}>
-									This status may have been removed or is not available.
+									{deleted
+										? 'This status was deleted.'
+										: 'This status may have been removed or is not available.'}
 								</div>
 							</div>
 						</div>
@@ -219,7 +269,7 @@ export function StatusDetailsClient({ statusId, initialPreviewTick }: Props) {
 							<div className={styles.actions_panel}>
 								<h2 className={styles.actions_title}>Config actions</h2>
 								<p className={styles.actions_subtitle}>
-									Export or share this Discord Rich Presence config.
+									Export or share this Discord Rich Presence status.
 								</p>
 								<div className={styles.actions_buttons}>
 									<a className={styles.action_btn_primary} onClick={handleOpenInApp}>
@@ -228,6 +278,16 @@ export function StatusDetailsClient({ statusId, initialPreviewTick }: Props) {
 									</a>
 									<DownloadJsonButton configId={status.id} />
 									<CopyJsonButton configId={status.id} />
+									{isOwn && (
+										<button
+											className={styles.action_btn_primary}
+											disabled={deleting}
+											onClick={handleDelete}
+										>
+											{deleting ? 'Deleting…' : 'Delete config'}
+											<span className={styles.action_btn_hint}>delete .json</span>
+										</button>
+									)}
 								</div>
 							</div>
 						</div>

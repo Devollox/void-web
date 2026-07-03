@@ -1,4 +1,5 @@
 import { leftNotFound, rightNotFound } from '@/app/not-found'
+import { auth } from '@/lib/auth'
 import Footer from '@components/footer'
 import Page from '@components/page'
 import PageHeader from '@components/page-header'
@@ -13,6 +14,7 @@ type Props = {
 
 type AuthorConfigsResponse = {
 	user: {
+		id?: string
 		name: string | null
 		avatar: string | null
 		tag: string | null
@@ -39,6 +41,37 @@ async function fetchAuthorConfigsByHandle(
 	return (await res.json()) as AuthorConfigsResponse
 }
 
+type AuthorOwnConfigsResponse = {
+	user: {
+		id: string
+	} | null
+	presenceConfigs: { id: string | number }[]
+	statusConfigs: { id: string | number }[]
+}
+
+async function fetchOwnIds(authorId: string): Promise<{
+	presenceIds: string[]
+	statusIds: string[]
+}> {
+	const res = await fetch(
+		`${process.env.NEXTAUTH_URL}/api/v1/authors/${encodeURIComponent(authorId)}/configs`,
+		{
+			method: 'GET',
+			cache: 'no-store',
+			headers: { 'Content-Type': 'application/json' },
+		}
+	)
+
+	if (!res.ok) return { presenceIds: [], statusIds: [] }
+
+	const data = (await res.json()) as AuthorOwnConfigsResponse
+
+	return {
+		presenceIds: (data.presenceConfigs || []).map(cfg => String(cfg.id)),
+		statusIds: (data.statusConfigs || []).map(cfg => String(cfg.id)),
+	}
+}
+
 export default async function ProfilePage(props: Props) {
 	const { id } = await props.params
 	const { tag } = await props.searchParams
@@ -46,7 +79,10 @@ export default async function ProfilePage(props: Props) {
 	const username = decodeURIComponent(id)
 	const normalizedTag = String(tag ?? '').padStart(4, '0')
 
-	const data = await fetchAuthorConfigsByHandle(username, normalizedTag)
+	const [data, session] = await Promise.all([
+		fetchAuthorConfigsByHandle(username, normalizedTag),
+		auth(),
+	])
 
 	if (!data?.user) {
 		return (
@@ -64,6 +100,22 @@ export default async function ProfilePage(props: Props) {
 
 	const { user, presenceConfigs, statusConfigs } = data
 
+	let initialOwnPresenceIds: string[] = []
+	let initialOwnStatusIds: string[] = []
+
+	const isOwnerServer =
+		!!session?.user?.id &&
+		!!user.name &&
+		!!user.tag &&
+		session.user.name === user.name &&
+		session.user.id.startsWith(normalizedTag)
+
+	if (isOwnerServer && session?.user?.id) {
+		const own = await fetchOwnIds(String(session.user.id))
+		initialOwnPresenceIds = own.presenceIds
+		initialOwnStatusIds = own.statusIds
+	}
+
 	return (
 		<Page>
 			<PageHeader
@@ -72,10 +124,12 @@ export default async function ProfilePage(props: Props) {
 			/>
 			<ProfileClient
 				user={user}
-				presenceConfigs={presenceConfigs}
-				statusConfigs={statusConfigs}
+				presenceConfigs={presenceConfigs as any}
+				statusConfigs={statusConfigs as any}
 				profileTag={normalizedTag}
 				username={username}
+				initialOwnPresenceIds={initialOwnPresenceIds}
+				initialOwnStatusIds={initialOwnStatusIds}
 			/>
 			<Footer />
 		</Page>

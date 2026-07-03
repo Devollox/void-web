@@ -46,7 +46,7 @@ export async function GET(_req: Request, ctx: { params: Promise<Params> | Params
 					id,
 					title: raw.title || 'Unnamed',
 					author: raw.author || userRaw?.name || 'Unknown',
-					authorId: authorId,
+					authorId,
 					authorAvatar: avatarFromUser,
 					authorTag: raw.authorTag || tagFromUser || undefined,
 					downloads:
@@ -73,7 +73,7 @@ export async function GET(_req: Request, ctx: { params: Promise<Params> | Params
 					id,
 					title: raw.title || 'Unnamed',
 					author: raw.author || userRaw?.name || 'Unknown',
-					authorId: authorId,
+					authorId,
 					authorAvatar: avatarFromUser,
 					authorTag: raw.authorTag || tagFromUser || undefined,
 					downloads:
@@ -97,6 +97,10 @@ export async function GET(_req: Request, ctx: { params: Promise<Params> | Params
 						provider: userRaw.provider || null,
 						createdAt: userRaw.createdAt || null,
 						lastSeen: userRaw.lastSeen || null,
+						configs: userRaw.configs || {
+							presence: {},
+							status: {},
+						},
 					}
 				: null,
 			presenceConfigs,

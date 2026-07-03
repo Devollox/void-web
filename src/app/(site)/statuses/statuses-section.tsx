@@ -8,9 +8,10 @@ import styles from './statuses.module.scss'
 type Props = {
 	initialSearchTerm: string
 	initialStatuses: Status[]
+	initialOwnStatusIds: string[]
 }
 
-export function StatusSection({ initialSearchTerm, initialStatuses }: Props) {
+export function StatusSection({ initialSearchTerm, initialStatuses, initialOwnStatusIds }: Props) {
 	return (
 		<Page>
 			<PageHeader
@@ -20,9 +21,14 @@ export function StatusSection({ initialSearchTerm, initialStatuses }: Props) {
 
 			<section className={styles.section_themes_panel}>
 				<div className={styles.themes_panel}>
-					<StatusClient initialStatuses={initialStatuses} initialSearchTerm={initialSearchTerm} />
+					<StatusClient
+						initialStatuses={initialStatuses}
+						initialSearchTerm={initialSearchTerm}
+						initialOwnStatusIds={initialOwnStatusIds}
+					/>
 				</div>
 			</section>
+
 			<Footer />
 		</Page>
 	)

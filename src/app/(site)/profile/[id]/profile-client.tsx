@@ -23,6 +23,8 @@ type Props = {
 	statusConfigs: Status[]
 	profileTag: string
 	username: string
+	initialOwnPresenceIds: string[]
+	initialOwnStatusIds: string[]
 }
 
 type AuthorConfigsResponse = {
@@ -82,12 +84,17 @@ export function ProfileClient({
 	statusConfigs,
 	profileTag,
 	username,
+	initialOwnPresenceIds,
+	initialOwnStatusIds,
 }: Props) {
 	const [searchTerm, setSearchTerm] = useState('')
 	const { data: session } = useSession()
 
 	const [liveConfigs, setLiveConfigs] = useState<Config[]>(presenceConfigs)
 	const [liveStatuses, setLiveStatuses] = useState<Status[]>(statusConfigs)
+
+	const [ownPresenceIds, setOwnPresenceIds] = useState<Set<string>>(new Set(initialOwnPresenceIds))
+	const [ownStatusIds, setOwnStatusIds] = useState<Set<string>>(new Set(initialOwnStatusIds))
 
 	useEffect(() => {
 		let cancelled = false
@@ -138,6 +145,43 @@ export function ProfileClient({
 		session.user.name === user.name &&
 		session.user.id.startsWith(profileTag)
 
+	useEffect(() => {
+		if (!isOwner || !session?.user?.id) return
+		let cancelled = false
+
+		async function loadOwnIds() {
+			try {
+				const res = await fetch(
+					`/api/v1/authors/${encodeURIComponent(String(session?.user?.id))}/configs`,
+					{
+						method: 'GET',
+						headers: { 'Content-Type': 'application/json' },
+					}
+				)
+
+				if (!res.ok) return
+				const data = (await res.json()) as AuthorConfigsResponse
+				if (cancelled) return
+
+				const presenceIds = new Set(
+					(data.presenceConfigs || []).map(cfg => String((cfg as any).id))
+				)
+				const statusIds = new Set((data.statusConfigs || []).map(cfg => String((cfg as any).id)))
+
+				setOwnPresenceIds(presenceIds)
+				setOwnStatusIds(statusIds)
+			} catch {
+				if (cancelled) return
+			}
+		}
+
+		loadOwnIds()
+
+		return () => {
+			cancelled = true
+		}
+	}, [isOwner, session?.user?.id])
+
 	const filteredConfigs = useMemo(
 		() => filterConfigs(liveConfigs, searchTerm),
 		[liveConfigs, searchTerm]
@@ -184,9 +228,19 @@ export function ProfileClient({
 				</div>
 
 				<div className={styles.themes_right_side}>
-					<PresenceGrid configs={sortedConfigs} loading={false} allowDelete={isOwner} />
+					<PresenceGrid
+						configs={sortedConfigs}
+						loading={false}
+						allowDelete={isOwner}
+						ownConfigIds={ownPresenceIds}
+					/>
 					<div style={{ marginTop: '20px' }} />
-					<StatusesGrid configs={sortedStatuses} loading={false} allowDelete={isOwner} />
+					<StatusesGrid
+						configs={sortedStatuses}
+						loading={false}
+						allowDelete={isOwner}
+						ownStatusIds={ownStatusIds}
+					/>
 				</div>
 			</div>
 		</section>
