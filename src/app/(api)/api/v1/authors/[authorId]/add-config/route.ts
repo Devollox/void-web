@@ -17,11 +17,16 @@ type AddConfigBody = {
 const db = admin.database()
 
 export async function createPresenceConfig(authorId: string, body: AddConfigBody): Promise<string> {
+	const userSnap = await db.ref(`users/${authorId}`).get()
+	const user = userSnap.exists() ? (userSnap.val() as any) : null
+
 	const ref = db.ref('presence-configs').push()
-	const { kind, ...rest } = body
+	const { kind, author, ...rest } = body
 
 	await ref.set({
 		...rest,
+		author: user?.name || author || 'Unknown',
+		authorAvatar: user?.avatar || user?.image || undefined,
 	})
 
 	const id = ref.key || 'unknown'
@@ -33,11 +38,16 @@ export async function createPresenceConfig(authorId: string, body: AddConfigBody
 }
 
 export async function createStatusConfig(authorId: string, body: AddConfigBody): Promise<string> {
+	const userSnap = await db.ref(`users/${authorId}`).get()
+	const user = userSnap.exists() ? (userSnap.val() as any) : null
+
 	const ref = db.ref('status-configs').push()
-	const { kind, ...rest } = body
+	const { kind, author, ...rest } = body
 
 	await ref.set({
 		...rest,
+		author: user?.name || author || 'Unknown',
+		authorAvatar: user?.avatar || user?.image || undefined,
 	})
 
 	const id = ref.key || 'unknown'
