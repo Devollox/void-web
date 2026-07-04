@@ -20,7 +20,7 @@ function CustomStatusPreview({ config, previewIndex }: CustomStatusPreviewProps)
 	const cycle = cycles[localIndex % maxLen] || { text: '' }
 
 	return (
-		<div className={styles.rpc_card_preview}>
+		<div className={`${styles.statuses_card_preview} ${styles.rpc_card_preview}`}>
 			<div className={styles.rpc_card_preview_inner}>
 				<StatusPreview
 					discriminator={config.authorTag ? `#${config.authorTag}` : '#0001'}

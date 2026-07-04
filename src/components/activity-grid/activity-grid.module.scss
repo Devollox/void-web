@@ -326,6 +326,11 @@
 	.rpc_card_preview {
 		justify-content: center;
 		position: static;
+		height: 358px !important;
+	}
+
+	.statuses_card_preview {
+		height: auto !important;
 	}
 
 	.rpc_card_preview_inner {
