@@ -36,8 +36,8 @@ type AuthorConfigsResponse = {
 		createdAt: number | null
 		lastSeen: number | null
 	} | null
-	presenceConfigs: Config[]
-	statusConfigs: Status[]
+	presenceConfigs: (Config & { isOwn?: boolean })[]
+	statusConfigs: (Status & { isOwn?: boolean })[]
 }
 
 function filterConfigs(configs: Config[], searchTerm: string) {
@@ -100,6 +100,17 @@ export function ProfileClient({
 		let cancelled = false
 		let es: EventSource | null = null
 
+		function applyOwnIds(next: AuthorConfigsResponse) {
+			const presenceIds = new Set(
+				(next.presenceConfigs || []).filter(cfg => cfg.isOwn).map(cfg => String(cfg.id))
+			)
+			const statusIds = new Set(
+				(next.statusConfigs || []).filter(cfg => cfg.isOwn).map(cfg => String(cfg.id))
+			)
+			setOwnPresenceIds(presenceIds)
+			setOwnStatusIds(statusIds)
+		}
+
 		function startStream() {
 			const url = `/api/v1/authors/stream?username=${encodeURIComponent(
 				username
@@ -112,6 +123,7 @@ export function ProfileClient({
 				const next = JSON.parse((event as MessageEvent).data) as AuthorConfigsResponse
 				setLiveConfigs(next.presenceConfigs || [])
 				setLiveStatuses(next.statusConfigs || [])
+				applyOwnIds(next)
 			})
 
 			es.addEventListener('update', event => {
@@ -119,12 +131,15 @@ export function ProfileClient({
 				const next = JSON.parse((event as MessageEvent).data) as AuthorConfigsResponse
 				setLiveConfigs(next.presenceConfigs || [])
 				setLiveStatuses(next.statusConfigs || [])
+				applyOwnIds(next)
 			})
 
 			es.addEventListener('not-found', () => {
 				if (cancelled) return
 				setLiveConfigs([])
 				setLiveStatuses([])
+				setOwnPresenceIds(new Set())
+				setOwnStatusIds(new Set())
 			})
 		}
 
