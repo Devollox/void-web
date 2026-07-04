@@ -133,7 +133,7 @@ export function StatusDetailsClient({ statusId, initialPreviewTick }: Props) {
 
 	if (loading) {
 		return (
-			<section id='status-details' className={styles.page_section}>
+			<section id='addon-details' className={styles.page_section}>
 				<div className={styles.theme_view_panel}>
 					<div
 						className={`${styles.addon_splitview_container_statuses} ${styles.addon_splitview_container}`}
@@ -145,13 +145,15 @@ export function StatusDetailsClient({ statusId, initialPreviewTick }: Props) {
 								<div className={styles.skel_subtitle} />
 								<div className={styles.skel_meta_block}>
 									<div className={styles.skel_meta_row} />
-									<div className={styles.skel_meta_row} />
+								</div>
+								<div style={{ height: '39px', marginTop: '20px' }} className={styles.skel_rpc} />
+								<div style={{ marginTop: '16px' }} className={styles.skel_meta_block}>
 									<div className={styles.skel_meta_row} />
 								</div>
 							</div>
 						</div>
-						<div className={styles.addon_details_middle_column}>
-							<div className={styles.skel_rpc} />
+						<div style={{ height: '160px' }} className={styles.addon_details_middle_column}>
+							<div style={{ height: '160px' }} className={styles.skel_rpc} />
 						</div>
 						<div className={styles.addon_details_middle_column}>
 							<div className={styles.skel_actions_panel}>
