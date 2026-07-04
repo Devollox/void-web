@@ -10,7 +10,6 @@
 	overflow: hidden;
 	background: hsla(0, 0%, 10%, 0.9);
 	border: 1px solid hsla(255, 255%, 255%, 0.08);
-	backdrop-filter: blur(24px);
 }
 
 .addon_backdrop {
@@ -132,8 +131,7 @@
 
 .download_btn_primary {
 	width: 100%;
-	-webkit-backdrop-filter: blur(10px);
-	backdrop-filter: blur(10px);
+
 	color: #fff;
 	text-align: center;
 	background: #272727;
@@ -232,8 +230,6 @@
 }
 
 .action_btn_primary {
-	-webkit-backdrop-filter: blur(10px);
-	backdrop-filter: blur(10px);
 	color: #fff;
 	text-align: center;
 	background: #272727;
@@ -262,8 +258,6 @@
 }
 
 .action_btn_secondary {
-	-webkit-backdrop-filter: blur(10px);
-	backdrop-filter: blur(10px);
 	color: #fff;
 	text-align: center;
 	background: #272727;

@@ -208,8 +208,6 @@
 	}
 }
 .download_tag {
-	-webkit-backdrop-filter: blur(10px);
-	backdrop-filter: blur(10px);
 	color: #f1f1f1;
 	background: #141414e6;
 	border: 1px solid #ffffff14;
@@ -239,7 +237,6 @@
 
 .btn_primary,
 .btn_secondary {
-	backdrop-filter: blur(10px);
 	color: #fff;
 	text-align: center;
 	background: #272727;

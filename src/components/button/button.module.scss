@@ -49,8 +49,7 @@
 .btn_secondary {
 	background: hsla(0, 0%, 4%, 0.71);
 	border: 1px solid hsla(0, 0%, 100%, 0.14) !important;
-	-webkit-backdrop-filter: blur(4px);
-	backdrop-filter: blur(4px);
+
 	color: #888;
 
 	&:hover {

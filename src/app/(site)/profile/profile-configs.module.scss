@@ -202,8 +202,6 @@
 }
 
 .profile_download_tag {
-	-webkit-backdrop-filter: blur(10px);
-	backdrop-filter: blur(10px);
 	color: #f1f1f1;
 	background: #141414e6;
 	border: 1px solid #ffffff14;
@@ -235,8 +233,6 @@
 
 .profile_btn_primary,
 .profile_btn_secondary {
-	-webkit-backdrop-filter: blur(10px);
-	backdrop-filter: blur(10px);
 	color: #fff;
 	text-align: center;
 	background: #272727;
@@ -498,7 +494,7 @@
 	top: 20px;
 	right: 20px;
 	background: #141414e6;
-	backdrop-filter: blur(10px);
+
 	border-radius: 8px;
 	padding: 8px 12px;
 	display: flex;
@@ -625,8 +621,7 @@
 
 .download_btn_primary {
 	width: 100%;
-	-webkit-backdrop-filter: blur(10px);
-	backdrop-filter: blur(10px);
+
 	color: #fff;
 	text-align: center;
 	background: #272727;
@@ -665,8 +660,7 @@
 .copy_btn {
 	margin-top: 12px;
 	width: 100%;
-	-webkit-backdrop-filter: blur(10px);
-	backdrop-filter: blur(10px);
+
 	color: #fff;
 	text-align: center;
 	background: #272727;
