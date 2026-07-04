@@ -55,12 +55,6 @@ type GetAllPayload = {
 	kind: ConfigKind
 }
 
-export async function fetchAllUsers(): Promise<Record<string, any>> {
-	const snap = await db.ref('users').get()
-	if (!snap.exists()) return {}
-	return snap.val() as Record<string, any>
-}
-
 export async function POST(req: Request) {
 	try {
 		const body = (await req.json()) as GetAllPayload
@@ -73,26 +67,42 @@ export async function POST(req: Request) {
 		}
 
 		const { kind } = body
-		const users = await fetchAllUsers()
+
+		if (kind !== 'presence' && kind !== 'status') {
+			return NextResponse.json(
+				{ error: 'InvalidKind', message: `Unsupported kind: ${kind}` },
+				{ status: 400 }
+			)
+		}
+
+		const targetRef = kind === 'presence' ? 'presence-configs' : 'status-configs'
+
+		const [configsSnap, usersSnap] = await Promise.all([
+			db.ref(targetRef).get(),
+			db.ref('users').get(),
+		])
+
+		if (!configsSnap.exists()) {
+			return NextResponse.json([], { status: 200 })
+		}
+
+		const configsData = configsSnap.val() as Record<string, any>
+		const usersData = usersSnap.exists() ? (usersSnap.val() as Record<string, any>) : {}
+
+		const configToOwnerMap: Record<string, any> = {}
+		for (const userRaw of Object.values(usersData)) {
+			const userConfigs = userRaw?.configs?.[kind] || {}
+			for (const [configId, hasConfig] of Object.entries(userConfigs)) {
+				if (hasConfig) {
+					configToOwnerMap[configId] = userRaw
+				}
+			}
+		}
 
 		if (kind === 'presence') {
-			const snap = await db.ref('presence-configs').get()
-			if (!snap.exists()) return NextResponse.json([], { status: 200 })
-
-			const data = snap.val() as Record<string, any>
-
-			const list: Config[] = Object.entries(data).map(([id, raw]) => {
+			const list: Config[] = Object.entries(configsData).map(([id, raw]) => {
 				const r = raw as any
-
-				let user: any = null
-
-				for (const [, userData] of Object.entries(users)) {
-					const configs = (userData as any).configs || {}
-					if (configs.presence && configs.presence[id]) {
-						user = userData
-						break
-					}
-				}
+				const user = configToOwnerMap[id]
 
 				return mapRawToConfig(
 					id,
@@ -105,40 +115,19 @@ export async function POST(req: Request) {
 			return NextResponse.json(list, { status: 200 })
 		}
 
-		if (kind === 'status') {
-			const snap = await db.ref('status-configs').get()
-			if (!snap.exists()) return NextResponse.json([], { status: 200 })
+		const list: Status[] = Object.entries(configsData).map(([id, raw]) => {
+			const r = raw as any
+			const user = configToOwnerMap[id]
 
-			const data = snap.val() as Record<string, any>
+			return mapRawToStatus(
+				id,
+				r,
+				user?.avatar || user?.image || '',
+				user?.name || r?.author || 'Unknown'
+			)
+		})
 
-			const list: Status[] = Object.entries(data).map(([id, raw]) => {
-				const r = raw as any
-
-				let user: any = null
-
-				for (const [, userData] of Object.entries(users)) {
-					const configs = (userData as any).configs || {}
-					if (configs.status && configs.status[id]) {
-						user = userData
-						break
-					}
-				}
-
-				return mapRawToStatus(
-					id,
-					r,
-					user?.avatar || user?.image || '',
-					user?.name || r?.author || 'Unknown'
-				)
-			})
-
-			return NextResponse.json(list, { status: 200 })
-		}
-
-		return NextResponse.json(
-			{ error: 'InvalidKind', message: `Unsupported kind: ${kind}` },
-			{ status: 400 }
-		)
+		return NextResponse.json(list, { status: 200 })
 	} catch (err) {
 		const message = err instanceof Error ? err.message : JSON.stringify(err)
 		return NextResponse.json({ error: 'InternalInternalError', message }, { status: 500 })

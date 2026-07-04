@@ -2,7 +2,7 @@ import { auth } from '@/lib/auth'
 import { mapRawToConfig, mapRawToStatus } from '@/service/firebase'
 import { admin } from '@/service/firebase-admin'
 import { NextResponse } from 'next/server'
-import { Config as BaseConfig, Status as BaseStatus, ConfigKind, fetchAllUsers } from '../route'
+import { Config as BaseConfig, Status as BaseStatus, ConfigKind } from '../route'
 
 const db = admin.database()
 
@@ -11,28 +11,35 @@ type Config = BaseConfig & { isOwn?: boolean }
 type Status = BaseStatus & { isOwn?: boolean }
 
 async function loadAllByKind(kind: QueryKind, currentUserId?: string | null) {
-	const users = await fetchAllUsers()
+	const targetRef = kind === 'presence' ? 'presence-configs' : 'status-configs'
+
+	const [configsSnap, usersSnap] = await Promise.all([
+		db.ref(targetRef).get(),
+		db.ref('users').get(),
+	])
+
+	if (!configsSnap.exists()) return []
+
+	const data = configsSnap.val() as Record<string, any>
+	const users = usersSnap.exists() ? (usersSnap.val() as Record<string, any>) : {}
+
+	const configToOwnerMap: Record<string, { uid: string; user: any }> = {}
+	for (const [uid, userData] of Object.entries(users)) {
+		const configs = (userData as any).configs || {}
+		const kindConfigs = configs[kind] || {}
+		for (const [configId, hasConfig] of Object.entries(kindConfigs)) {
+			if (hasConfig) {
+				configToOwnerMap[configId] = { uid, user: userData }
+			}
+		}
+	}
 
 	if (kind === 'presence') {
-		const snap = await db.ref('presence-configs').get()
-		if (!snap.exists()) return []
-
-		const data = snap.val() as Record<string, any>
-
 		const list: Config[] = Object.entries(data).map(([id, raw]) => {
 			const r = raw as any
-
-			let user: any = null
-			let ownerId: string | null = null
-
-			for (const [uid, userData] of Object.entries(users)) {
-				const configs = (userData as any).configs || {}
-				if (configs.presence && configs.presence[id]) {
-					user = userData
-					ownerId = String(uid)
-					break
-				}
-			}
+			const ownerData = configToOwnerMap[id]
+			const user = ownerData?.user
+			const ownerId = ownerData?.uid || null
 
 			const avatar = user?.avatar || user?.image || r?.authorAvatar || ''
 			const authorName = user?.name || r?.author || 'Unknown'
@@ -49,25 +56,11 @@ async function loadAllByKind(kind: QueryKind, currentUserId?: string | null) {
 		return list
 	}
 
-	const snap = await db.ref('status-configs').get()
-	if (!snap.exists()) return []
-
-	const data = snap.val() as Record<string, any>
-
 	const list: Status[] = Object.entries(data).map(([id, raw]) => {
 		const r = raw as any
-
-		let user: any = null
-		let ownerId: string | null = null
-
-		for (const [uid, userData] of Object.entries(users)) {
-			const configs = (userData as any).configs || {}
-			if (configs.status && configs.status[id]) {
-				user = userData
-				ownerId = String(uid)
-				break
-			}
-		}
+		const ownerData = configToOwnerMap[id]
+		const user = ownerData?.user
+		const ownerId = ownerData?.uid || null
 
 		const avatar = user?.avatar || user?.image || r?.authorAvatar || ''
 		const authorName = user?.name || r?.author || 'Unknown'
