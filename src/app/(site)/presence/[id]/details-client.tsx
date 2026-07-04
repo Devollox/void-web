@@ -155,7 +155,7 @@ export function ConfigDetailsClient({ configId, initialPreviewTick }: Props) {
 							</div>
 						</div>
 						<div className={styles.addon_details_middle_column}>
-							<div style={{ height: '358px' }} className={styles.skel_rpc} />
+							<div style={{ height: '288px' }} className={styles.skel_rpc} />
 						</div>
 						<div className={styles.addon_details_middle_column}>
 							<div className={styles.skel_actions_panel}>

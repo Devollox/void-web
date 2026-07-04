@@ -90,11 +90,11 @@ export async function POST(req: Request) {
 		const usersData = usersSnap.exists() ? (usersSnap.val() as Record<string, any>) : {}
 
 		const configToOwnerMap: Record<string, any> = {}
-		for (const userRaw of Object.values(usersData)) {
-			const userConfigs = userRaw?.configs?.[kind] || {}
+		for (const [uid, userRaw] of Object.entries(usersData)) {
+			const userConfigs = (userRaw as any)?.configs?.[kind] || {}
 			for (const [configId, hasConfig] of Object.entries(userConfigs)) {
 				if (hasConfig) {
-					configToOwnerMap[configId] = userRaw
+					configToOwnerMap[configId] = { uid, userRaw }
 				}
 			}
 		}
@@ -102,14 +102,20 @@ export async function POST(req: Request) {
 		if (kind === 'presence') {
 			const list: Config[] = Object.entries(configsData).map(([id, raw]) => {
 				const r = raw as any
-				const user = configToOwnerMap[id]
+				const owner = configToOwnerMap[id]
+				const user = owner?.userRaw
 
-				return mapRawToConfig(
-					id,
-					r,
-					user?.avatar || user?.image || '',
-					user?.name || r?.author || 'Unknown'
-				)
+				const avatar = user?.avatar || user?.image || r?.authorAvatar || ''
+				const tag =
+					typeof user?.tag !== 'undefined'
+						? String(user.tag).padStart(4, '0')
+						: r?.authorTag || undefined
+				const name = user?.name || r?.author || 'Unknown'
+
+				const cfg = mapRawToConfig(id, r, avatar, name) as Config
+				cfg.authorTag = tag
+
+				return cfg
 			})
 
 			return NextResponse.json(list, { status: 200 })
@@ -117,14 +123,20 @@ export async function POST(req: Request) {
 
 		const list: Status[] = Object.entries(configsData).map(([id, raw]) => {
 			const r = raw as any
-			const user = configToOwnerMap[id]
+			const owner = configToOwnerMap[id]
+			const user = owner?.userRaw
 
-			return mapRawToStatus(
-				id,
-				r,
-				user?.avatar || user?.image || '',
-				user?.name || r?.author || 'Unknown'
-			)
+			const avatar = user?.avatar || user?.image || r?.authorAvatar || ''
+			const tag =
+				typeof user?.tag !== 'undefined'
+					? String(user.tag).padStart(4, '0')
+					: r?.authorTag || undefined
+			const name = user?.name || r?.author || 'Unknown'
+
+			const st = mapRawToStatus(id, r, avatar, name) as Status
+			st.authorTag = tag
+
+			return st
 		})
 
 		return NextResponse.json(list, { status: 200 })

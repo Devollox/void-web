@@ -58,7 +58,7 @@ async function loadAuthorConfigsByHandle(
 	const statusIds = Object.keys(statusMap).filter(id => statusMap[id])
 
 	const avatarFromUser = userRaw?.avatar || userRaw?.image || ''
-	const tagFromUser = String(userRaw.tag ?? '').padStart(4, '0')
+	const tagFromUser = String(userRaw?.tag ?? '').padStart(4, '0')
 
 	const presenceConfigs = presenceIds
 		.map(id => {
@@ -67,7 +67,7 @@ async function loadAuthorConfigsByHandle(
 			return {
 				id,
 				title: raw.title || 'Unnamed',
-				author: raw.author || userRaw?.name || 'Unknown',
+				author: raw.author || userRaw?.name || username || 'Unknown',
 				authorAvatar: avatarFromUser,
 				authorTag: tagFromUser,
 				downloads:
@@ -94,7 +94,7 @@ async function loadAuthorConfigsByHandle(
 			return {
 				id,
 				title: raw.title || 'Unnamed',
-				author: raw.author || userRaw?.name || 'Unknown',
+				author: raw.author || userRaw?.name || username || 'Unknown',
 				authorAvatar: avatarFromUser,
 				authorTag: tagFromUser,
 				downloads:

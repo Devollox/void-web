@@ -3,14 +3,12 @@
 import { Config } from '@/app/(api)/api/v1/configs/route'
 import { PresenceGrid } from '@/components/activity-grid/presence'
 import { Search, X } from 'lucide-react'
-import { useSession } from 'next-auth/react'
 import { useEffect, useMemo, useState } from 'react'
 import styles from './presence.module.scss'
 
 export type Props = {
 	initialConfigs?: Config[]
 	initialSearchTerm: string
-	initialOwnConfigIds?: string[]
 }
 
 export function filterConfigs(configs: Config[], searchTerm: string) {
@@ -35,61 +33,10 @@ export function sortConfigs(configs: Config[]) {
 	})
 }
 
-type AuthorConfigsResponse = {
-	user: {
-		id: string
-		name: string | null
-		avatar: string | null
-		provider: string | null
-		createdAt: number | null
-		lastSeen: number | null
-	} | null
-	presenceConfigs: Config[]
-	statusConfigs: any[]
-}
-
-export function ConfigsClient({
-	initialConfigs = [],
-	initialSearchTerm,
-	initialOwnConfigIds = [],
-}: Props) {
+export function ConfigsClient({ initialConfigs = [], initialSearchTerm }: Props) {
 	const [configs, setConfigs] = useState<Config[]>(initialConfigs)
 	const [searchTerm, setSearchTerm] = useState(initialSearchTerm ?? '')
 	const [loading, setLoading] = useState(initialConfigs.length === 0)
-
-	const { data: session } = useSession()
-	const [ownConfigIds, setOwnConfigIds] = useState<Set<string>>(new Set(initialOwnConfigIds))
-
-	useEffect(() => {
-		let cancelled = false
-
-		async function loadOwnConfigs() {
-			const userId = session?.user?.id ? String(session.user.id) : ''
-			if (!userId) return
-
-			try {
-				const res = await fetch(`/api/v1/authors/${encodeURIComponent(userId)}/configs`, {
-					method: 'GET',
-					headers: { 'Content-Type': 'application/json' },
-				})
-
-				if (!res.ok) return
-				const data = (await res.json()) as AuthorConfigsResponse
-				if (cancelled) return
-
-				const ids = new Set<string>((data.presenceConfigs || []).map(cfg => String(cfg.id)))
-				setOwnConfigIds(ids)
-			} catch {
-				if (cancelled) return
-			}
-		}
-
-		loadOwnConfigs()
-
-		return () => {
-			cancelled = true
-		}
-	}, [session?.user?.id])
 
 	useEffect(() => {
 		let cancelled = false
@@ -170,8 +117,6 @@ export function ConfigsClient({
 	const filteredConfigs = useMemo(() => filterConfigs(configs, searchTerm), [configs, searchTerm])
 	const sortedConfigs = useMemo(() => sortConfigs(filteredConfigs), [filteredConfigs])
 
-	const canDeleteAnything = !!session?.user?.id
-
 	return (
 		<>
 			<div className={styles.themes_left_side}>
@@ -202,12 +147,7 @@ export function ConfigsClient({
 			</div>
 
 			<div className={styles.themes_right_side}>
-				<PresenceGrid
-					configs={sortedConfigs}
-					loading={loading}
-					allowDelete={canDeleteAnything}
-					ownConfigIds={ownConfigIds}
-				/>
+				<PresenceGrid configs={sortedConfigs} loading={loading} />
 			</div>
 		</>
 	)

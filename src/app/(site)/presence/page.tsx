@@ -53,39 +53,11 @@ async function fetchInitialPresence(): Promise<PresenceConfig[]> {
 	return (await res.json()) as PresenceConfig[]
 }
 
-async function fetchOwnPresenceIds(authorId: string): Promise<string[]> {
-	const res = await fetch(
-		`${process.env.NEXTAUTH_URL}/api/v1/authors/${encodeURIComponent(authorId)}/configs`,
-		{
-			method: 'GET',
-			cache: 'no-store',
-			headers: { 'Content-Type': 'application/json' },
-		}
-	)
-
-	if (!res.ok) return []
-
-	const data = (await res.json()) as AuthorConfigsResponse
-	return (data.presenceConfigs || []).map(cfg => String(cfg.id))
-}
-
 export default async function ConfigsPage(props: PageProps) {
 	const { q = '' } = await props.searchParams
 	const searchTerm = q || ''
 
-	const [initialConfigs, session] = await Promise.all([fetchInitialPresence(), auth()])
+	const [initialConfigs] = await Promise.all([fetchInitialPresence(), auth()])
 
-	let initialOwnConfigIds: string[] = []
-
-	if (session?.user?.id) {
-		initialOwnConfigIds = await fetchOwnPresenceIds(String(session.user.id))
-	}
-
-	return (
-		<ConfigsSection
-			initialSearchTerm={searchTerm}
-			initialConfigs={initialConfigs}
-			initialOwnConfigIds={initialOwnConfigIds}
-		/>
-	)
+	return <ConfigsSection initialSearchTerm={searchTerm} initialConfigs={initialConfigs} />
 }

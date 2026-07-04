@@ -42,9 +42,14 @@ async function loadAllByKind(kind: QueryKind, currentUserId?: string | null) {
 			const ownerId = ownerData?.uid || null
 
 			const avatar = user?.avatar || user?.image || r?.authorAvatar || ''
-			const authorName = user?.name || r?.author || 'Unknown'
+			const name = user?.name || r?.author || 'Unknown'
+			const tag =
+				typeof user?.tag !== 'undefined'
+					? String(user.tag).padStart(4, '0')
+					: r?.authorTag || undefined
 
-			const cfg = mapRawToConfig(id, r, avatar, authorName) as Config
+			const cfg = mapRawToConfig(id, r, avatar, name) as Config
+			cfg.authorTag = tag
 
 			if (currentUserId && ownerId && currentUserId === ownerId) {
 				cfg.isOwn = true
@@ -63,9 +68,14 @@ async function loadAllByKind(kind: QueryKind, currentUserId?: string | null) {
 		const ownerId = ownerData?.uid || null
 
 		const avatar = user?.avatar || user?.image || r?.authorAvatar || ''
-		const authorName = user?.name || r?.author || 'Unknown'
+		const name = user?.name || r?.author || 'Unknown'
+		const tag =
+			typeof user?.tag !== 'undefined'
+				? String(user.tag).padStart(4, '0')
+				: r?.authorTag || undefined
 
-		const st = mapRawToStatus(id, r, avatar, authorName) as Status
+		const st = mapRawToStatus(id, r, avatar, name) as Status
+		st.authorTag = tag
 
 		if (currentUserId && ownerId && currentUserId === ownerId) {
 			st.isOwn = true

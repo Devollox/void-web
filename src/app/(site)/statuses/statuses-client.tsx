@@ -3,14 +3,12 @@
 import { StatusesGrid } from '@/components/activity-grid/statuses'
 import type { Status } from '@service/firebase'
 import { Search, X } from 'lucide-react'
-import { useSession } from 'next-auth/react'
 import { useEffect, useMemo, useState } from 'react'
 import styles from './statuses.module.scss'
 
 export type Props = {
 	initialStatuses?: Status[]
 	initialSearchTerm: string
-	initialOwnStatusIds?: string[]
 }
 
 export function filterStatuses(statuses: Status[], searchTerm: string) {
@@ -35,61 +33,10 @@ export function sortStatuses(statuses: Status[]) {
 	})
 }
 
-type AuthorStatusesResponse = {
-	user: {
-		id: string
-		name: string | null
-		avatar: string | null
-		provider: string | null
-		createdAt: number | null
-		lastSeen: number | null
-	} | null
-	presenceConfigs: any[]
-	statusConfigs: Status[]
-}
-
-export function StatusClient({
-	initialStatuses = [],
-	initialSearchTerm,
-	initialOwnStatusIds = [],
-}: Props) {
+export function StatusClient({ initialStatuses = [], initialSearchTerm }: Props) {
 	const [statuses, setStatuses] = useState<Status[]>(initialStatuses)
 	const [searchTerm, setSearchTerm] = useState(initialSearchTerm ?? '')
 	const [loading, setLoading] = useState(initialStatuses.length === 0)
-
-	const { data: session } = useSession()
-	const [ownStatusIds, setOwnStatusIds] = useState<Set<string>>(new Set(initialOwnStatusIds))
-
-	useEffect(() => {
-		let cancelled = false
-
-		async function loadOwnStatuses() {
-			const userId = session?.user?.id ? String(session.user.id) : ''
-			if (!userId) return
-
-			try {
-				const res = await fetch(`/api/v1/authors/${encodeURIComponent(userId)}/configs`, {
-					method: 'GET',
-					headers: { 'Content-Type': 'application/json' },
-				})
-
-				if (!res.ok) return
-				const data = (await res.json()) as AuthorStatusesResponse
-				if (cancelled) return
-
-				const ids = new Set<string>((data.statusConfigs || []).map(cfg => String((cfg as any).id)))
-				setOwnStatusIds(ids)
-			} catch {
-				if (cancelled) return
-			}
-		}
-
-		loadOwnStatuses()
-
-		return () => {
-			cancelled = true
-		}
-	}, [session?.user?.id])
 
 	useEffect(() => {
 		let cancelled = false
@@ -151,11 +98,6 @@ export function StatusClient({
 				const next = JSON.parse((event as MessageEvent).data) as Status[]
 				setStatuses(next)
 			})
-
-			eventSource.addEventListener('not-found', () => {
-				if (cancelled) return
-				setStatuses([])
-			})
 		}
 
 		startStream()
@@ -172,8 +114,6 @@ export function StatusClient({
 		[statuses, searchTerm]
 	)
 	const sortedStatuses = useMemo(() => sortStatuses(filteredStatuses), [filteredStatuses])
-
-	const canDeleteAnything = !!session?.user?.id
 
 	return (
 		<>
@@ -205,12 +145,7 @@ export function StatusClient({
 			</div>
 
 			<div className={styles.themes_right_side}>
-				<StatusesGrid
-					configs={sortedStatuses}
-					loading={loading}
-					allowDelete={canDeleteAnything}
-					ownStatusIds={ownStatusIds}
-				/>
+				<StatusesGrid configs={sortedStatuses} loading={loading} />
 			</div>
 		</>
 	)
