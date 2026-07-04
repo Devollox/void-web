@@ -34,11 +34,19 @@
 	.addon_splitview_container {
 		grid-template-columns: 1fr;
 		padding: 24px 20px;
-		min-height: 1080px;
+		min-height: 980px;
 	}
 
-	.addon_splitview_container > div {
-		height: 380px;
+	.addon_splitview_container_statuses {
+		min-height: 790px;
+	}
+
+	.addon_splitview_container > div:nth-of-type(2) {
+		height: 350px;
+	}
+
+	.addon_splitview_container_statuses > div:nth-of-type(2) {
+		height: 160px !important;
 	}
 
 	.page_section {

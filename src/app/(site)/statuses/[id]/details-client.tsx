@@ -135,7 +135,9 @@ export function StatusDetailsClient({ statusId, initialPreviewTick }: Props) {
 		return (
 			<section id='status-details' className={styles.page_section}>
 				<div className={styles.theme_view_panel}>
-					<div className={styles.addon_splitview_container}>
+					<div
+						className={`${styles.addon_splitview_container_statuses} ${styles.addon_splitview_container}`}
+					>
 						<div className={styles.addon_details_right_column}>
 							<div className={styles.addon_details_segment}>
 								<div className={styles.skel_back_link} />
@@ -223,7 +225,9 @@ export function StatusDetailsClient({ statusId, initialPreviewTick }: Props) {
 		<section id='status-details' className={styles.page_section}>
 			<div className={styles.theme_view_panel}>
 				<div>
-					<div className={styles.addon_splitview_container}>
+					<div
+						className={`${styles.addon_splitview_container_statuses} ${styles.addon_splitview_container}`}
+					>
 						<div className={styles.addon_details_right_column}>
 							<div className={styles.addon_details_segment}>
 								<a href='/statuses' className={styles.back_link}>
