@@ -116,10 +116,7 @@
 	background: rgba(26, 26, 26, 0.96);
 	border-color: rgba(91, 91, 91, 0.4);
 	--card-highlight: #5b5b5b;
-	transition:
-		transform 0.2s ease,
-		box-shadow 0.2s ease,
-		border-color 0.2s ease;
+	transition: all 1s ease;
 }
 
 .card_wrap::before {

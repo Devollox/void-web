@@ -22,8 +22,12 @@ function CustomRpcPreview({ config, previewIndex, avatarSrc }: CustomRpcPreviewP
 	const maxLen = Math.max(cycles.length || 1, images.length || 1, buttonPairs.length || 1)
 	const localIndex = maxLen ? previewIndex % maxLen : 0
 	const cycle = cycles[localIndex % (cycles.length || 1)] || { details: '', state: '' }
-	const image = images[localIndex % (images.length || 1)] || { largeImage: '' }
-	const buttons = buttonPairs[localIndex % (buttonPairs.length || 1)] ?? { label1: '', url1: '' }
+	const imageIndex = images.length ? localIndex % images.length : 0
+	const image = images[imageIndex] || { largeImage: '' }
+	const buttons = buttonPairs[localIndex % (buttonPairs.length || 1)] ?? {
+		label1: '',
+		url1: '',
+	}
 
 	return (
 		<div className={`${styles.rpc_card_presence} ${styles.rpc_card_preview}`}>
@@ -158,16 +162,43 @@ export function PresenceGrid({
 			) : (
 				<div className={styles.cards_grid}>
 					{localConfigs.map((config, index) => {
-						const highlight = animateColors ? config.averageColor || '#5b5b5b' : '#5b5b5b'
-						const hasColor = animateColors && Boolean(config.averageColor)
+						const configData: any = config.configData || {}
+						const perImageColors =
+							Array.isArray((config as any).averageColors) &&
+							(config as any).averageColors.length > 0
+								? ((config as any).averageColors as string[])
+								: []
+
+						const cyclesLen = configData.cycles?.length || 1
+						const imagesLen = configData.imageCycles?.length || 1
+						const buttonsLen = configData.buttonPairs?.length || 1
+						const maxLen = Math.max(cyclesLen || 1, imagesLen || 1, buttonsLen || 1)
+
 						const baseIndex = mounted ? previewTick + index : 0
+						const localIndex = maxLen ? baseIndex % maxLen : 0
+
+						const imageIndex = imagesLen ? localIndex % imagesLen : 0
+
+						const perImageHighlight =
+							perImageColors.length > 0
+								? perImageColors[imageIndex % perImageColors.length]
+								: undefined
+
+						const highlight = animateColors
+							? perImageHighlight || config.averageColor || '#5b5b5b'
+							: '#5b5b5b'
+
+						const hasColor =
+							animateColors && (Boolean(perImageHighlight) || Boolean(config.averageColor))
+
 						const borderColor = `${highlight}66`
 						const avatarSrc = config.authorAvatar || '/logo.png'
-						const canDelete =
+						const canDelete = !!(
 							allowDelete &&
 							(forceOwnerMode ||
 								(config as any).isOwn === true ||
 								(!!ownConfigIds && ownConfigIds.has(String(config.id))))
+						)
 
 						return (
 							<div

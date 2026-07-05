@@ -33,7 +33,7 @@ export interface Config {
 	downloads: number
 	description: string
 	configData: ConfigData
-	averageColor: string
+	averageColors?: string[]
 	uploadedAt?: number
 }
 

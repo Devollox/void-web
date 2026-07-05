@@ -51,7 +51,8 @@ export interface Config {
 	downloads: number
 	description: string
 	configData: ConfigData
-	averageColor: string
+	averageColor?: string
+	averageColors?: string[]
 	uploadedAt?: number
 }
 
@@ -104,7 +105,7 @@ export function mapRawToConfig(
 	overriddenAvatar?: string,
 	overriddenAuthor?: string
 ): Config {
-	return {
+	const cfg: Config = {
 		id,
 		title: data?.title || 'Unnamed',
 		author: overriddenAuthor || data?.author || 'Unknown',
@@ -115,7 +116,6 @@ export function mapRawToConfig(
 				? data.downloads
 				: parseInt(String(data?.downloads ?? '0')) || 0,
 		description: data?.description || '',
-		averageColor: data?.averageColor || '#5b5b5b',
 		configData: data?.configData || {
 			cycles: [{ details: 'Idling in the void', state: 'Just vibing' }],
 			imageCycles: [],
@@ -123,6 +123,12 @@ export function mapRawToConfig(
 		},
 		uploadedAt: data?.uploadedAt || 0,
 	}
+
+	if (Array.isArray(data?.averageColors)) {
+		cfg.averageColors = data.averageColors as string[]
+	}
+
+	return cfg
 }
 
 export function mapRawToStatus(
