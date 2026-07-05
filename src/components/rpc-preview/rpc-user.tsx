@@ -1,32 +1,33 @@
 'use client'
 
 import Image from 'next/image'
+import { useEffect, useState } from 'react'
 import styles from './rpc-preview.module.scss'
 
-type Cycle = {
+interface Cycle {
 	details: string
 	state: string
 }
 
-type ImageCycle = {
+interface ImageCycle {
 	largeImage: string
 	largeText?: string
 }
 
-type ButtonPair = {
+interface ButtonPair {
 	label1: string
 	url1: string
 	label2?: string
 	url2?: string
 }
 
-type ConfigData = {
+interface ConfigData {
 	cycles: Cycle[]
 	imageCycles: ImageCycle[]
 	buttonPairs: ButtonPair[]
 }
 
-type RpcPreviewProps = {
+interface RpcPreviewProps {
 	username?: string
 	discriminator?: string
 	activityType?: string
@@ -50,19 +51,36 @@ const RpcUser = ({
 	discriminator?: string
 	avatarSrc?: string
 }) => {
-	const imgSrc = avatarSrc || FALLBACK_AVATAR
+	const [imgSrc, setImgSrc] = useState(avatarSrc || FALLBACK_AVATAR)
+
+	useEffect(() => {
+		setImgSrc(avatarSrc || FALLBACK_AVATAR)
+	}, [avatarSrc])
+
+	const displayTag = discriminator
+		? discriminator.startsWith('#')
+			? discriminator
+			: `#${discriminator}`
+		: '#0000'
 
 	return (
 		<div className={styles.rpc_user}>
 			<div className={styles.rpc_avatar}>
 				<div className={styles.avatar_placeholder}>
-					<Image src={imgSrc} alt='Avatar' width={48} height={48} unoptimized />
+					<Image
+						src={imgSrc}
+						alt='Avatar'
+						width={48}
+						height={48}
+						unoptimized
+						onError={() => setImgSrc(FALLBACK_AVATAR)}
+					/>
 				</div>
 				<div className={styles.status_indicator} />
 			</div>
 			<div>
 				<div className={styles.username}>{username}</div>
-				<div className={styles.discriminator}>{discriminator}</div>
+				<div className={styles.discriminator}>{displayTag}</div>
 			</div>
 		</div>
 	)
@@ -73,7 +91,11 @@ const RpcActivityArt = ({
 }: {
 	currentImage?: ImageCycle
 }) => {
-	const imgSrc = currentImage.largeImage || FALLBACK_ART
+	const [imgSrc, setImgSrc] = useState(currentImage.largeImage || FALLBACK_ART)
+
+	useEffect(() => {
+		setImgSrc(currentImage.largeImage || FALLBACK_ART)
+	}, [currentImage.largeImage])
 
 	return (
 		<div className={styles.activity_art}>
@@ -84,6 +106,7 @@ const RpcActivityArt = ({
 				alt='Activity art'
 				className={styles.large_art}
 				unoptimized
+				onError={() => setImgSrc(FALLBACK_ART)}
 			/>
 			<div className={styles.art_overlay} />
 		</div>
