@@ -24,7 +24,7 @@ export function buildAuthorTag(authorId: string) {
 
 export async function createPresenceConfig(authorId: string, body: AddConfigBody): Promise<string> {
 	const ref = db.ref('presence-configs').push()
-	const { kind, author, ...rest } = body
+	const { kind, ...rest } = body
 
 	await ref.set({
 		...rest,
@@ -41,7 +41,7 @@ export async function createPresenceConfig(authorId: string, body: AddConfigBody
 
 export async function createStatusConfig(authorId: string, body: AddConfigBody): Promise<string> {
 	const ref = db.ref('status-configs').push()
-	const { kind, author, ...rest } = body
+	const { kind, ...rest } = body
 
 	await ref.set({
 		...rest,

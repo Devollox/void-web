@@ -14,7 +14,7 @@ type CustomRpcPreviewProps = {
 }
 
 function CustomRpcPreview({ config, previewIndex, avatarSrc }: CustomRpcPreviewProps) {
-	const configData: any = config.configData
+	const configData: any = config.configData || {}
 	const authorTag: any = config.authorTag
 	const cycles = configData.cycles ?? []
 	const images = configData.imageCycles ?? []
@@ -108,8 +108,8 @@ export function PresenceGrid({
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ type: 'presence_download', id: config.id }),
 			})
-		} catch (err) {
-			console.error('Failed to track open in app', err)
+		} catch {
+			return
 		}
 	}
 

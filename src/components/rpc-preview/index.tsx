@@ -5,32 +5,35 @@ import Image from 'next/image'
 import RpcLabel from '../label'
 import styles from './rpc-preview.module.scss'
 
-interface Cycle {
+type Cycle = {
 	details: string
 	state: string
 }
 
-interface ImageCycle {
+type ImageCycle = {
 	largeImage: string
+	largeText?: string
 }
 
-interface ButtonPair {
+type ButtonPair = {
 	label1: string
 	url1: string
 	label2?: string
 	url2?: string
 }
 
-interface Config {
+type ConfigData = {
 	cycles: Array<{ details: string; state: string }>
+	imageCycles: Array<{ largeImage: string; largeText?: string }>
+	buttonPairs: Array<{ label1: string; url1: string; label2?: string; url2?: string }>
 }
 
-interface Props {
+type Props = {
 	currentCycle: Cycle
 	currentImage: ImageCycle
 	currentButtons?: ButtonPair
 	currentIndex: number
-	config: Config
+	config: ConfigData
 	username?: string
 	discriminator?: string
 	activityType?: string
@@ -48,13 +51,21 @@ export default function RpcPreview({
 	activityType = 'Void Presence',
 	avatarSrc,
 }: Props) {
-	const buttons = []
-	if (currentButtons) {
+	const buttons: Array<{ label: string; url: string }> = []
+
+	if (currentButtons?.label1 && currentButtons?.url1) {
 		buttons.push({ label: currentButtons.label1, url: currentButtons.url1 })
-		if (currentButtons.label2 && currentButtons.url2) {
-			buttons.push({ label: currentButtons.label2, url: currentButtons.url2 })
-		}
 	}
+
+	if (currentButtons?.label2 && currentButtons?.url2) {
+		buttons.push({ label: currentButtons.label2, url: currentButtons.url2 })
+	}
+
+	const cyclesLen = config.cycles?.length || 1
+	const normalizedIndex = (((currentIndex % cyclesLen) + cyclesLen) % cyclesLen) + 1
+	const progress = Math.round((normalizedIndex / cyclesLen) * 100)
+	const safeAvatarSrc = avatarSrc || Logo
+	const safeImageSrc = currentImage?.largeImage || '/placeholder.jpg'
 
 	return (
 		<section id='rpc-preview-section' className={styles.rpc_section}>
@@ -64,7 +75,7 @@ export default function RpcPreview({
 					<div className={styles.rpc_user}>
 						<div className={styles.rpc_avatar}>
 							<div className={styles.avatar_placeholder}>
-								<Image src={avatarSrc || Logo} alt='Avatar' width={48} height={48} unoptimized />
+								<Image src={safeAvatarSrc} alt='Avatar' width={48} height={48} unoptimized />
 							</div>
 							<div className={styles.status_indicator} />
 						</div>
@@ -81,28 +92,22 @@ export default function RpcPreview({
 								<Image
 									width={64}
 									height={64}
-									src={currentImage.largeImage}
+									src={safeImageSrc}
 									alt='Activity art'
 									className={styles.large_art}
 									unoptimized
 								/>
 								<div className={styles.art_overlay} />
 							</div>
+
 							<div className={styles.activity_details}>
 								<div className={styles.details_title}>{currentCycle.details}</div>
 								<div className={styles.details_state}>{currentCycle.state}</div>
 								<div className={styles.progress_bar}>
 									<div className={styles.progress_bg}>
-										<div
-											className={styles.progress_fill}
-											style={{
-												width: `${((currentIndex + 1) / config.cycles.length) * 100}%`,
-											}}
-										/>
+										<div className={styles.progress_fill} style={{ width: `${progress}%` }} />
 									</div>
-									<div className={styles.progress_time}>
-										{Math.round(((currentIndex + 1) / config.cycles.length) * 100)}%
-									</div>
+									<div className={styles.progress_time}>{progress}%</div>
 								</div>
 							</div>
 						</div>

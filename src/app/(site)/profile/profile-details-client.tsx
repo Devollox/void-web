@@ -135,7 +135,7 @@ export function ProfileDetailsClient({ user, lastConfig, authorID }: Props) {
 											String(authorID)
 										)}&name=${encodeURIComponent(user.name || '')}&provider=${encodeURIComponent(
 											user.provider || ''
-										)}`}
+										)}&avatar=${encodeURIComponent(user.image || '')}`}
 										className={styles.action_btn_primary}
 										rel='noreferrer'
 									>

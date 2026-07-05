@@ -100,8 +100,8 @@ export function StatusesGrid({
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ type: 'status_download', id: config.id }),
 			})
-		} catch (err) {
-			console.error('Failed to track open in app', err)
+		} catch {
+			return
 		}
 	}
 

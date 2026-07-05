@@ -10,6 +10,31 @@ type QueryKind = ConfigKind
 type Config = BaseConfig & { isOwn?: boolean }
 type Status = BaseStatus & { isOwn?: boolean }
 
+type OwnerInfo = {
+	uid: string
+	user: any
+}
+
+function buildConfigToOwnerMap(
+	kind: QueryKind,
+	users: Record<string, any>
+): Record<string, OwnerInfo> {
+	const map: Record<string, OwnerInfo> = {}
+
+	for (const [uid, userData] of Object.entries(users)) {
+		if (!userData) continue
+		const configs = (userData as any).configs || {}
+		const kindConfigs = configs[kind] || {}
+
+		for (const [configId, hasConfig] of Object.entries(kindConfigs)) {
+			if (!hasConfig) continue
+			map[configId] = { uid, user: userData }
+		}
+	}
+
+	return map
+}
+
 async function loadAllByKind(kind: QueryKind, currentUserId?: string | null) {
 	const targetRef = kind === 'presence' ? 'presence-configs' : 'status-configs'
 
@@ -23,16 +48,7 @@ async function loadAllByKind(kind: QueryKind, currentUserId?: string | null) {
 	const data = configsSnap.val() as Record<string, any>
 	const users = usersSnap.exists() ? (usersSnap.val() as Record<string, any>) : {}
 
-	const configToOwnerMap: Record<string, { uid: string; user: any }> = {}
-	for (const [uid, userData] of Object.entries(users)) {
-		const configs = (userData as any).configs || {}
-		const kindConfigs = configs[kind] || {}
-		for (const [configId, hasConfig] of Object.entries(kindConfigs)) {
-			if (hasConfig) {
-				configToOwnerMap[configId] = { uid, user: userData }
-			}
-		}
-	}
+	const configToOwnerMap = buildConfigToOwnerMap(kind, users)
 
 	if (kind === 'presence') {
 		const list: Config[] = Object.entries(data).map(([id, raw]) => {
@@ -41,12 +57,16 @@ async function loadAllByKind(kind: QueryKind, currentUserId?: string | null) {
 			const user = ownerData?.user
 			const ownerId = ownerData?.uid || null
 
-			const avatar = user?.avatar || user?.image || r?.authorAvatar || ''
-			const name = user?.name || r?.author || 'Unknown'
+			const avatar =
+				user?.avatar || user?.image || user?.picture || r?.authorAvatar || r?.avatar || ''
+			const name =
+				user?.name || user?.displayName || user?.username || r?.author || r?.authorName || 'Unknown'
 			const tag =
-				typeof user?.tag !== 'undefined'
+				typeof user?.tag !== 'undefined' && user?.tag !== null
 					? String(user.tag).padStart(4, '0')
-					: r?.authorTag || undefined
+					: typeof r?.authorTag !== 'undefined' && r?.authorTag !== null
+						? String(r.authorTag).padStart(4, '0')
+						: undefined
 
 			const cfg = mapRawToConfig(id, r, avatar, name) as Config
 			cfg.authorTag = tag
@@ -67,12 +87,16 @@ async function loadAllByKind(kind: QueryKind, currentUserId?: string | null) {
 		const user = ownerData?.user
 		const ownerId = ownerData?.uid || null
 
-		const avatar = user?.avatar || user?.image || r?.authorAvatar || ''
-		const name = user?.name || r?.author || 'Unknown'
+		const avatar =
+			user?.avatar || user?.image || user?.picture || r?.authorAvatar || r?.avatar || ''
+		const name =
+			user?.name || user?.displayName || user?.username || r?.author || r?.authorName || 'Unknown'
 		const tag =
-			typeof user?.tag !== 'undefined'
+			typeof user?.tag !== 'undefined' && user?.tag !== null
 				? String(user.tag).padStart(4, '0')
-				: r?.authorTag || undefined
+				: typeof r?.authorTag !== 'undefined' && r?.authorTag !== null
+					? String(r.authorTag).padStart(4, '0')
+					: undefined
 
 		const st = mapRawToStatus(id, r, avatar, name) as Status
 		st.authorTag = tag
@@ -106,7 +130,10 @@ export async function GET(req: Request) {
 	const stream = new ReadableStream({
 		async start(controller) {
 			const send = (event: string, data: any) => {
-				controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`))
+				if (closed) return
+				try {
+					controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`))
+				} catch {}
 			}
 
 			const initial = await loadAllByKind(kind, currentUserId)
@@ -125,7 +152,9 @@ export async function GET(req: Request) {
 
 			const ping = setInterval(() => {
 				if (closed) return
-				controller.enqueue(encoder.encode(`event: ping\ndata: {}\n\n`))
+				try {
+					controller.enqueue(encoder.encode(`event: ping\ndata: {}\n\n`))
+				} catch {}
 			}, 25000)
 
 			req.signal.addEventListener('abort', () => {

@@ -35,8 +35,7 @@ async function resolveUserByHandle(username: string, tag: string) {
 
 async function loadAuthorConfigsByHandle(
 	username: string,
-	tag: string,
-	currentUserId?: string | null
+	tag: string
 ): Promise<AuthorConfigs | null> {
 	const resolved = await resolveUserByHandle(username, tag)
 	if (!resolved) return null
@@ -82,7 +81,6 @@ async function loadAuthorConfigsByHandle(
 					buttonPairs: [],
 				},
 				uploadedAt: raw.uploadedAt || 0,
-				isOwn: !!currentUserId && currentUserId === authorId,
 			}
 		})
 		.filter((cfg): cfg is NonNullable<typeof cfg> => cfg !== null)
@@ -104,7 +102,6 @@ async function loadAuthorConfigsByHandle(
 				description: raw.description || '',
 				configData: raw.configData || { statusCycles: [] },
 				uploadedAt: raw.uploadedAt || 0,
-				isOwn: !!currentUserId && currentUserId === authorId,
 			}
 		})
 		.filter((st): st is NonNullable<typeof st> => st !== null)
@@ -147,7 +144,7 @@ export async function GET(req: Request) {
 				controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`))
 			}
 
-			const initial = await loadAuthorConfigsByHandle(username, tag, currentUserId)
+			const initial = await loadAuthorConfigsByHandle(username, tag)
 			if (!initial || !initial.user) {
 				send('not-found', { username, tag })
 				controller.close()
@@ -173,7 +170,7 @@ export async function GET(req: Request) {
 
 			const onAnyChange = async () => {
 				if (closed) return
-				const next = await loadAuthorConfigsByHandle(username, tag, currentUserId)
+				const next = await loadAuthorConfigsByHandle(username, tag)
 				if (!next || !next.user) {
 					send('not-found', { username, tag })
 					return

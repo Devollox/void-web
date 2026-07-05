@@ -79,7 +79,7 @@ export async function DELETE(req: Request, ctx: { params: Promise<Params> | Para
 
 		await db.ref().update(updates)
 
-		return NextResponse.json({ ok: true, ownerId: owner.id }, { status: 200 })
+		return NextResponse.json({ ok: true }, { status: 200 })
 	} catch (err) {
 		const message = err instanceof Error ? err.message : String(err)
 		return NextResponse.json({ error: 'InternalError', message }, { status: 500 })

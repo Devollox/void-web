@@ -91,6 +91,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth(req => {
 
 				if (session.user) {
 					session.user.id = String(token.id || token.sub || '')
+					session.user.provider = session.provider
 				}
 
 				return session

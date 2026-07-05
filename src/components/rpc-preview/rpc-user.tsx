@@ -1,33 +1,32 @@
 'use client'
 
 import Image from 'next/image'
-import { useEffect, useState } from 'react'
 import styles from './rpc-preview.module.scss'
 
-interface Cycle {
+type Cycle = {
 	details: string
 	state: string
 }
 
-interface ImageCycle {
+type ImageCycle = {
 	largeImage: string
 	largeText?: string
 }
 
-interface ButtonPair {
+type ButtonPair = {
 	label1: string
 	url1: string
 	label2?: string
 	url2?: string
 }
 
-interface ConfigData {
+type ConfigData = {
 	cycles: Cycle[]
 	imageCycles: ImageCycle[]
 	buttonPairs: ButtonPair[]
 }
 
-interface RpcPreviewProps {
+type RpcPreviewProps = {
 	username?: string
 	discriminator?: string
 	activityType?: string
@@ -51,24 +50,13 @@ const RpcUser = ({
 	discriminator?: string
 	avatarSrc?: string
 }) => {
-	const [imgSrc, setImgSrc] = useState(avatarSrc || FALLBACK_AVATAR)
-
-	useEffect(() => {
-		setImgSrc(avatarSrc || FALLBACK_AVATAR)
-	}, [avatarSrc])
+	const imgSrc = avatarSrc || FALLBACK_AVATAR
 
 	return (
 		<div className={styles.rpc_user}>
 			<div className={styles.rpc_avatar}>
 				<div className={styles.avatar_placeholder}>
-					<Image
-						src={imgSrc}
-						alt='Avatar'
-						width={48}
-						height={48}
-						unoptimized
-						onError={() => setImgSrc(FALLBACK_AVATAR)}
-					/>
+					<Image src={imgSrc} alt='Avatar' width={48} height={48} unoptimized />
 				</div>
 				<div className={styles.status_indicator} />
 			</div>
@@ -85,11 +73,7 @@ const RpcActivityArt = ({
 }: {
 	currentImage?: ImageCycle
 }) => {
-	const [imgSrc, setImgSrc] = useState(currentImage.largeImage || FALLBACK_ART)
-
-	useEffect(() => {
-		setImgSrc(currentImage.largeImage || FALLBACK_ART)
-	}, [currentImage.largeImage])
+	const imgSrc = currentImage.largeImage || FALLBACK_ART
 
 	return (
 		<div className={styles.activity_art}>
@@ -100,7 +84,6 @@ const RpcActivityArt = ({
 				alt='Activity art'
 				className={styles.large_art}
 				unoptimized
-				onError={() => setImgSrc(FALLBACK_ART)}
 			/>
 			<div className={styles.art_overlay} />
 		</div>

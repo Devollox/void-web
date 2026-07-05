@@ -55,6 +55,11 @@ type GetAllPayload = {
 	kind: ConfigKind
 }
 
+type OwnerInfo = {
+	uid: string
+	user: any
+}
+
 export async function POST(req: Request) {
 	try {
 		const body = (await req.json()) as GetAllPayload
@@ -89,13 +94,12 @@ export async function POST(req: Request) {
 		const configsData = configsSnap.val() as Record<string, any>
 		const usersData = usersSnap.exists() ? (usersSnap.val() as Record<string, any>) : {}
 
-		const configToOwnerMap: Record<string, any> = {}
+		const configToOwnerMap: Record<string, OwnerInfo> = {}
 		for (const [uid, userRaw] of Object.entries(usersData)) {
 			const userConfigs = (userRaw as any)?.configs?.[kind] || {}
 			for (const [configId, hasConfig] of Object.entries(userConfigs)) {
-				if (hasConfig) {
-					configToOwnerMap[configId] = { uid, userRaw }
-				}
+				if (!hasConfig) continue
+				configToOwnerMap[configId] = { uid, user: userRaw }
 			}
 		}
 
@@ -103,7 +107,7 @@ export async function POST(req: Request) {
 			const list: Config[] = Object.entries(configsData).map(([id, raw]) => {
 				const r = raw as any
 				const owner = configToOwnerMap[id]
-				const user = owner?.userRaw
+				const user = owner?.user
 
 				const avatar = user?.avatar || user?.image || r?.authorAvatar || ''
 				const tag =
@@ -124,7 +128,7 @@ export async function POST(req: Request) {
 		const list: Status[] = Object.entries(configsData).map(([id, raw]) => {
 			const r = raw as any
 			const owner = configToOwnerMap[id]
-			const user = owner?.userRaw
+			const user = owner?.user
 
 			const avatar = user?.avatar || user?.image || r?.authorAvatar || ''
 			const tag =

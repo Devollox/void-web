@@ -23,8 +23,6 @@ type Props = {
 	statusConfigs: Status[]
 	profileTag: string
 	username: string
-	initialOwnPresenceIds: string[]
-	initialOwnStatusIds: string[]
 }
 
 type AuthorConfigsResponse = {
@@ -36,8 +34,8 @@ type AuthorConfigsResponse = {
 		createdAt: number | null
 		lastSeen: number | null
 	} | null
-	presenceConfigs: (Config & { isOwn?: boolean })[]
-	statusConfigs: (Status & { isOwn?: boolean })[]
+	presenceConfigs: Config[]
+	statusConfigs: Status[]
 }
 
 function filterConfigs(configs: Config[], searchTerm: string) {
@@ -84,8 +82,6 @@ export function ProfileClient({
 	statusConfigs,
 	profileTag,
 	username,
-	initialOwnPresenceIds,
-	initialOwnStatusIds,
 }: Props) {
 	const [searchTerm, setSearchTerm] = useState('')
 	const { data: session } = useSession()
@@ -93,23 +89,9 @@ export function ProfileClient({
 	const [liveConfigs, setLiveConfigs] = useState<Config[]>(presenceConfigs)
 	const [liveStatuses, setLiveStatuses] = useState<Status[]>(statusConfigs)
 
-	const [ownPresenceIds, setOwnPresenceIds] = useState<Set<string>>(new Set(initialOwnPresenceIds))
-	const [ownStatusIds, setOwnStatusIds] = useState<Set<string>>(new Set(initialOwnStatusIds))
-
 	useEffect(() => {
 		let cancelled = false
 		let es: EventSource | null = null
-
-		function applyOwnIds(next: AuthorConfigsResponse) {
-			const presenceIds = new Set(
-				(next.presenceConfigs || []).filter(cfg => cfg.isOwn).map(cfg => String(cfg.id))
-			)
-			const statusIds = new Set(
-				(next.statusConfigs || []).filter(cfg => cfg.isOwn).map(cfg => String(cfg.id))
-			)
-			setOwnPresenceIds(presenceIds)
-			setOwnStatusIds(statusIds)
-		}
 
 		function startStream() {
 			const url = `/api/v1/authors/stream?username=${encodeURIComponent(
@@ -123,7 +105,6 @@ export function ProfileClient({
 				const next = JSON.parse((event as MessageEvent).data) as AuthorConfigsResponse
 				setLiveConfigs(next.presenceConfigs || [])
 				setLiveStatuses(next.statusConfigs || [])
-				applyOwnIds(next)
 			})
 
 			es.addEventListener('update', event => {
@@ -131,15 +112,12 @@ export function ProfileClient({
 				const next = JSON.parse((event as MessageEvent).data) as AuthorConfigsResponse
 				setLiveConfigs(next.presenceConfigs || [])
 				setLiveStatuses(next.statusConfigs || [])
-				applyOwnIds(next)
 			})
 
 			es.addEventListener('not-found', () => {
 				if (cancelled) return
 				setLiveConfigs([])
 				setLiveStatuses([])
-				setOwnPresenceIds(new Set())
-				setOwnStatusIds(new Set())
 			})
 		}
 
@@ -150,52 +128,6 @@ export function ProfileClient({
 			es?.close()
 		}
 	}, [username, profileTag])
-
-	const isOwner =
-		!!user &&
-		!!session &&
-		!!session.user?.id &&
-		!!session.user?.name &&
-		!!user.name &&
-		session.user.name === user.name &&
-		session.user.id.startsWith(profileTag)
-
-	useEffect(() => {
-		if (!isOwner || !session?.user?.id) return
-		let cancelled = false
-
-		async function loadOwnIds() {
-			try {
-				const res = await fetch(
-					`/api/v1/authors/${encodeURIComponent(String(session?.user?.id))}/configs`,
-					{
-						method: 'GET',
-						headers: { 'Content-Type': 'application/json' },
-					}
-				)
-
-				if (!res.ok) return
-				const data = (await res.json()) as AuthorConfigsResponse
-				if (cancelled) return
-
-				const presenceIds = new Set(
-					(data.presenceConfigs || []).map(cfg => String((cfg as any).id))
-				)
-				const statusIds = new Set((data.statusConfigs || []).map(cfg => String((cfg as any).id)))
-
-				setOwnPresenceIds(presenceIds)
-				setOwnStatusIds(statusIds)
-			} catch {
-				if (cancelled) return
-			}
-		}
-
-		loadOwnIds()
-
-		return () => {
-			cancelled = true
-		}
-	}, [isOwner, session?.user?.id])
 
 	const filteredConfigs = useMemo(
 		() => filterConfigs(liveConfigs, searchTerm),
@@ -243,19 +175,9 @@ export function ProfileClient({
 				</div>
 
 				<div className={styles.themes_right_side}>
-					<PresenceGrid
-						configs={sortedConfigs}
-						loading={false}
-						allowDelete={isOwner}
-						ownConfigIds={ownPresenceIds}
-					/>
+					<PresenceGrid configs={sortedConfigs} loading={false} allowDelete={false} />
 					<div style={{ marginTop: '20px' }} />
-					<StatusesGrid
-						configs={sortedStatuses}
-						loading={false}
-						allowDelete={isOwner}
-						ownStatusIds={ownStatusIds}
-					/>
+					<StatusesGrid configs={sortedStatuses} loading={false} allowDelete={false} />
 				</div>
 			</div>
 		</section>
