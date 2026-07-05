@@ -1,7 +1,7 @@
 'use client'
 
-import Image from 'next/image'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { ProgressBar } from '../progress-bar'
 import styles from '../rpc-preview/rpc-preview.module.scss'
 
 interface StatusCycle {
@@ -33,22 +33,26 @@ const StatusUser = ({
 	discriminator?: string
 	avatarSrc?: string
 }) => {
-	const [imgSrc, setImgSrc] = useState(avatarSrc || FALLBACK_AVATAR)
+	const initialSrc = avatarSrc || FALLBACK_AVATAR
+	const [imgSrc, setImgSrc] = useState(initialSrc)
+	const prevSrcRef = useRef(initialSrc)
 
 	useEffect(() => {
-		setImgSrc(avatarSrc || FALLBACK_AVATAR)
+		const nextSrc = avatarSrc || FALLBACK_AVATAR
+		if (prevSrcRef.current === nextSrc) return
+		prevSrcRef.current = nextSrc
+		setImgSrc(nextSrc)
 	}, [avatarSrc])
 
 	return (
 		<div className={styles.rpc_user}>
 			<div className={styles.rpc_avatar}>
 				<div className={styles.avatar_placeholder}>
-					<Image
+					<img
 						src={imgSrc}
 						alt='Avatar'
 						width={48}
 						height={48}
-						unoptimized
 						onError={() => setImgSrc(FALLBACK_AVATAR)}
 					/>
 				</div>
@@ -74,17 +78,12 @@ const StatusDetails = ({
 	const cycles = config?.statusCycles ?? []
 	const maxLen = cycles.length || 1
 	const clampedIndex = (((currentIndex ?? 0) % maxLen) + maxLen) % maxLen
-	const progress = maxLen > 0 ? Math.round(((clampedIndex + 1) / maxLen) * 100) : 100
+	const progress = maxLen > 0 ? ((clampedIndex + 1) / maxLen) * 100 : 100
 
 	return (
 		<div className={styles.activity_details}>
 			<div className={styles.details_title}>{currentStatus.text}</div>
-			<div className={styles.progress_bar}>
-				<div className={styles.progress_bg}>
-					<div className={styles.progress_fill} style={{ width: `${progress}%` }} />
-				</div>
-				<div className={styles.progress_time}>{progress}%</div>
-			</div>
+			<ProgressBar value={progress} />
 		</div>
 	)
 }
