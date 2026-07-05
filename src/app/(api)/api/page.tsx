@@ -579,6 +579,7 @@ es.addEventListener('not-found', () => {
 		description: 'Returns user profile data without configs, looked up by user id.',
 		group: 'users',
 		hasExample: true,
+		authRequired: true,
 		samplePayload: {
 			id: '123456789',
 			name: 'User Name',
