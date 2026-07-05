@@ -83,7 +83,9 @@ export async function GET(req: Request, ctx: { params: Promise<Params> | Params 
 			{
 				ok: false,
 				error: 'TooManyAttempts',
-				message: `Too many invalid requests. Try again in ${Math.ceil((rl.remainingMs ?? 0) / 1000)} seconds.`,
+				message: `Too many invalid requests. Try again in ${Math.ceil(
+					(rl.remainingMs ?? 0) / 1000
+				)} seconds.`,
 			},
 			{ status: 429 }
 		)
@@ -132,6 +134,14 @@ export async function GET(req: Request, ctx: { params: Promise<Params> | Params 
 				if (!snap.exists()) return null
 				const id = presenceIds[idx]
 				const raw = snap.val() as any
+
+				const averageColors: string[] =
+					Array.isArray(raw.averageColors) && raw.averageColors.length > 0
+						? raw.averageColors
+						: raw.averageColor
+							? [raw.averageColor]
+							: ['#5b5b5b']
+
 				return {
 					id,
 					title: raw.title || 'Unnamed',
@@ -144,7 +154,7 @@ export async function GET(req: Request, ctx: { params: Promise<Params> | Params 
 							? raw.downloads
 							: parseInt(String(raw.downloads ?? '0')) || 0,
 					description: raw.description || '',
-					averageColor: raw.averageColor || '#5b5b5b',
+					averageColors,
 					configData: raw.configData || {
 						cycles: [{ details: 'Idling in the void', state: 'Just vibing' }],
 						imageCycles: [],

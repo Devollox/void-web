@@ -35,6 +35,14 @@ async function loadAuthorConfigs(authorId: string) {
 		.map(id => {
 			const raw = presencesRaw[id]
 			if (!raw) return null
+
+			const averageColors: string[] =
+				Array.isArray(raw.averageColors) && raw.averageColors.length > 0
+					? raw.averageColors
+					: raw.averageColor
+						? [raw.averageColor]
+						: ['#5b5b5b']
+
 			return {
 				id,
 				title: raw.title || 'Unnamed',
@@ -47,7 +55,7 @@ async function loadAuthorConfigs(authorId: string) {
 						? raw.downloads
 						: parseInt(String(raw.downloads ?? '0')) || 0,
 				description: raw.description || '',
-				averageColor: raw.averageColor || '#5b5b5b',
+				averageColors,
 				configData: raw.configData || {
 					cycles: [{ details: 'Idling in the void', state: 'Just vibing' }],
 					imageCycles: [],
