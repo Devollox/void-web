@@ -37,13 +37,17 @@ export default async function ReleasesSection() {
 			? await getWailsMetadata(stableRelease.version, 'updates')
 			: null
 
+	const allAssets = stableRelease?.assets ?? []
+
+	const topAssets = allAssets.length > 0 ? [allAssets[allAssets.length - 1]] : []
+
 	const left = (
 		<>
 			{error ? (
 				<InfoBox variant='muted' lines={[error]} />
 			) : stableRelease ? (
 				<>
-					{stableRelease.assets.length > 0 && <DownloadButtons assets={stableRelease.assets} />}
+					{stableRelease.assets.length > 0 && <DownloadButtons assets={topAssets} />}
 
 					<div className={styles.release_meta}>
 						<div className={styles.release_row}>
