@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { useEffect, useRef, useState } from 'react'
 import { ProgressBar } from '../progress-bar'
 import styles from '../rpc-preview/rpc-preview.module.scss'
@@ -48,11 +49,12 @@ const StatusUser = ({
 		<div className={styles.rpc_user}>
 			<div className={styles.rpc_avatar}>
 				<div className={styles.avatar_placeholder}>
-					<img
+					<Image
 						src={imgSrc}
 						alt='Avatar'
 						width={48}
 						height={48}
+						unoptimized
 						onError={() => setImgSrc(FALLBACK_AVATAR)}
 					/>
 				</div>
