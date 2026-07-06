@@ -1,6 +1,6 @@
-import { auth } from '@/lib/auth'
 import { admin } from '@/service/firebase-admin'
 import { NextResponse } from 'next/server'
+import { auth } from '../../../auth/[...nextauth]/route'
 
 const db = admin.database()
 
