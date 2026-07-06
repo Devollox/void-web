@@ -2,7 +2,7 @@ import Footer from '@components/footer'
 import Page from '@components/page'
 import PageHeader from '@components/page-header'
 import type { Metadata } from 'next'
-import type { ApiEndpoint } from './api-client'
+import { ApiEndpoint } from './api-client'
 import { ApiDocsClient } from './api-docs-client'
 
 export const metadata: Metadata = {
@@ -67,8 +67,37 @@ const endpoints: ApiEndpoint[] = [
 				createdAt: 123456789,
 				lastSeen: 123456789,
 			},
-			presenceConfigs: [],
-			statusConfigs: [],
+			presenceConfigs: [
+				{
+					id: 'cfg-1',
+					title: 'Presence config title',
+					author: 'Author Name',
+					authorAvatar: 'https://example.com/avatar.png',
+					authorTag: '1234',
+					downloads: 0,
+					description: 'Config description',
+					averageColors: ['#ffffff'],
+					configData: {
+						cycles: [{ details: 'Details line', state: 'State line' }],
+						imageCycles: [],
+						buttonPairs: [],
+					},
+					uploadedAt: 123456789,
+				},
+			],
+			statusConfigs: [
+				{
+					id: 'status-1',
+					title: 'Status config title',
+					author: 'Author Name',
+					authorAvatar: 'https://example.com/avatar.png',
+					authorTag: '1234',
+					downloads: 0,
+					description: 'Status description',
+					configData: { statusCycles: [{ text: 'Example status text' }] },
+					uploadedAt: 123456789,
+				},
+			],
 		},
 		fetchPayload: `fetch('${API_BASE_V1}/v1/authors/resolve?username=Author%20Name&tag=1234')
   .then(res => res.json())
@@ -97,8 +126,37 @@ const endpoints: ApiEndpoint[] = [
 					createdAt: 123456789,
 					lastSeen: 123456789,
 				},
-				presenceConfigs: [],
-				statusConfigs: [],
+				presenceConfigs: [
+					{
+						id: 'cfg-1',
+						title: 'Presence config title',
+						author: 'Author Name',
+						authorAvatar: 'https://example.com/avatar.png',
+						authorTag: '1234',
+						downloads: 0,
+						description: 'Config description',
+						averageColors: ['#ffffff'],
+						configData: {
+							cycles: [{ details: 'Details line', state: 'State line' }],
+							imageCycles: [],
+							buttonPairs: [],
+						},
+						uploadedAt: 123456789,
+					},
+				],
+				statusConfigs: [
+					{
+						id: 'status-1',
+						title: 'Status config title',
+						author: 'Author Name',
+						authorAvatar: 'https://example.com/avatar.png',
+						authorTag: '1234',
+						downloads: 0,
+						description: 'Status description',
+						configData: { statusCycles: [{ text: 'Example status text' }] },
+						uploadedAt: 123456789,
+					},
+				],
 			},
 		},
 		fetchPayload: `fetch('${API_BASE_V1}/v1/authors/resolve', {
@@ -130,8 +188,37 @@ const endpoints: ApiEndpoint[] = [
 					createdAt: 123456789,
 					lastSeen: 123456789,
 				},
-				presenceConfigs: [],
-				statusConfigs: [],
+				presenceConfigs: [
+					{
+						id: 'cfg-1',
+						title: 'Presence config title',
+						author: 'Author Name',
+						authorAvatar: 'https://example.com/avatar.png',
+						authorTag: '1234',
+						downloads: 0,
+						description: 'Config description',
+						averageColors: ['#ffffff'],
+						configData: {
+							cycles: [{ details: 'Details line', state: 'State line' }],
+							imageCycles: [],
+							buttonPairs: [],
+						},
+						uploadedAt: 123456789,
+					},
+				],
+				statusConfigs: [
+					{
+						id: 'status-1',
+						title: 'Status config title',
+						author: 'Author Name',
+						authorAvatar: 'https://example.com/avatar.png',
+						authorTag: '1234',
+						downloads: 0,
+						description: 'Status description',
+						configData: { statusCycles: [{ text: 'Example status text' }] },
+						uploadedAt: 123456789,
+					},
+				],
 			},
 		},
 		fetchPayload: `const es = new EventSource('${API_BASE_V1.replace(
@@ -153,6 +240,7 @@ es.addEventListener('not-found', () => {
   console.log('author not found')
 })`,
 	},
+
 	{
 		id: 'authors-create-config',
 		method: 'POST',
@@ -251,8 +339,37 @@ es.addEventListener('not-found', () => {
 				createdAt: 123456789,
 				lastSeen: 123456789,
 			},
-			presenceConfigs: [],
-			statusConfigs: [],
+			presenceConfigs: [
+				{
+					id: 'cfg-1',
+					title: 'Presence config title',
+					author: 'Author Name',
+					authorAvatar: 'https://example.com/avatar.png',
+					authorTag: '1234',
+					downloads: 0,
+					description: 'Config description',
+					configData: {
+						cycles: [{ details: 'Details line', state: 'State line' }],
+						imageCycles: [],
+						buttonPairs: [],
+					},
+					averageColors: ['#ffffff'],
+					uploadedAt: 123456789,
+				},
+			],
+			statusConfigs: [
+				{
+					id: 'status-1',
+					title: 'Status config title',
+					author: 'Author Name',
+					authorAvatar: 'https://example.com/avatar.png',
+					authorTag: '1234',
+					downloads: 0,
+					description: 'Status description',
+					configData: { statusCycles: [{ text: 'Example status text' }] },
+					uploadedAt: 123456789,
+				},
+			],
 		},
 		fetchPayload: `fetch('${API_BASE_V1}/v1/authors/123456789/configs')
   .then(res => res.json())
@@ -288,7 +405,7 @@ es.addEventListener('not-found', () => {
 				authorTag: '1234',
 				downloads: 0,
 				description: 'Config description',
-				averageColor: '#ffffff',
+				averageColors: ['#ffffff'],
 				configData: {},
 				uploadedAt: 123456789,
 			},
@@ -331,7 +448,7 @@ es.addEventListener('not-found', () => {
 				downloads: 0,
 				description: 'Config description',
 				configData: {},
-				averageColor: '#ffffff',
+				averageColors: ['#ffffff'],
 				uploadedAt: 123456789,
 			},
 		},
