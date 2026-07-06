@@ -74,29 +74,23 @@ export const { handlers, auth, signIn, signOut } = NextAuth(req => {
 					}
 
 					token.id = stableId.trim() || String(user?.id || token.sub || '')
-					token.name = user?.name || token.name || 'Unknown'
-					token.picture = user?.image || token.picture || '/logo.png'
+				}
 
-					if (token.id) {
-						try {
-							token.firebaseToken = await admin.auth().createCustomToken(String(token.id))
-						} catch (err) {
-							console.error('createCustomToken failed:', err)
-						}
-					}
+				if (token.id) {
+					try {
+						token.firebaseToken = await admin.auth().createCustomToken(String(token.id))
+					} catch {}
 				}
 
 				return token
 			},
-
 			async session({ session, token }) {
-				session.accessToken = token.accessToken as string | undefined
-				session.firebaseToken = token.firebaseToken as string | undefined
-				session.provider = token.provider as string | undefined
+				session.accessToken = token.accessToken
+				session.firebaseToken = token.firebaseToken
+				session.provider = token.provider
 
 				if (session.user) {
 					session.user.id = String(token.id || token.sub || '')
-					session.user.provider = session.provider
 				}
 
 				return session
@@ -104,5 +98,3 @@ export const { handlers, auth, signIn, signOut } = NextAuth(req => {
 		},
 	}
 })
-
-export const { GET, POST } = handlers
