@@ -1,4 +1,3 @@
-import { auth } from '@/lib/auth'
 import { admin } from '@/service/firebase-admin'
 
 const db = admin.database()
@@ -16,7 +15,16 @@ type AuthorConfigs = {
 	statusConfigs: any[]
 }
 
+const userHandleCache: Record<string, { authorId: string; userRaw: any; updatedAt: number }> = {}
+const CACHE_TTL = 30000
+
 async function resolveUserByHandle(username: string, tag: string) {
+	const cacheKey = `${username}#${tag}`
+	const now = Date.now()
+	if (userHandleCache[cacheKey] && now - userHandleCache[cacheKey].updatedAt < CACHE_TTL) {
+		return userHandleCache[cacheKey]
+	}
+
 	const usersSnap = await db.ref('users').get()
 	if (!usersSnap.exists()) return null
 
@@ -30,6 +38,7 @@ async function resolveUserByHandle(username: string, tag: string) {
 	if (!entry) return null
 
 	const [authorId, userRaw] = entry
+	userHandleCache[cacheKey] = { authorId, userRaw, updatedAt: now }
 	return { authorId, userRaw }
 }
 
@@ -126,9 +135,6 @@ export async function GET(req: Request) {
 		return new Response('BadRequest', { status: 400 })
 	}
 
-	const session = await auth()
-	const currentUserId = session?.user?.id ? String(session.user.id) : null
-
 	const encoder = new TextEncoder()
 	let closed = false
 
@@ -138,6 +144,16 @@ export async function GET(req: Request) {
 				if (closed) return
 				try {
 					controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`))
+				} catch {}
+			}
+
+			const cleanup = () => {
+				if (closed) return
+				closed = true
+				clearInterval(ping)
+				userRef.off('value', onValueHandler)
+				try {
+					controller.close()
 				} catch {}
 			}
 
@@ -172,6 +188,7 @@ export async function GET(req: Request) {
 				const next = await loadAuthorConfigsById(authorId)
 				if (!next || !next.user) {
 					send('not-found', { username, tag })
+					cleanup()
 					return
 				}
 				send('update', next)
@@ -186,14 +203,7 @@ export async function GET(req: Request) {
 				} catch {}
 			}, 25000)
 
-			req.signal.addEventListener('abort', () => {
-				closed = true
-				clearInterval(ping)
-				userRef.off('value', onValueHandler)
-				try {
-					controller.close()
-				} catch {}
-			})
+			req.signal.addEventListener('abort', cleanup)
 		},
 		cancel() {
 			closed = true

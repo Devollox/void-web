@@ -7,6 +7,9 @@ const db = admin.database()
 
 type Params = { id: string }
 
+const singleUserCache: Record<string, { data: any; updatedAt: number }> = {}
+const CACHE_TTL = 30000
+
 async function loadConfigSnapshot(id: string, kind: ConfigKind) {
 	const refPath = kind === 'presence' ? `presence-configs/${id}` : `status-configs/${id}`
 	const snap = await db.ref(refPath).get()
@@ -17,9 +20,17 @@ async function loadConfigSnapshot(id: string, kind: ConfigKind) {
 
 	let user: any = null
 	if (authorId) {
-		const userSnap = await db.ref(`users/${authorId}`).get()
-		if (userSnap.exists()) {
-			user = userSnap.val()
+		const now = Date.now()
+		const cached = singleUserCache[authorId]
+
+		if (cached && now - cached.updatedAt < CACHE_TTL) {
+			user = cached.data
+		} else {
+			const userSnap = await db.ref(`users/${authorId}`).get()
+			if (userSnap.exists()) {
+				user = userSnap.val()
+				singleUserCache[authorId] = { data: user, updatedAt: now }
+			}
 		}
 	}
 
@@ -39,7 +50,7 @@ async function loadConfigSnapshot(id: string, kind: ConfigKind) {
 }
 
 export async function GET(req: Request, ctx: { params: Promise<Params> | Params }) {
-	const { id } = await ctx.params
+	const { id } = 'then' in ctx.params ? await ctx.params : ctx.params
 
 	if (!id) {
 		return NextResponse.json(
@@ -88,6 +99,7 @@ export async function GET(req: Request, ctx: { params: Promise<Params> | Params 
 				const next = await loadConfigSnapshot(id, kind)
 				if (!next) {
 					send('not-found', { id, kind })
+					cleanup()
 					return
 				}
 				send('update', next)
@@ -102,14 +114,17 @@ export async function GET(req: Request, ctx: { params: Promise<Params> | Params 
 				} catch {}
 			}, 25000)
 
-			req.signal.addEventListener('abort', () => {
+			const cleanup = () => {
+				if (closed) return
 				closed = true
 				clearInterval(ping)
 				ref.off('value', onValueHandler)
 				try {
 					controller.close()
 				} catch {}
-			})
+			}
+
+			req.signal.addEventListener('abort', cleanup)
 		},
 		cancel() {
 			closed = true

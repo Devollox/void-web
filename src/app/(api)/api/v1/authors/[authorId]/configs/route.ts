@@ -69,7 +69,7 @@ async function registerFail(ip: string) {
 }
 
 export async function GET(req: Request, ctx: { params: Promise<Params> | Params }) {
-	const { authorId } = await ctx.params
+	const { authorId } = 'then' in ctx.params ? await ctx.params : ctx.params
 
 	if (!authorId) {
 		return NextResponse.json({ ok: false, error: 'MissingAuthorId' }, { status: 400 })

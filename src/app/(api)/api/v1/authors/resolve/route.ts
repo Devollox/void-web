@@ -8,28 +8,45 @@ type Body = {
 	tag: string
 }
 
+const userHandleCache: Record<string, { data: any; updatedAt: number }> = {}
+const CACHE_TTL = 30000
+
 async function resolveAuthor(username: string, tag: string) {
 	if (!username || !tag) {
 		return NextResponse.json({ ok: false, error: 'BadRequest' }, { status: 400 })
 	}
 
-	const usersSnap = await db.ref('users').get()
-	if (!usersSnap.exists()) {
-		return NextResponse.json({ ok: false, error: 'NotFound' }, { status: 404 })
+	const cacheKey = `${username}#${tag}`
+	const now = Date.now()
+
+	let authorId: string | null = null
+	let userRaw: any = null
+
+	if (userHandleCache[cacheKey] && now - userHandleCache[cacheKey].updatedAt < CACHE_TTL) {
+		const cached = userHandleCache[cacheKey].data
+		authorId = cached.authorId
+		userRaw = cached.userRaw
+	} else {
+		const usersSnap = await db.ref('users').get()
+		if (!usersSnap.exists()) {
+			return NextResponse.json({ ok: false, error: 'NotFound' }, { status: 404 })
+		}
+
+		const users = usersSnap.val() as Record<string, any>
+
+		const entry = Object.entries(users).find(
+			([, u]) =>
+				u.name === username && String(u.tag ?? '').padStart(4, '0') === String(tag).padStart(4, '0')
+		)
+
+		if (!entry) {
+			return NextResponse.json({ ok: false, error: 'NotFound' }, { status: 404 })
+		}
+
+		;[authorId, userRaw] = entry
+		userHandleCache[cacheKey] = { data: { authorId, userRaw }, updatedAt: now }
 	}
 
-	const users = usersSnap.val() as Record<string, any>
-
-	const entry = Object.entries(users).find(
-		([, u]) =>
-			u.name === username && String(u.tag ?? '').padStart(4, '0') === String(tag).padStart(4, '0')
-	)
-
-	if (!entry) {
-		return NextResponse.json({ ok: false, error: 'NotFound' }, { status: 404 })
-	}
-
-	const [authorId, userRaw] = entry
 	const presenceMap = userRaw?.configs?.presence || {}
 	const statusMap = userRaw?.configs?.status || {}
 
@@ -117,8 +134,12 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-	const body = (await req.json()) as Body
-	const username = body?.username || ''
-	const tag = body?.tag || ''
-	return resolveAuthor(username, tag)
+	try {
+		const body = (await req.json()) as Body
+		const username = body?.username || ''
+		const tag = body?.tag || ''
+		return await resolveAuthor(username, tag)
+	} catch {
+		return NextResponse.json({ ok: false, error: 'InvalidJSON' }, { status: 400 })
+	}
 }

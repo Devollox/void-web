@@ -10,7 +10,10 @@ export async function GET(req: Request) {
 	const stream = new ReadableStream({
 		async start(controller) {
 			const send = (event: string, data: any) => {
-				controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`))
+				if (closed) return
+				try {
+					controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`))
+				} catch {}
 			}
 
 			const initialSnap = await db.ref('stats').get()
@@ -29,7 +32,9 @@ export async function GET(req: Request) {
 
 			const ping = setInterval(() => {
 				if (closed) return
-				controller.enqueue(encoder.encode(`event: ping\ndata: {}\n\n`))
+				try {
+					controller.enqueue(encoder.encode(`event: ping\ndata: {}\n\n`))
+				} catch {}
 			}, 25000)
 
 			const cleanup = () => {

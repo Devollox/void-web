@@ -10,9 +10,11 @@ type QueryKind = ConfigKind
 type Config = BaseConfig & { isOwn?: boolean }
 type Status = BaseStatus & { isOwn?: boolean }
 
+const globalUsersCache: Record<string, { data: any; updatedAt: number }> = {}
+const CACHE_TTL = 30000
+
 async function loadAllByKind(kind: QueryKind, currentUserId?: string | null) {
 	const targetRef = kind === 'presence' ? 'presence-configs' : 'status-configs'
-
 	const configsSnap = await db.ref(targetRef).get()
 
 	if (!configsSnap.exists()) return []
@@ -20,55 +22,46 @@ async function loadAllByKind(kind: QueryKind, currentUserId?: string | null) {
 	const configsData = configsSnap.val() as Record<string, any>
 	const configEntries = Object.entries(configsData)
 
-	const uniqueAuthorIds = new Set<string>()
+	const now = Date.now()
+	const missingUserIds = new Set<string>()
+
 	for (const [, raw] of configEntries) {
 		if (raw?.authorId) {
-			uniqueAuthorIds.add(String(raw.authorId))
+			const uid = String(raw.authorId)
+			if (!globalUsersCache[uid] || now - globalUsersCache[uid].updatedAt > CACHE_TTL) {
+				missingUserIds.add(uid)
+			}
 		}
 	}
 
-	const usersData: Record<string, any> = {}
-	if (uniqueAuthorIds.size > 0) {
-		await Promise.all(
-			Array.from(uniqueAuthorIds).map(async uid => {
-				const userSnap = await db.ref(`users/${uid}`).get()
-				if (userSnap.exists()) {
-					usersData[uid] = userSnap.val()
+	if (missingUserIds.size > 0) {
+		if (missingUserIds.size > 5) {
+			const allUsersSnap = await db.ref('users').get()
+			if (allUsersSnap.exists()) {
+				const allUsers = allUsersSnap.val() as Record<string, any>
+				for (const uid of missingUserIds) {
+					if (allUsers[uid]) {
+						globalUsersCache[uid] = { data: allUsers[uid], updatedAt: now }
+					}
 				}
-			})
-		)
-	}
-
-	if (kind === 'presence') {
-		const list: Config[] = configEntries.map(([id, raw]) => {
-			const r = raw as any
-			const ownerId = r.authorId ? String(r.authorId) : null
-			const user = ownerId ? usersData[ownerId] : null
-
-			const avatar = user?.avatar || user?.image || r?.authorAvatar || '/logo.png'
-			const name = user?.name || r?.author || 'Unknown User'
-			const tag =
-				typeof user?.tag !== 'undefined'
-					? String(user.tag).padStart(4, '0')
-					: r?.authorTag || undefined
-
-			const cfg = mapRawToConfig(id, r, avatar, name) as Config
-			cfg.authorTag = tag
-
-			if (currentUserId && ownerId && currentUserId === ownerId) {
-				cfg.isOwn = true
 			}
-
-			return cfg
-		})
-
-		return list
+		} else {
+			await Promise.all(
+				Array.from(missingUserIds).map(async uid => {
+					const userSnap = await db.ref(`users/${uid}`).get()
+					if (userSnap.exists()) {
+						globalUsersCache[uid] = { data: userSnap.val(), updatedAt: now }
+					}
+				})
+			)
+		}
 	}
 
-	const list: Status[] = configEntries.map(([id, raw]) => {
+	const isPresence = kind === 'presence'
+	const list = configEntries.map(([id, raw]) => {
 		const r = raw as any
 		const ownerId = r.authorId ? String(r.authorId) : null
-		const user = ownerId ? usersData[ownerId] : null
+		const user = ownerId ? globalUsersCache[ownerId]?.data : null
 
 		const avatar = user?.avatar || user?.image || r?.authorAvatar || '/logo.png'
 		const name = user?.name || r?.author || 'Unknown User'
@@ -77,14 +70,19 @@ async function loadAllByKind(kind: QueryKind, currentUserId?: string | null) {
 				? String(user.tag).padStart(4, '0')
 				: r?.authorTag || undefined
 
-		const st = mapRawToStatus(id, r, avatar, name) as Status
-		st.authorTag = tag
-
-		if (currentUserId && ownerId && currentUserId === ownerId) {
-			st.isOwn = true
+		let item: Config | Status
+		if (isPresence) {
+			item = mapRawToConfig(id, r, avatar, name) as Config
+		} else {
+			item = mapRawToStatus(id, r, avatar, name) as Status
 		}
 
-		return st
+		item.authorTag = tag
+		if (currentUserId && ownerId && currentUserId === ownerId) {
+			item.isOwn = true
+		}
+
+		return item
 	})
 
 	return list
@@ -136,14 +134,17 @@ export async function GET(req: Request) {
 				} catch {}
 			}, 25000)
 
-			req.signal.addEventListener('abort', () => {
+			const cleanup = () => {
+				if (closed) return
 				closed = true
 				clearInterval(ping)
 				ref.off('value', onValueHandler)
 				try {
 					controller.close()
 				} catch {}
-			})
+			}
+
+			req.signal.addEventListener('abort', cleanup)
 		},
 		cancel() {
 			closed = true

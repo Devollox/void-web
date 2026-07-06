@@ -55,6 +55,9 @@ type GetAllPayload = {
 	kind: ConfigKind
 }
 
+const usersCache: Record<string, { data: any; updatedAt: number }> = {}
+const CACHE_TTL = 30000
+
 export async function POST(req: Request) {
 	try {
 		const body = (await req.json()) as GetAllPayload
@@ -86,29 +89,45 @@ export async function POST(req: Request) {
 		const configsData = configsSnap.val() as Record<string, any>
 		const configEntries = Object.entries(configsData)
 
-		const uniqueAuthorIds = new Set<string>()
+		const now = Date.now()
+		const missingAuthorIds = new Set<string>()
+
 		for (const [, raw] of configEntries) {
 			if (raw?.authorId) {
-				uniqueAuthorIds.add(String(raw.authorId))
+				const uid = String(raw.authorId)
+				if (!usersCache[uid] || now - usersCache[uid].updatedAt > CACHE_TTL) {
+					missingAuthorIds.add(uid)
+				}
 			}
 		}
 
-		const usersData: Record<string, any> = {}
-		if (uniqueAuthorIds.size > 0) {
-			await Promise.all(
-				Array.from(uniqueAuthorIds).map(async uid => {
-					const userSnap = await db.ref(`users/${uid}`).get()
-					if (userSnap.exists()) {
-						usersData[uid] = userSnap.val()
+		if (missingAuthorIds.size > 0) {
+			if (missingAuthorIds.size > 5) {
+				const allUsersSnap = await db.ref('users').get()
+				if (allUsersSnap.exists()) {
+					const allUsers = allUsersSnap.val() as Record<string, any>
+					for (const uid of missingAuthorIds) {
+						if (allUsers[uid]) {
+							usersCache[uid] = { data: allUsers[uid], updatedAt: now }
+						}
 					}
-				})
-			)
+				}
+			} else {
+				await Promise.all(
+					Array.from(missingAuthorIds).map(async uid => {
+						const userSnap = await db.ref(`users/${uid}`).get()
+						if (userSnap.exists()) {
+							usersCache[uid] = { data: userSnap.val(), updatedAt: now }
+						}
+					})
+				)
+			}
 		}
 
 		const list = configEntries.map(([id, raw]) => {
 			const r = raw as any
 			const authorId = r.authorId ? String(r.authorId) : null
-			const user = authorId ? usersData[authorId] : null
+			const user = authorId ? usersCache[authorId]?.data : null
 
 			const avatar = user?.avatar || user?.image || r?.authorAvatar || '/logo.png'
 			const name = user?.name || r?.author || 'Unknown User'

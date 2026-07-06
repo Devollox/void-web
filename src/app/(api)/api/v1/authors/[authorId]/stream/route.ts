@@ -141,7 +141,7 @@ async function loadAuthorConfigs(authorId: string) {
 }
 
 export async function GET(req: Request, ctx: { params: Promise<Params> | Params }) {
-	const { authorId } = await ctx.params
+	const { authorId } = 'then' in ctx.params ? await ctx.params : ctx.params
 
 	if (!authorId) {
 		return NextResponse.json({ ok: false, error: 'MissingAuthorId' }, { status: 400 })
@@ -194,6 +194,16 @@ export async function GET(req: Request, ctx: { params: Promise<Params> | Params 
 				} catch {}
 			}
 
+			const cleanup = () => {
+				if (closed) return
+				closed = true
+				clearInterval(ping)
+				userRef.off('value', onValueHandler)
+				try {
+					controller.close()
+				} catch {}
+			}
+
 			send('ready', initial)
 
 			const userRef = db.ref(`users/${authorId}`)
@@ -203,6 +213,7 @@ export async function GET(req: Request, ctx: { params: Promise<Params> | Params 
 				const next = await loadAuthorConfigs(authorId)
 				if (!next) {
 					send('not-found', { authorId })
+					cleanup()
 					return
 				}
 				send('update', next)
@@ -217,14 +228,7 @@ export async function GET(req: Request, ctx: { params: Promise<Params> | Params 
 				} catch {}
 			}, 25000)
 
-			req.signal.addEventListener('abort', () => {
-				closed = true
-				clearInterval(ping)
-				userRef.off('value', onValueHandler)
-				try {
-					controller.close()
-				} catch {}
-			})
+			req.signal.addEventListener('abort', cleanup)
 		},
 		cancel() {
 			closed = true
