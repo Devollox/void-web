@@ -55,11 +55,6 @@ type GetAllPayload = {
 	kind: ConfigKind
 }
 
-type OwnerInfo = {
-	uid: string
-	user: any
-}
-
 export async function POST(req: Request) {
 	try {
 		const body = (await req.json()) as GetAllPayload
@@ -82,70 +77,60 @@ export async function POST(req: Request) {
 
 		const targetRef = kind === 'presence' ? 'presence-configs' : 'status-configs'
 
-		const [configsSnap, usersSnap] = await Promise.all([
-			db.ref(targetRef).get(),
-			db.ref('users').get(),
-		])
+		const configsSnap = await db.ref(targetRef).get()
 
 		if (!configsSnap.exists()) {
 			return NextResponse.json([], { status: 200 })
 		}
 
 		const configsData = configsSnap.val() as Record<string, any>
-		const usersData = usersSnap.exists() ? (usersSnap.val() as Record<string, any>) : {}
+		const configEntries = Object.entries(configsData)
 
-		const configToOwnerMap: Record<string, OwnerInfo> = {}
-		for (const [uid, userRaw] of Object.entries(usersData)) {
-			const userConfigs = (userRaw as any)?.configs?.[kind] || {}
-			for (const [configId, hasConfig] of Object.entries(userConfigs)) {
-				if (!hasConfig) continue
-				configToOwnerMap[configId] = { uid, user: userRaw }
+		const uniqueAuthorIds = new Set<string>()
+		for (const [, raw] of configEntries) {
+			if (raw?.authorId) {
+				uniqueAuthorIds.add(String(raw.authorId))
 			}
 		}
 
-		if (kind === 'presence') {
-			const list: Config[] = Object.entries(configsData).map(([id, raw]) => {
-				const r = raw as any
-				const owner = configToOwnerMap[id]
-				const user = owner?.user
-
-				const avatar = user?.avatar || user?.image || r?.authorAvatar || ''
-				const tag =
-					typeof user?.tag !== 'undefined'
-						? String(user.tag).padStart(4, '0')
-						: r?.authorTag || undefined
-				const name = user?.name || r?.author || 'Unknown'
-
-				const cfg = mapRawToConfig(id, r, avatar, name) as Config
-				cfg.authorTag = tag
-
-				return cfg
-			})
-
-			return NextResponse.json(list, { status: 200 })
+		const usersData: Record<string, any> = {}
+		if (uniqueAuthorIds.size > 0) {
+			await Promise.all(
+				Array.from(uniqueAuthorIds).map(async uid => {
+					const userSnap = await db.ref(`users/${uid}`).get()
+					if (userSnap.exists()) {
+						usersData[uid] = userSnap.val()
+					}
+				})
+			)
 		}
 
-		const list: Status[] = Object.entries(configsData).map(([id, raw]) => {
+		const list = configEntries.map(([id, raw]) => {
 			const r = raw as any
-			const owner = configToOwnerMap[id]
-			const user = owner?.user
+			const authorId = r.authorId ? String(r.authorId) : null
+			const user = authorId ? usersData[authorId] : null
 
-			const avatar = user?.avatar || user?.image || r?.authorAvatar || ''
+			const avatar = user?.avatar || user?.image || r?.authorAvatar || '/logo.png'
+			const name = user?.name || r?.author || 'Unknown User'
 			const tag =
 				typeof user?.tag !== 'undefined'
 					? String(user.tag).padStart(4, '0')
 					: r?.authorTag || undefined
-			const name = user?.name || r?.author || 'Unknown'
 
-			const st = mapRawToStatus(id, r, avatar, name) as Status
-			st.authorTag = tag
-
-			return st
+			if (kind === 'presence') {
+				const cfg = mapRawToConfig(id, r, avatar, name) as Config
+				cfg.authorTag = tag
+				return cfg
+			} else {
+				const st = mapRawToStatus(id, r, avatar, name) as Status
+				st.authorTag = tag
+				return st
+			}
 		})
 
 		return NextResponse.json(list, { status: 200 })
 	} catch (err) {
 		const message = err instanceof Error ? err.message : JSON.stringify(err)
-		return NextResponse.json({ error: 'InternalInternalError', message }, { status: 500 })
+		return NextResponse.json({ error: 'InternalError', message }, { status: 500 })
 	}
 }

@@ -26,9 +26,7 @@ async function updateAuthorInConfigs(
 	normalizedTag?: string | null
 ) {
 	const userConfigsSnap = await db.ref(`users/${userId}/configs`).get()
-	if (!userConfigsSnap.exists()) {
-		return
-	}
+	if (!userConfigsSnap.exists()) return
 
 	const configs = userConfigsSnap.val() as {
 		presence?: Record<string, boolean>
@@ -38,52 +36,42 @@ async function updateAuthorInConfigs(
 	const presenceIds = Object.keys(configs.presence || {}).filter(id => configs.presence?.[id])
 	const statusIds = Object.keys(configs.status || {}).filter(id => configs.status?.[id])
 
-	if (presenceIds.length > 0) {
-		const presenceSnap = await db.ref('presence-configs').get()
-		if (presenceSnap.exists()) {
-			const presenceData = presenceSnap.val() as Record<string, any>
-			const updates: Record<string, any> = {}
+	if (presenceIds.length === 0 && statusIds.length === 0) {
+		return
+	}
 
-			for (const id of presenceIds) {
-				const cfg = presenceData[id]
-				if (!cfg) continue
+	const updates: Record<string, any> = {}
 
-				updates[id] = {
-					...cfg,
-					...(name ? { author: name } : {}),
-					...(avatar ? { authorAvatar: avatar } : {}),
-					...(normalizedTag ? { authorTag: normalizedTag } : {}),
-				}
-			}
+	for (const id of presenceIds) {
+		const basePath = `presence-configs/${id}`
 
-			if (Object.keys(updates).length > 0) {
-				await db.ref('presence-configs').update(updates)
-			}
+		if (name) {
+			updates[`${basePath}/author`] = name
+		}
+		if (avatar) {
+			updates[`${basePath}/authorAvatar`] = avatar
+		}
+		if (normalizedTag) {
+			updates[`${basePath}/authorTag`] = normalizedTag
 		}
 	}
 
-	if (statusIds.length > 0) {
-		const statusSnap = await db.ref('status-configs').get()
-		if (statusSnap.exists()) {
-			const statusData = statusSnap.val() as Record<string, any>
-			const updates: Record<string, any> = {}
+	for (const id of statusIds) {
+		const basePath = `status-configs/${id}`
 
-			for (const id of statusIds) {
-				const cfg = statusData[id]
-				if (!cfg) continue
-
-				updates[id] = {
-					...cfg,
-					...(name ? { author: name } : {}),
-					...(avatar ? { authorAvatar: avatar } : {}),
-					...(normalizedTag ? { authorTag: normalizedTag } : {}),
-				}
-			}
-
-			if (Object.keys(updates).length > 0) {
-				await db.ref('status-configs').update(updates)
-			}
+		if (name) {
+			updates[`${basePath}/author`] = name
 		}
+		if (avatar) {
+			updates[`${basePath}/authorAvatar`] = avatar
+		}
+		if (normalizedTag) {
+			updates[`${basePath}/authorTag`] = normalizedTag
+		}
+	}
+
+	if (Object.keys(updates).length > 0) {
+		await db.ref().update(updates)
 	}
 }
 

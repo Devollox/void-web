@@ -9,38 +9,6 @@ type Params = { id: string }
 type GetByIdPayload = { kind: ConfigKind }
 type GetByIdResponse = Config | Status
 
-interface UserData {
-	name?: string
-	avatar?: string
-	image?: string
-}
-
-export async function findUserByConfig(id: string, kind: ConfigKind): Promise<UserData | null> {
-	try {
-		const usersSnap = await db.ref('users').get()
-		if (!usersSnap.exists()) {
-			return null
-		}
-
-		const users = usersSnap.val() as Record<string, any>
-
-		for (const [, data] of Object.entries(users)) {
-			const configs = (data as any).configs || {}
-			if (kind === 'presence' && configs.presence && configs.presence[id]) {
-				return data as UserData
-			}
-			if (kind === 'status' && configs.status && configs.status[id]) {
-				return data as UserData
-			}
-		}
-
-		return null
-	} catch (e) {
-		console.error('findUserByConfig error', e)
-		return null
-	}
-}
-
 export async function POST(req: Request, ctx: { params: Promise<Params> | Params }) {
 	try {
 		const { id } = await ctx.params
@@ -70,7 +38,15 @@ export async function POST(req: Request, ctx: { params: Promise<Params> | Params
 			}
 
 			const data = snap.val() as any
-			const user = await findUserByConfig(id, kind)
+			const authorId = data?.authorId ? String(data.authorId) : null
+
+			let user: any = null
+			if (authorId) {
+				const userSnap = await db.ref(`users/${authorId}`).get()
+				if (userSnap.exists()) {
+					user = userSnap.val()
+				}
+			}
 
 			const config: GetByIdResponse = mapRawToConfig(
 				id,
@@ -89,7 +65,15 @@ export async function POST(req: Request, ctx: { params: Promise<Params> | Params
 			}
 
 			const data = snap.val() as any
-			const user = await findUserByConfig(id, kind)
+			const authorId = data?.authorId ? String(data.authorId) : null
+
+			let user: any = null
+			if (authorId) {
+				const userSnap = await db.ref(`users/${authorId}`).get()
+				if (userSnap.exists()) {
+					user = userSnap.val()
+				}
+			}
 
 			const status: GetByIdResponse = mapRawToStatus(
 				id,

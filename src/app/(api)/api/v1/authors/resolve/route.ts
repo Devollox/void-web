@@ -29,28 +29,26 @@ async function resolveAuthor(username: string, tag: string) {
 		return NextResponse.json({ ok: false, error: 'NotFound' }, { status: 404 })
 	}
 
-	const [, userRaw] = entry
-
-	const presenceRef = db.ref('presence-configs')
-	const statusRef = db.ref('status-configs')
-
-	const [presenceSnap, statusSnap] = await Promise.all([presenceRef.get(), statusRef.get()])
-
-	const presencesRaw = presenceSnap.exists() ? (presenceSnap.val() as Record<string, any>) : {}
-	const statusesRaw = statusSnap.exists() ? (statusSnap.val() as Record<string, any>) : {}
-
-	const presenceMap = (userRaw?.configs?.presence || {}) as Record<string, boolean>
-	const statusMap = (userRaw?.configs?.status || {}) as Record<string, boolean>
+	const [authorId, userRaw] = entry
+	const presenceMap = userRaw?.configs?.presence || {}
+	const statusMap = userRaw?.configs?.status || {}
 
 	const presenceIds = Object.keys(presenceMap).filter(id => presenceMap[id])
 	const statusIds = Object.keys(statusMap).filter(id => statusMap[id])
 
-	const avatarFromUser = userRaw?.avatar || userRaw?.image || ''
+	const [presenceSnaps, statusSnaps] = await Promise.all([
+		Promise.all(presenceIds.map(id => db.ref(`presence-configs/${id}`).get())),
+		Promise.all(statusIds.map(id => db.ref(`status-configs/${id}`).get())),
+	])
 
-	const presenceConfigs = presenceIds
-		.map(id => {
-			const raw = presencesRaw[id]
-			if (!raw) return null
+	const avatarFromUser = userRaw?.avatar || userRaw?.image || '/logo.png'
+	const tagFromUser = String(userRaw.tag ?? '').padStart(4, '0')
+
+	const presenceConfigs = presenceSnaps
+		.map((snap, idx) => {
+			if (!snap.exists()) return null
+			const id = presenceIds[idx]
+			const raw = snap.val() as any
 
 			const averageColors: string[] =
 				Array.isArray(raw.averageColors) && raw.averageColors.length > 0
@@ -62,13 +60,11 @@ async function resolveAuthor(username: string, tag: string) {
 			return {
 				id,
 				title: raw.title || 'Unnamed',
-				author: raw.author || userRaw?.name || 'Unknown',
+				author: userRaw.name || 'Unknown User',
+				authorId,
 				authorAvatar: avatarFromUser,
-				authorTag: userRaw.tag,
-				downloads:
-					typeof raw.downloads === 'number'
-						? raw.downloads
-						: parseInt(String(raw.downloads ?? '0')) || 0,
+				authorTag: tagFromUser,
+				downloads: typeof raw.downloads === 'number' ? raw.downloads : 0,
 				description: raw.description || '',
 				averageColors,
 				configData: raw.configData || {
@@ -79,34 +75,33 @@ async function resolveAuthor(username: string, tag: string) {
 				uploadedAt: raw.uploadedAt || 0,
 			}
 		})
-		.filter(Boolean)
+		.filter((cfg): cfg is NonNullable<typeof cfg> => cfg !== null)
 
-	const statusConfigs = statusIds
-		.map(id => {
-			const raw = statusesRaw[id]
-			if (!raw) return null
+	const statusConfigs = statusSnaps
+		.map((snap, idx) => {
+			if (!snap.exists()) return null
+			const id = statusIds[idx]
+			const raw = snap.val() as any
 			return {
 				id,
 				title: raw.title || 'Unnamed',
-				author: raw.author || userRaw?.name || 'Unknown',
+				author: userRaw.name || 'Unknown User',
+				authorId,
 				authorAvatar: avatarFromUser,
-				authorTag: userRaw.tag,
-				downloads:
-					typeof raw.downloads === 'number'
-						? raw.downloads
-						: parseInt(String(raw.downloads ?? '0')) || 0,
+				authorTag: tagFromUser,
+				downloads: typeof raw.downloads === 'number' ? raw.downloads : 0,
 				description: raw.description || '',
 				configData: raw.configData || { statusCycles: [] },
 				uploadedAt: raw.uploadedAt || 0,
 			}
 		})
-		.filter(Boolean)
+		.filter((st): st is NonNullable<typeof st> => st !== null)
 
 	return NextResponse.json({
 		user: {
 			name: userRaw.name || null,
-			avatar: avatarFromUser || null,
-			tag: String(userRaw.tag ?? '').padStart(4, '0'),
+			avatar: avatarFromUser,
+			tag: tagFromUser,
 			provider: userRaw.provider || null,
 			createdAt: userRaw.createdAt || null,
 			lastSeen: userRaw.lastSeen || null,
@@ -124,6 +119,8 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-	const { username, tag } = (await req.json()) as Body
+	const body = (await req.json()) as Body
+	const username = body?.username || ''
+	const tag = body?.tag || ''
 	return resolveAuthor(username, tag)
 }

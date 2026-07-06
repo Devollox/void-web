@@ -10,63 +10,47 @@ type QueryKind = ConfigKind
 type Config = BaseConfig & { isOwn?: boolean }
 type Status = BaseStatus & { isOwn?: boolean }
 
-type OwnerInfo = {
-	uid: string
-	user: any
-}
-
-function buildConfigToOwnerMap(
-	kind: QueryKind,
-	users: Record<string, any>
-): Record<string, OwnerInfo> {
-	const map: Record<string, OwnerInfo> = {}
-
-	for (const [uid, userData] of Object.entries(users)) {
-		if (!userData) continue
-		const configs = (userData as any).configs || {}
-		const kindConfigs = configs[kind] || {}
-
-		for (const [configId, hasConfig] of Object.entries(kindConfigs)) {
-			if (!hasConfig) continue
-			map[configId] = { uid, user: userData }
-		}
-	}
-
-	return map
-}
-
 async function loadAllByKind(kind: QueryKind, currentUserId?: string | null) {
 	const targetRef = kind === 'presence' ? 'presence-configs' : 'status-configs'
 
-	const [configsSnap, usersSnap] = await Promise.all([
-		db.ref(targetRef).get(),
-		db.ref('users').get(),
-	])
+	const configsSnap = await db.ref(targetRef).get()
 
 	if (!configsSnap.exists()) return []
 
-	const data = configsSnap.val() as Record<string, any>
-	const users = usersSnap.exists() ? (usersSnap.val() as Record<string, any>) : {}
+	const configsData = configsSnap.val() as Record<string, any>
+	const configEntries = Object.entries(configsData)
 
-	const configToOwnerMap = buildConfigToOwnerMap(kind, users)
+	const uniqueAuthorIds = new Set<string>()
+	for (const [, raw] of configEntries) {
+		if (raw?.authorId) {
+			uniqueAuthorIds.add(String(raw.authorId))
+		}
+	}
+
+	const usersData: Record<string, any> = {}
+	if (uniqueAuthorIds.size > 0) {
+		await Promise.all(
+			Array.from(uniqueAuthorIds).map(async uid => {
+				const userSnap = await db.ref(`users/${uid}`).get()
+				if (userSnap.exists()) {
+					usersData[uid] = userSnap.val()
+				}
+			})
+		)
+	}
 
 	if (kind === 'presence') {
-		const list: Config[] = Object.entries(data).map(([id, raw]) => {
+		const list: Config[] = configEntries.map(([id, raw]) => {
 			const r = raw as any
-			const ownerData = configToOwnerMap[id]
-			const user = ownerData?.user
-			const ownerId = ownerData?.uid || null
+			const ownerId = r.authorId ? String(r.authorId) : null
+			const user = ownerId ? usersData[ownerId] : null
 
-			const avatar =
-				user?.avatar || user?.image || user?.picture || r?.authorAvatar || r?.avatar || ''
-			const name =
-				user?.name || user?.displayName || user?.username || r?.author || r?.authorName || 'Unknown'
+			const avatar = user?.avatar || user?.image || r?.authorAvatar || '/logo.png'
+			const name = user?.name || r?.author || 'Unknown User'
 			const tag =
-				typeof user?.tag !== 'undefined' && user?.tag !== null
+				typeof user?.tag !== 'undefined'
 					? String(user.tag).padStart(4, '0')
-					: typeof r?.authorTag !== 'undefined' && r?.authorTag !== null
-						? String(r.authorTag).padStart(4, '0')
-						: undefined
+					: r?.authorTag || undefined
 
 			const cfg = mapRawToConfig(id, r, avatar, name) as Config
 			cfg.authorTag = tag
@@ -81,22 +65,17 @@ async function loadAllByKind(kind: QueryKind, currentUserId?: string | null) {
 		return list
 	}
 
-	const list: Status[] = Object.entries(data).map(([id, raw]) => {
+	const list: Status[] = configEntries.map(([id, raw]) => {
 		const r = raw as any
-		const ownerData = configToOwnerMap[id]
-		const user = ownerData?.user
-		const ownerId = ownerData?.uid || null
+		const ownerId = r.authorId ? String(r.authorId) : null
+		const user = ownerId ? usersData[ownerId] : null
 
-		const avatar =
-			user?.avatar || user?.image || user?.picture || r?.authorAvatar || r?.avatar || ''
-		const name =
-			user?.name || user?.displayName || user?.username || r?.author || r?.authorName || 'Unknown'
+		const avatar = user?.avatar || user?.image || r?.authorAvatar || '/logo.png'
+		const name = user?.name || r?.author || 'Unknown User'
 		const tag =
-			typeof user?.tag !== 'undefined' && user?.tag !== null
+			typeof user?.tag !== 'undefined'
 				? String(user.tag).padStart(4, '0')
-				: typeof r?.authorTag !== 'undefined' && r?.authorTag !== null
-					? String(r.authorTag).padStart(4, '0')
-					: undefined
+				: r?.authorTag || undefined
 
 		const st = mapRawToStatus(id, r, avatar, name) as Status
 		st.authorTag = tag

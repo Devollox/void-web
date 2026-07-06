@@ -125,9 +125,10 @@ export async function GET(req: Request, ctx: { params: Promise<Params> | Params 
 			Promise.all(statusIds.map(id => db.ref(`status-configs/${id}`).get())),
 		])
 
-		const avatarFromUser = userRaw.avatar || userRaw.image || ''
+		const avatarFromUser = userRaw.avatar || userRaw.image || '/logo.png'
 		const tagFromUser = userRaw.tag || userRaw.authorTag || null
-		const authorName = userRaw.name || 'Unknown'
+		const authorName = userRaw.name || 'Unknown User'
+		const formattedTag = tagFromUser ? String(tagFromUser).padStart(4, '0') : undefined
 
 		const presenceConfigs = presenceSnaps
 			.map((snap, idx) => {
@@ -145,14 +146,11 @@ export async function GET(req: Request, ctx: { params: Promise<Params> | Params 
 				return {
 					id,
 					title: raw.title || 'Unnamed',
-					author: raw.author || authorName,
+					author: authorName,
 					authorId,
 					authorAvatar: avatarFromUser,
-					authorTag: raw.authorTag || tagFromUser || undefined,
-					downloads:
-						typeof raw.downloads === 'number'
-							? raw.downloads
-							: parseInt(String(raw.downloads ?? '0')) || 0,
+					authorTag: formattedTag,
+					downloads: typeof raw.downloads === 'number' ? raw.downloads : 0,
 					description: raw.description || '',
 					averageColors,
 					configData: raw.configData || {
@@ -173,14 +171,11 @@ export async function GET(req: Request, ctx: { params: Promise<Params> | Params 
 				return {
 					id,
 					title: raw.title || 'Unnamed',
-					author: raw.author || authorName,
+					author: authorName,
 					authorId,
 					authorAvatar: avatarFromUser,
-					authorTag: raw.authorTag || tagFromUser || undefined,
-					downloads:
-						typeof raw.downloads === 'number'
-							? raw.downloads
-							: parseInt(String(raw.downloads ?? '0')) || 0,
+					authorTag: formattedTag,
+					downloads: typeof raw.downloads === 'number' ? raw.downloads : 0,
 					description: raw.description || '',
 					configData: raw.configData || { statusCycles: [] },
 					uploadedAt: raw.uploadedAt || 0,
@@ -202,8 +197,8 @@ export async function GET(req: Request, ctx: { params: Promise<Params> | Params 
 			user: {
 				id: authorId,
 				name: userRaw.name || null,
-				avatar: avatarFromUser || null,
-				tag: tagFromUser,
+				avatar: userRaw.avatar || userRaw.image || null,
+				tag: formattedTag || null,
 				provider: userRaw.provider || null,
 				createdAt: userRaw.createdAt || null,
 				lastSeen: userRaw.lastSeen || null,

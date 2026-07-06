@@ -33,36 +33,30 @@ async function resolveUserByHandle(username: string, tag: string) {
 	return { authorId, userRaw }
 }
 
-async function loadAuthorConfigsByHandle(
-	username: string,
-	tag: string
-): Promise<AuthorConfigs | null> {
-	const resolved = await resolveUserByHandle(username, tag)
-	if (!resolved) return null
+async function loadAuthorConfigsById(authorId: string): Promise<AuthorConfigs | null> {
+	const userSnap = await db.ref(`users/${authorId}`).get()
+	if (!userSnap.exists()) return null
 
-	const { authorId, userRaw } = resolved
-
-	const presenceRef = db.ref('presence-configs')
-	const statusRef = db.ref('status-configs')
-
-	const [presenceSnap, statusSnap] = await Promise.all([presenceRef.get(), statusRef.get()])
-
-	const presencesRaw = presenceSnap.exists() ? (presenceSnap.val() as Record<string, any>) : {}
-	const statusesRaw = statusSnap.exists() ? (statusSnap.val() as Record<string, any>) : {}
-
-	const presenceMap = (userRaw?.configs?.presence || {}) as Record<string, boolean>
-	const statusMap = (userRaw?.configs?.status || {}) as Record<string, boolean>
+	const userRaw = userSnap.val() as any
+	const presenceMap = userRaw.configs?.presence || {}
+	const statusMap = userRaw.configs?.status || {}
 
 	const presenceIds = Object.keys(presenceMap).filter(id => presenceMap[id])
 	const statusIds = Object.keys(statusMap).filter(id => statusMap[id])
 
-	const avatarFromUser = userRaw?.avatar || userRaw?.image || ''
-	const tagFromUser = String(userRaw?.tag ?? '').padStart(4, '0')
+	const [presenceSnaps, statusSnaps] = await Promise.all([
+		Promise.all(presenceIds.map(id => db.ref(`presence-configs/${id}`).get())),
+		Promise.all(statusIds.map(id => db.ref(`status-configs/${id}`).get())),
+	])
 
-	const presenceConfigs = presenceIds
-		.map(id => {
-			const raw = presencesRaw[id]
-			if (!raw) return null
+	const avatarFromUser = userRaw.avatar || userRaw.image || '/logo.png'
+	const tagFromUser = String(userRaw.tag ?? '').padStart(4, '0')
+
+	const presenceConfigs = presenceSnaps
+		.map((snap, idx) => {
+			if (!snap.exists()) return null
+			const id = presenceIds[idx]
+			const raw = snap.val() as any
 
 			const averageColors: string[] =
 				Array.isArray(raw.averageColors) && raw.averageColors.length > 0
@@ -74,13 +68,10 @@ async function loadAuthorConfigsByHandle(
 			return {
 				id,
 				title: raw.title || 'Unnamed',
-				author: raw.author || userRaw?.name || username || 'Unknown',
+				author: userRaw.name || 'Unknown User',
 				authorAvatar: avatarFromUser,
 				authorTag: tagFromUser,
-				downloads:
-					typeof raw.downloads === 'number'
-						? raw.downloads
-						: parseInt(String(raw.downloads ?? '0')) || 0,
+				downloads: typeof raw.downloads === 'number' ? raw.downloads : 0,
 				description: raw.description || '',
 				averageColors,
 				configData: raw.configData || {
@@ -93,20 +84,18 @@ async function loadAuthorConfigsByHandle(
 		})
 		.filter((cfg): cfg is NonNullable<typeof cfg> => cfg !== null)
 
-	const statusConfigs = statusIds
-		.map(id => {
-			const raw = statusesRaw[id]
-			if (!raw) return null
+	const statusConfigs = statusSnaps
+		.map((snap, idx) => {
+			if (!snap.exists()) return null
+			const id = statusIds[idx]
+			const raw = snap.val() as any
 			return {
 				id,
 				title: raw.title || 'Unnamed',
-				author: raw.author || userRaw?.name || username || 'Unknown',
+				author: userRaw.name || 'Unknown User',
 				authorAvatar: avatarFromUser,
 				authorTag: tagFromUser,
-				downloads:
-					typeof raw.downloads === 'number'
-						? raw.downloads
-						: parseInt(String(raw.downloads ?? '0')) || 0,
+				downloads: typeof raw.downloads === 'number' ? raw.downloads : 0,
 				description: raw.description || '',
 				configData: raw.configData || { statusCycles: [] },
 				uploadedAt: raw.uploadedAt || 0,
@@ -115,16 +104,14 @@ async function loadAuthorConfigsByHandle(
 		.filter((st): st is NonNullable<typeof st> => st !== null)
 
 	return {
-		user: userRaw
-			? {
-					name: userRaw.name || null,
-					avatar: avatarFromUser || null,
-					tag: tagFromUser,
-					provider: userRaw.provider || null,
-					createdAt: userRaw.createdAt || null,
-					lastSeen: userRaw.lastSeen || null,
-				}
-			: null,
+		user: {
+			name: userRaw.name || null,
+			avatar: avatarFromUser,
+			tag: tagFromUser,
+			provider: userRaw.provider || null,
+			createdAt: userRaw.createdAt || null,
+			lastSeen: userRaw.lastSeen || null,
+		},
 		presenceConfigs,
 		statusConfigs,
 	}
@@ -149,36 +136,40 @@ export async function GET(req: Request) {
 		async start(controller) {
 			const send = (event: string, data: any) => {
 				if (closed) return
-				controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`))
+				try {
+					controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`))
+				} catch {}
 			}
-
-			const initial = await loadAuthorConfigsByHandle(username, tag)
-			if (!initial || !initial.user) {
-				send('not-found', { username, tag })
-				controller.close()
-				closed = true
-				return
-			}
-
-			send('ready', initial)
 
 			const resolved = await resolveUserByHandle(username, tag)
-			if (!resolved) {
+			if (!resolved || !resolved.authorId) {
 				send('not-found', { username, tag })
-				controller.close()
+				try {
+					controller.close()
+				} catch {}
 				closed = true
 				return
 			}
 
 			const { authorId } = resolved
 
-			const userRef = db.ref(`users/${authorId}`)
-			const presenceRef = db.ref('presence-configs')
-			const statusRef = db.ref('status-configs')
+			const initial = await loadAuthorConfigsById(authorId)
+			if (!initial || !initial.user) {
+				send('not-found', { username, tag })
+				try {
+					controller.close()
+				} catch {}
+				closed = true
+				return
+			}
 
-			const onAnyChange = async () => {
+			send('ready', initial)
+
+			const userRef = db.ref(`users/${authorId}`)
+
+			const onValueHandler = async () => {
 				if (closed) return
-				const next = await loadAuthorConfigsByHandle(username, tag)
+				const next = await loadAuthorConfigsById(authorId)
 				if (!next || !next.user) {
 					send('not-found', { username, tag })
 					return
@@ -186,22 +177,19 @@ export async function GET(req: Request) {
 				send('update', next)
 			}
 
-			userRef.on('value', onAnyChange)
-			presenceRef.on('value', onAnyChange)
-			statusRef.on('value', onAnyChange)
+			userRef.on('value', onValueHandler)
 
 			const ping = setInterval(() => {
 				if (closed) return
-				controller.enqueue(encoder.encode(`event: ping\ndata: {}\n\n`))
+				try {
+					controller.enqueue(encoder.encode(`event: ping\ndata: {}\n\n`))
+				} catch {}
 			}, 25000)
 
 			req.signal.addEventListener('abort', () => {
-				if (closed) return
 				closed = true
 				clearInterval(ping)
-				userRef.off('value', onAnyChange)
-				presenceRef.off('value', onAnyChange)
-				statusRef.off('value', onAnyChange)
+				userRef.off('value', onValueHandler)
 				try {
 					controller.close()
 				} catch {}

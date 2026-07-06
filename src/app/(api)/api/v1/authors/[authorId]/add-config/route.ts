@@ -1,4 +1,5 @@
 import { admin } from '@/service/firebase-admin'
+import { redis } from '@/service/redis'
 import { NextResponse } from 'next/server'
 
 type Params = { authorId: string }
@@ -7,28 +8,68 @@ type AddConfigBody = {
 	kind: 'presence' | 'status'
 	title: string
 	description: string
-	author: string
 	configData: any
-	downloads: number
 	uploadedAt: number
-	averageColor?: string
+	averageColors?: string[]
 }
 
 const db = admin.database()
 
-export function buildAuthorTag(authorId: string) {
-	const digitsOnly = authorId.replace(/\D/g, '')
-	const head = digitsOnly.slice(0, 4)
-	return head.padStart(4, '0')
+function getClientIp(req: Request): string {
+	const forwardedFor = req.headers.get('x-forwarded-for')
+	if (forwardedFor) {
+		return forwardedFor.split(',')[0].trim()
+	}
+	return '127.0.0.1'
 }
 
-export async function createPresenceConfig(authorId: string, body: AddConfigBody): Promise<string> {
+async function checkRateLimit(ip: string) {
+	const freqKey = `rl:freq:${ip}`
+	const blockKey = `rl:block:${ip}`
+
+	const isBlocked = await redis.get<number>(blockKey)
+	if (isBlocked) {
+		const ttl = await redis.ttl(blockKey)
+		return { blocked: true, remainingMs: ttl * 1000 }
+	}
+
+	const requests = await redis.incr(freqKey)
+	if (requests === 1) {
+		await redis.expire(freqKey, 1)
+	}
+
+	if (requests > 5) {
+		return { tooFrequent: true }
+	}
+
+	return { ok: true }
+}
+
+async function registerFail(ip: string) {
+	const failKey = `rl:fails:${ip}`
+	const blockKey = `rl:block:${ip}`
+
+	const fails = await redis.incr(failKey)
+	if (fails === 1) {
+		await redis.expire(failKey, 60)
+	}
+
+	if (fails >= 10) {
+		await redis.set(blockKey, 1, { ex: 600 })
+		await redis.del(failKey)
+	}
+}
+
+export async function createPresenceConfig(
+	authorId: string,
+	body: Omit<AddConfigBody, 'kind'>
+): Promise<string> {
 	const ref = db.ref('presence-configs').push()
-	const { kind, ...rest } = body
 
 	await ref.set({
-		...rest,
-		authorTag: buildAuthorTag(authorId),
+		...body,
+		authorId,
+		downloads: 0,
 	})
 
 	const id = ref.key || 'unknown'
@@ -39,13 +80,16 @@ export async function createPresenceConfig(authorId: string, body: AddConfigBody
 	return id
 }
 
-export async function createStatusConfig(authorId: string, body: AddConfigBody): Promise<string> {
+export async function createStatusConfig(
+	authorId: string,
+	body: Omit<AddConfigBody, 'kind'>
+): Promise<string> {
 	const ref = db.ref('status-configs').push()
-	const { kind, ...rest } = body
 
 	await ref.set({
-		...rest,
-		authorTag: buildAuthorTag(authorId),
+		...body,
+		authorId,
+		downloads: 0,
 	})
 
 	const id = ref.key || 'unknown'
@@ -67,9 +111,37 @@ export async function POST(req: Request, ctx: { params: Promise<Params> | Params
 			)
 		}
 
+		const ip = getClientIp(req)
+		const rl = await checkRateLimit(ip)
+
+		if (rl.blocked) {
+			return NextResponse.json(
+				{
+					ok: false,
+					error: 'TooManyAttempts',
+					message: `Too many invalid requests. Try again in ${Math.ceil(
+						(rl.remainingMs ?? 0) / 1000
+					)} seconds.`,
+				},
+				{ status: 429 }
+			)
+		}
+
+		if (rl.tooFrequent) {
+			return NextResponse.json(
+				{
+					ok: false,
+					error: 'TooFrequent',
+					message: 'Too many requests. Please wait before trying again.',
+				},
+				{ status: 429 }
+			)
+		}
+
 		const body = (await req.json()) as AddConfigBody
 
 		if (!body.kind || (body.kind !== 'presence' && body.kind !== 'status')) {
+			await registerFail(ip)
 			return NextResponse.json(
 				{ error: 'InvalidKind', message: 'kind must be "presence" or "status"' },
 				{ status: 400 }
@@ -77,6 +149,7 @@ export async function POST(req: Request, ctx: { params: Promise<Params> | Params
 		}
 
 		if (!body.title || !body.configData) {
+			await registerFail(ip)
 			return NextResponse.json(
 				{ error: 'InvalidPayload', message: 'title and configData are required' },
 				{ status: 400 }
@@ -85,16 +158,19 @@ export async function POST(req: Request, ctx: { params: Promise<Params> | Params
 
 		const userSnap = await db.ref(`users/${authorId}`).get()
 		if (!userSnap.exists()) {
+			await registerFail(ip)
 			return NextResponse.json(
 				{ error: 'AuthorNotFound', message: 'Author does not exist' },
 				{ status: 404 }
 			)
 		}
 
+		const { kind, ...configPayload } = body
+
 		const createdId =
-			body.kind === 'presence'
-				? await createPresenceConfig(authorId, body)
-				: await createStatusConfig(authorId, body)
+			kind === 'presence'
+				? await createPresenceConfig(authorId, configPayload)
+				: await createStatusConfig(authorId, configPayload)
 
 		return NextResponse.json({ id: createdId }, { status: 200 })
 	} catch (err) {
