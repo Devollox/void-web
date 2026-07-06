@@ -1,6 +1,4 @@
 import { admin } from '@/service/firebase-admin'
-import { UpstashRedisAdapter } from '@auth/upstash-redis-adapter'
-import { redis } from '@service/redis'
 import NextAuth from 'next-auth'
 import DiscordProvider from 'next-auth/providers/discord'
 import GitHub from 'next-auth/providers/github'
@@ -13,7 +11,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth(req => {
 	const steamReq = req ?? new Request(`${protocol}${host}`)
 
 	return {
-		adapter: UpstashRedisAdapter(redis),
 		providers: [
 			GitHub({
 				clientId: process.env.GITHUB_ID!,
