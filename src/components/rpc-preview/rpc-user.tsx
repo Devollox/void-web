@@ -178,19 +178,25 @@ const RpcActivity = ({
 	currentImage,
 	currentIndex,
 	config,
+	hasButtons,
 }: {
 	activityType?: string
 	currentCycle?: Cycle
 	currentImage?: ImageCycle
 	currentIndex?: number
 	config?: Partial<ConfigData>
+	hasButtons: boolean
 }) => {
 	const imageSrc = currentImage?.largeImage || FALLBACK_ART
 
 	return (
 		<div className={styles.rpc_activity}>
 			<div className={styles.activity_type}>{activityType}</div>
-			<div className={styles.activity_content}>
+			<div
+				className={`${styles.activity_content} ${
+					!hasButtons ? styles.activity_content_noButtons : ''
+				}`}
+			>
 				<RpcActivityArt src={imageSrc} />
 				<RpcActivityDetails
 					currentCycle={currentCycle}
@@ -216,11 +222,15 @@ export default function RpcPreview({
 	const buttons: Array<{ label: string; url: string }> = []
 
 	if (currentButtons) {
-		buttons.push({ label: currentButtons.label1, url: currentButtons.url1 })
+		if (currentButtons.label1 && currentButtons.url1) {
+			buttons.push({ label: currentButtons.label1, url: currentButtons.url1 })
+		}
 		if (currentButtons.label2 && currentButtons.url2) {
 			buttons.push({ label: currentButtons.label2, url: currentButtons.url2 })
 		}
 	}
+
+	const hasButtons = buttons.length > 0
 
 	return (
 		<div className={styles.rpc_preview}>
@@ -231,8 +241,9 @@ export default function RpcPreview({
 				currentImage={currentImage}
 				currentIndex={currentIndex}
 				config={config}
+				hasButtons={hasButtons}
 			/>
-			{buttons.length > 0 && <RpcButtons buttons={buttons} />}
+			{hasButtons && <RpcButtons buttons={buttons} />}
 		</div>
 	)
 }
