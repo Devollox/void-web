@@ -96,7 +96,7 @@ RpcUser.displayName = 'RpcUser'
 const RpcActivityArt = memo(
 	({ src }: { src: string }) => {
 		const imgRef = useRef<HTMLImageElement>(null)
-		const lastSrcRef = useRef<string>('')
+		const lastSrcRef = useRef<string>(src || FALLBACK_ART)
 
 		useEffect(() => {
 			const nextSrc = src || FALLBACK_ART
@@ -113,7 +113,7 @@ const RpcActivityArt = memo(
 					ref={imgRef}
 					width={64}
 					height={64}
-					defaultValue={src || FALLBACK_ART}
+					src={src || FALLBACK_ART}
 					alt='Activity art'
 					className={styles.large_art}
 					onError={e => {

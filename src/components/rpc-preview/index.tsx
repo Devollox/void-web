@@ -2,6 +2,7 @@
 
 import Logo from '@public/logo.png'
 import Image from 'next/image'
+import { memo, useEffect, useRef } from 'react'
 import RpcLabel from '../label'
 import styles from './rpc-preview.module.scss'
 
@@ -40,7 +41,46 @@ type Props = {
 	avatarSrc?: string
 }
 
-export default function RpcPreview({
+const FALLBACK_ART = '/logo.png'
+
+const RpcActivityArt = memo(
+	({ src }: { src: string }) => {
+		const imgRef = useRef<HTMLImageElement>(null)
+		const lastSrcRef = useRef<string>('')
+
+		useEffect(() => {
+			const nextSrc = src || FALLBACK_ART
+			if (lastSrcRef.current === nextSrc) return
+			lastSrcRef.current = nextSrc
+			if (imgRef.current) {
+				imgRef.current.src = nextSrc
+			}
+		}, [src])
+
+		return (
+			<div className={styles.activity_art}>
+				<img
+					ref={imgRef}
+					width={64}
+					height={64}
+					defaultValue={src || FALLBACK_ART}
+					alt='Activity art'
+					className={styles.large_art}
+					onError={e => {
+						lastSrcRef.current = FALLBACK_ART
+						;(e.target as HTMLImageElement).src = FALLBACK_ART
+					}}
+				/>
+				<div className={styles.art_overlay} />
+			</div>
+		)
+	},
+	(prevProps, nextProps) => prevProps.src === nextProps.src
+)
+
+RpcActivityArt.displayName = 'RpcActivityArt'
+
+const RpcPreview = memo(function RpcPreview({
 	currentCycle,
 	currentImage,
 	currentButtons,
@@ -65,7 +105,7 @@ export default function RpcPreview({
 	const normalizedIndex = (((currentIndex % cyclesLen) + cyclesLen) % cyclesLen) + 1
 	const progress = Math.round((normalizedIndex / cyclesLen) * 100)
 	const safeAvatarSrc = avatarSrc || Logo
-	const safeImageSrc = currentImage?.largeImage || '/logo.png'
+	const imageSrc = currentImage?.largeImage || FALLBACK_ART
 
 	return (
 		<section id='rpc-preview-section' className={styles.rpc_section}>
@@ -88,17 +128,7 @@ export default function RpcPreview({
 					<div className={styles.rpc_activity}>
 						<div className={styles.activity_type}>{activityType}</div>
 						<div className={styles.activity_content}>
-							<div className={styles.activity_art}>
-								<Image
-									width={64}
-									height={64}
-									src={safeImageSrc}
-									alt='Activity art'
-									className={styles.large_art}
-									unoptimized
-								/>
-								<div className={styles.art_overlay} />
-							</div>
+							<RpcActivityArt src={imageSrc} />
 
 							<div className={styles.activity_details}>
 								<div className={styles.details_title}>{currentCycle.details}</div>
@@ -132,4 +162,6 @@ export default function RpcPreview({
 			</div>
 		</section>
 	)
-}
+})
+
+export default RpcPreview

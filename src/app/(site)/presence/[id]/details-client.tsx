@@ -3,7 +3,7 @@
 import { Config } from '@/app/(api)/api/v1/configs/route'
 import RpcPreview from '@components/rpc-preview/rpc-user'
 import { useSession } from 'next-auth/react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import styles from './config-details.module.scss'
 import { CopyJsonButton } from './copy-button'
 import { DownloadJsonButton } from './download-button'
@@ -24,6 +24,9 @@ export function ConfigDetailsClient({ configId, initialPreviewTick }: Props) {
 	const [loading, setLoading] = useState(true)
 	const [deleting, setDeleting] = useState(false)
 	const [deleted, setDeleted] = useState(false)
+
+	const backdropRef = useRef<HTMLImageElement>(null)
+	const lastBackdropSrcRef = useRef<string>('')
 
 	const { data: session } = useSession()
 
@@ -93,6 +96,36 @@ export function ConfigDetailsClient({ configId, initialPreviewTick }: Props) {
 			eventSource?.close()
 		}
 	}, [configId])
+
+	const configData: any = config?.configData || {}
+
+	const cycles = configData.cycles?.length ? configData.cycles : [{ details: '', state: '' }]
+	const images = configData.imageCycles?.length ? configData.imageCycles : [{ largeImage: '' }]
+	const buttonsList = configData.buttonPairs?.length
+		? configData.buttonPairs
+		: [{ label1: '', url1: '' }]
+
+	const maxLen = Math.max(cycles.length || 1, images.length || 1, buttonsList.length || 1)
+	const localIndex = maxLen ? previewTick % maxLen : 0
+
+	const cycleIndex = localIndex % cycles.length
+	const imageIndex = localIndex % images.length
+	const buttonIndex = localIndex % buttonsList.length
+
+	const firstCycle = cycles[cycleIndex]
+	const firstImage = images[imageIndex]
+	const firstButtons = buttonsList[buttonIndex]
+	const avatarSrc = config?.authorAvatar || '/logo.png'
+
+	useEffect(() => {
+		if (!config) return
+		const nextSrc = firstImage.largeImage || ''
+		if (lastBackdropSrcRef.current === nextSrc) return
+		lastBackdropSrcRef.current = nextSrc
+		if (backdropRef.current) {
+			backdropRef.current.src = nextSrc
+		}
+	}, [firstImage.largeImage, config])
 
 	const isOwnerClient = useMemo(() => {
 		if (!config) return false
@@ -202,26 +235,6 @@ export function ConfigDetailsClient({ configId, initialPreviewTick }: Props) {
 		)
 	}
 
-	const configData: any = config.configData
-
-	const cycles = configData.cycles?.length ? configData.cycles : [{ details: '', state: '' }]
-	const images = configData.imageCycles?.length ? configData.imageCycles : [{ largeImage: '' }]
-	const buttonsList = configData.buttonPairs?.length
-		? configData.buttonPairs
-		: [{ label1: '', url1: '' }]
-
-	const maxLen = Math.max(cycles.length || 1, images.length || 1, buttonsList.length || 1)
-	const localIndex = maxLen ? previewTick % maxLen : 0
-
-	const cycleIndex = localIndex % cycles.length
-	const imageIndex = localIndex % images.length
-	const buttonIndex = localIndex % buttonsList.length
-
-	const firstCycle = cycles[cycleIndex]
-	const firstImage = images[imageIndex]
-	const firstButtons = buttonsList[buttonIndex]
-	const avatarSrc = config.authorAvatar || '/logo.png'
-
 	const handleOpenInApp = async () => {
 		window.location.href = `voidpresence://import-config?title=${encodeURIComponent(
 			config.title
@@ -242,8 +255,8 @@ export function ConfigDetailsClient({ configId, initialPreviewTick }: Props) {
 		<section id='addon-details' className={styles.page_section}>
 			<div className={styles.theme_view_panel}>
 				<img
-					key={firstImage.largeImage || null}
-					src={firstImage.largeImage || undefined}
+					ref={backdropRef}
+					defaultValue={firstImage.largeImage || undefined}
 					className={styles.addon_backdrop}
 					alt=''
 				/>
