@@ -1,4 +1,6 @@
 import { admin } from '@/service/firebase-admin'
+import { UpstashRedisAdapter } from '@auth/upstash-redis-adapter'
+import { redis } from '@service/redis'
 import NextAuth from 'next-auth'
 import DiscordProvider from 'next-auth/providers/discord'
 import GitHub from 'next-auth/providers/github'
@@ -11,6 +13,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth(req => {
 	const steamReq = req ?? new Request(`${protocol}${host}`)
 
 	return {
+		adapter: UpstashRedisAdapter(redis),
 		providers: [
 			GitHub({
 				clientId: process.env.GITHUB_ID!,
@@ -71,20 +74,22 @@ export const { handlers, auth, signIn, signOut } = NextAuth(req => {
 					}
 
 					token.id = stableId.trim() || String(user?.id || token.sub || '')
-				}
 
-				if (token.id) {
-					try {
-						token.firebaseToken = await admin.auth().createCustomToken(String(token.id))
-					} catch {}
+					if (token.id) {
+						try {
+							token.firebaseToken = await admin.auth().createCustomToken(String(token.id))
+						} catch (err) {
+							console.error('createCustomToken failed:', err)
+						}
+					}
 				}
 
 				return token
 			},
 			async session({ session, token }) {
-				session.accessToken = token.accessToken
-				session.firebaseToken = token.firebaseToken
-				session.provider = token.provider
+				session.accessToken = token.accessToken as string | undefined
+				session.firebaseToken = token.firebaseToken as string | undefined
+				session.provider = token.provider as string | undefined
 
 				if (session.user) {
 					session.user.id = String(token.id || token.sub || '')
