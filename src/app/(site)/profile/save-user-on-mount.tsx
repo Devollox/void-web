@@ -15,7 +15,7 @@ export function SaveUserOnMount() {
 
 		sentRef.current = true
 
-		fetch('/api/v1/users/sync', {
+		fetch('/api/auth/users/sync', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({

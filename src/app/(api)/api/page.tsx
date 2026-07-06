@@ -691,7 +691,7 @@ es.addEventListener('not-found', () => {
 	{
 		id: 'users-get-profile',
 		method: 'GET',
-		path: '/v1/users/{id}',
+		path: '/api/auth/users/sync',
 		title: 'Get user profile',
 		description: 'Returns user profile data without configs, looked up by user id.',
 		group: 'users',
@@ -704,7 +704,7 @@ es.addEventListener('not-found', () => {
 			tag: '1234',
 			provider: 'discord',
 		},
-		fetchPayload: `fetch('${API_BASE_V1}/v1/users/123456789')
+		fetchPayload: `fetch('https://voidpresence.site/api/auth/users/sync')
   .then(res => res.json())
   .then(user => console.log(user))`,
 	},
