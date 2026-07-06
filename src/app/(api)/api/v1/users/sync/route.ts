@@ -19,62 +19,6 @@ function normalizeTag(tag?: string): string | null {
 	return head.padStart(4, '0')
 }
 
-async function updateAuthorInConfigs(
-	userId: string,
-	name?: string,
-	avatar?: string,
-	normalizedTag?: string | null
-) {
-	const userConfigsSnap = await db.ref(`users/${userId}/configs`).get()
-	if (!userConfigsSnap.exists()) return
-
-	const configs = userConfigsSnap.val() as {
-		presence?: Record<string, boolean>
-		status?: Record<string, boolean>
-	}
-
-	const presenceIds = Object.keys(configs.presence || {}).filter(id => configs.presence?.[id])
-	const statusIds = Object.keys(configs.status || {}).filter(id => configs.status?.[id])
-
-	if (presenceIds.length === 0 && statusIds.length === 0) {
-		return
-	}
-
-	const updates: Record<string, any> = {}
-
-	for (const id of presenceIds) {
-		const basePath = `presence-configs/${id}`
-
-		if (name) {
-			updates[`${basePath}/author`] = name
-		}
-		if (avatar) {
-			updates[`${basePath}/authorAvatar`] = avatar
-		}
-		if (normalizedTag) {
-			updates[`${basePath}/authorTag`] = normalizedTag
-		}
-	}
-
-	for (const id of statusIds) {
-		const basePath = `status-configs/${id}`
-
-		if (name) {
-			updates[`${basePath}/author`] = name
-		}
-		if (avatar) {
-			updates[`${basePath}/authorAvatar`] = avatar
-		}
-		if (normalizedTag) {
-			updates[`${basePath}/authorTag`] = normalizedTag
-		}
-	}
-
-	if (Object.keys(updates).length > 0) {
-		await db.ref().update(updates)
-	}
-}
-
 export async function POST(req: Request) {
 	try {
 		const body = (await req.json()) as SyncUserBody
@@ -98,6 +42,7 @@ export async function POST(req: Request) {
 		const snap = await userRef.get()
 
 		const normalizedTag = normalizeTag(tag)
+		const now = Date.now()
 
 		if (snap.exists()) {
 			await userRef.update({
@@ -105,10 +50,8 @@ export async function POST(req: Request) {
 				...(avatar ? { avatar } : {}),
 				...(normalizedTag ? { tag: normalizedTag } : {}),
 				...(provider ? { provider } : {}),
-				lastSeen: Date.now(),
+				lastSeen: now,
 			})
-
-			await updateAuthorInConfigs(userId, name, avatar, normalizedTag)
 
 			return NextResponse.json({ ok: true, created: false }, { status: 200 })
 		}
@@ -118,11 +61,9 @@ export async function POST(req: Request) {
 			avatar: avatar || '/logo.png',
 			provider: provider || null,
 			tag: normalizedTag,
-			createdAt: Date.now(),
-			lastSeen: Date.now(),
+			createdAt: now,
+			lastSeen: now,
 		})
-
-		await updateAuthorInConfigs(userId, name, avatar, normalizedTag)
 
 		return NextResponse.json({ ok: true, created: true }, { status: 200 })
 	} catch (err) {
