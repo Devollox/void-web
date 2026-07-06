@@ -74,13 +74,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth(req => {
 					}
 
 					token.id = stableId.trim() || String(user?.id || token.sub || '')
+				}
 
-					if (token.id) {
-						try {
-							token.firebaseToken = await admin.auth().createCustomToken(String(token.id))
-						} catch (err) {
-							console.error('createCustomToken failed:', err)
-						}
+				if (token.id) {
+					try {
+						token.firebaseToken = await admin.auth().createCustomToken(String(token.id))
+					} catch (err) {
+						console.error('createCustomToken failed:', err)
 					}
 				}
 
@@ -93,7 +93,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth(req => {
 
 				if (session.user) {
 					session.user.id = String(token.id || token.sub || '')
-					session.user.provider = session.provider
+					session.user.provider = token.provider as string | undefined
 				}
 
 				return session
