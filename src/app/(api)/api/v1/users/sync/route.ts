@@ -30,9 +30,22 @@ export async function POST(req: Request) {
 		const session = await auth()
 		const currentUserId = session?.user?.id ? String(session.user.id) : null
 
-		if (!currentUserId || currentUserId !== body.userId) {
+		if (!currentUserId) {
 			return NextResponse.json(
-				{ ok: false, error: 'Forbidden', message: 'You can only sync your own profile' },
+				{ ok: false, error: 'NoSessionUserId', message: 'Missing session.user.id' },
+				{ status: 401 }
+			)
+		}
+
+		if (currentUserId !== body.userId) {
+			return NextResponse.json(
+				{
+					ok: false,
+					error: 'Forbidden',
+					message: 'You can only sync your own profile',
+					currentUserId,
+					bodyUserId: body.userId,
+				},
 				{ status: 403 }
 			)
 		}
@@ -56,6 +69,7 @@ export async function POST(req: Request) {
 			return NextResponse.json({ ok: true, created: false }, { status: 200 })
 		}
 
+		// Создаём НОВОГО пользователя
 		await userRef.set({
 			name: name ?? 'Unknown',
 			avatar: avatar || '/logo.png',
