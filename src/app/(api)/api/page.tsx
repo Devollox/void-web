@@ -714,7 +714,7 @@ export default function ApiDocsPage() {
 	return (
 		<Page isApiHost={true}>
 			<PageHeader
-				title='API endpoints'
+				title='Void Presence API endpoints'
 				subtitle='Browse HTTP endpoints in the same layout as your release schedule.'
 			/>
 			<ApiDocsClient initialEndpoints={endpoints} />
