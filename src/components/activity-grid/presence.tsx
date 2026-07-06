@@ -2,7 +2,7 @@
 
 import type { Config } from '@service/firebase'
 import { Download, Trash } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { memo, useEffect, useState } from 'react'
 import RpcPreview from '../rpc-preview/rpc-user'
 import styles from './activity-grid.module.scss'
 import { SkeletonCard } from './skeleton-card'
@@ -13,7 +13,11 @@ type CustomRpcPreviewProps = {
 	avatarSrc: string
 }
 
-function CustomRpcPreview({ config, previewIndex, avatarSrc }: CustomRpcPreviewProps) {
+const CustomRpcPreview = memo(function CustomRpcPreview({
+	config,
+	previewIndex,
+	avatarSrc,
+}: CustomRpcPreviewProps) {
 	const configData: any = config.configData || {}
 	const authorTag: any = config.authorTag
 	const cycles = configData.cycles ?? []
@@ -45,7 +49,7 @@ function CustomRpcPreview({ config, previewIndex, avatarSrc }: CustomRpcPreviewP
 			</div>
 		</div>
 	)
-}
+})
 
 type PresenceGridProps = {
 	configs: Config[]
@@ -251,6 +255,11 @@ export function PresenceGrid({
 											</a>
 										</div>
 									</div>
+								</div>
+								<div style={{ display: 'none' }}>
+									{configData.imageCycles?.map((img: any, i: number) => (
+										<img key={i} src={img.largeImage} alt='' />
+									))}
 								</div>
 							</div>
 						)

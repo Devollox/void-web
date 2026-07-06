@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { memo, useEffect, useRef, useState } from 'react'
 import { ProgressBar } from '../progress-bar'
 import styles from './rpc-preview.module.scss'
 
@@ -40,86 +40,94 @@ interface RpcPreviewProps {
 }
 
 const FALLBACK_AVATAR = '/logo.png'
-const FALLBACK_ART = '/placeholder.jpg'
+const FALLBACK_ART = '/logo.png'
 
-const RpcUser = ({
-	username = 'Devollox',
-	discriminator = '#0001',
-	avatarSrc,
-}: {
-	username?: string
-	discriminator?: string
-	avatarSrc?: string
-}) => {
-	const initialSrc = avatarSrc || FALLBACK_AVATAR
-	const [imgSrc, setImgSrc] = useState(initialSrc)
-	const prevSrcRef = useRef(initialSrc)
+const RpcUser = memo(
+	({
+		username = 'Devollox',
+		discriminator = '#0001',
+		avatarSrc,
+	}: {
+		username?: string
+		discriminator?: string
+		avatarSrc?: string
+	}) => {
+		const initialSrc = avatarSrc || FALLBACK_AVATAR
+		const [imgSrc, setImgSrc] = useState(initialSrc)
+		const prevSrcRef = useRef(initialSrc)
 
-	useEffect(() => {
-		const nextSrc = avatarSrc || FALLBACK_AVATAR
-		if (prevSrcRef.current === nextSrc) return
-		prevSrcRef.current = nextSrc
-		setImgSrc(nextSrc)
-	}, [avatarSrc])
+		useEffect(() => {
+			const nextSrc = avatarSrc || FALLBACK_AVATAR
+			if (prevSrcRef.current === nextSrc) return
+			prevSrcRef.current = nextSrc
+			setImgSrc(nextSrc)
+		}, [avatarSrc])
 
-	const displayTag = discriminator
-		? discriminator.startsWith('#')
-			? discriminator
-			: `#${discriminator}`
-		: '#0000'
+		const displayTag = discriminator
+			? discriminator.startsWith('#')
+				? discriminator
+				: `#${discriminator}`
+			: '#0000'
 
-	return (
-		<div className={styles.rpc_user}>
-			<div className={styles.rpc_avatar}>
-				<div className={styles.avatar_placeholder}>
-					<img
-						src={imgSrc}
-						alt='Avatar'
-						width={48}
-						height={48}
-						onError={() => setImgSrc(FALLBACK_AVATAR)}
-					/>
+		return (
+			<div className={styles.rpc_user}>
+				<div className={styles.rpc_avatar}>
+					<div className={styles.avatar_placeholder}>
+						<img
+							src={imgSrc}
+							alt='Avatar'
+							width={48}
+							height={48}
+							onError={() => setImgSrc(FALLBACK_AVATAR)}
+						/>
+					</div>
+					<div className={styles.status_indicator} />
 				</div>
-				<div className={styles.status_indicator} />
+				<div>
+					<div className={styles.username}>{username}</div>
+					<div className={styles.discriminator}>{displayTag}</div>
+				</div>
 			</div>
-			<div>
-				<div className={styles.username}>{username}</div>
-				<div className={styles.discriminator}>{displayTag}</div>
+		)
+	}
+)
+RpcUser.displayName = 'RpcUser'
+
+const RpcActivityArt = memo(
+	({ src }: { src: string }) => {
+		const imgRef = useRef<HTMLImageElement>(null)
+		const lastSrcRef = useRef<string>('')
+
+		useEffect(() => {
+			const nextSrc = src || FALLBACK_ART
+			if (lastSrcRef.current === nextSrc) return
+			lastSrcRef.current = nextSrc
+			if (imgRef.current) {
+				imgRef.current.src = nextSrc
+			}
+		}, [src])
+
+		return (
+			<div className={styles.activity_art}>
+				<img
+					ref={imgRef}
+					width={64}
+					height={64}
+					defaultValue={src || FALLBACK_ART}
+					alt='Activity art'
+					className={styles.large_art}
+					onError={e => {
+						lastSrcRef.current = FALLBACK_ART
+						;(e.target as HTMLImageElement).src = FALLBACK_ART
+					}}
+				/>
+				<div className={styles.art_overlay} />
 			</div>
-		</div>
-	)
-}
-
-const RpcActivityArt = ({
-	currentImage = { largeImage: FALLBACK_ART },
-}: {
-	currentImage?: ImageCycle
-}) => {
-	const initialSrc = currentImage.largeImage || FALLBACK_ART
-	const [imgSrc, setImgSrc] = useState(initialSrc)
-	const prevSrcRef = useRef(initialSrc)
-
-	useEffect(() => {
-		const nextSrc = currentImage.largeImage || FALLBACK_ART
-		if (prevSrcRef.current === nextSrc) return
-		prevSrcRef.current = nextSrc
-		setImgSrc(nextSrc)
-	}, [currentImage.largeImage])
-
-	return (
-		<div className={styles.activity_art}>
-			<img
-				width={64}
-				height={64}
-				src={imgSrc}
-				alt='Activity art'
-				className={styles.large_art}
-				onError={() => setImgSrc(FALLBACK_ART)}
-			/>
-			<div className={styles.art_overlay} />
-		</div>
-	)
-}
+		)
+	},
+	(prevProps, nextProps) => prevProps.src === nextProps.src
+)
+RpcActivityArt.displayName = 'RpcActivityArt'
 
 const RpcActivityDetails = ({
 	currentCycle = { details: 'No details', state: 'No state' },
@@ -152,13 +160,17 @@ const RpcButton = ({ label, url }: { label: string; url: string }) => (
 	</a>
 )
 
-const RpcButtons = ({ buttons }: { buttons: Array<{ label: string; url: string }> }) => (
-	<div className={styles.rpc_buttons}>
-		{buttons.map((button, index) => (
-			<RpcButton key={index} {...button} />
-		))}
-	</div>
+const RpcButtons = memo(
+	({ buttons }: { buttons: Array<{ label: string; url: string }> }) => (
+		<div className={styles.rpc_buttons}>
+			{buttons.map((button, index) => (
+				<RpcButton key={index} {...button} />
+			))}
+		</div>
+	),
+	(prevProps, nextProps) => JSON.stringify(prevProps.buttons) === JSON.stringify(nextProps.buttons)
 )
+RpcButtons.displayName = 'RpcButtons'
 
 const RpcActivity = ({
 	activityType,
@@ -172,15 +184,23 @@ const RpcActivity = ({
 	currentImage?: ImageCycle
 	currentIndex?: number
 	config?: Partial<ConfigData>
-}) => (
-	<div className={styles.rpc_activity}>
-		<div className={styles.activity_type}>{activityType}</div>
-		<div className={styles.activity_content}>
-			<RpcActivityArt currentImage={currentImage} />
-			<RpcActivityDetails currentCycle={currentCycle} currentIndex={currentIndex} config={config} />
+}) => {
+	const imageSrc = currentImage?.largeImage || FALLBACK_ART
+
+	return (
+		<div className={styles.rpc_activity}>
+			<div className={styles.activity_type}>{activityType}</div>
+			<div className={styles.activity_content}>
+				<RpcActivityArt src={imageSrc} />
+				<RpcActivityDetails
+					currentCycle={currentCycle}
+					currentIndex={currentIndex}
+					config={config}
+				/>
+			</div>
 		</div>
-	</div>
-)
+	)
+}
 
 export default function RpcPreview({
 	username,

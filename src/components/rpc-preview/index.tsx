@@ -65,7 +65,7 @@ export default function RpcPreview({
 	const normalizedIndex = (((currentIndex % cyclesLen) + cyclesLen) % cyclesLen) + 1
 	const progress = Math.round((normalizedIndex / cyclesLen) * 100)
 	const safeAvatarSrc = avatarSrc || Logo
-	const safeImageSrc = currentImage?.largeImage || '/placeholder.jpg'
+	const safeImageSrc = currentImage?.largeImage || '/logo.png'
 
 	return (
 		<section id='rpc-preview-section' className={styles.rpc_section}>
