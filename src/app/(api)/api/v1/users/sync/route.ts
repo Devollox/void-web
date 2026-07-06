@@ -29,7 +29,7 @@ export async function POST(req: Request) {
 
 		const session = await auth()
 		const currentUserId = session?.user?.id ? String(session.user.id) : null
-
+		console.log(session)
 		if (!currentUserId) {
 			console.warn('NoSessionUserId in /api/v1/users/sync', { session })
 			return NextResponse.json(
