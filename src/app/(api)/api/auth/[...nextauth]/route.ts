@@ -7,6 +7,15 @@ import GitHub from 'next-auth/providers/github'
 import Google from 'next-auth/providers/google'
 import SteamProvider from 'steam-next-auth'
 
+const db = admin.database()
+
+function normalizeTag(tag?: string): string | null {
+	if (!tag) return null
+	const digitsOnly = tag.replace(/\D/g, '')
+	const head = digitsOnly.slice(0, 4)
+	return head.padStart(4, '0')
+}
+
 export const { handlers, auth, signIn, signOut } = NextAuth(req => {
 	const host = req?.headers.get('host') || 'voidpresence.site'
 	const protocol = host.includes('localhost') ? 'http://' : 'https://'
@@ -74,13 +83,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth(req => {
 					}
 
 					token.id = stableId.trim() || String(user?.id || token.sub || '')
+					token.name = user?.name || token.name || 'Unknown'
+					token.picture = user?.image || token.picture || '/logo.png'
+				}
 
-					if (token.id) {
-						try {
-							token.firebaseToken = await admin.auth().createCustomToken(String(token.id))
-						} catch (err) {
-							console.error('createCustomToken failed:', err)
-						}
+				if (token.id) {
+					try {
+						token.firebaseToken = await admin.auth().createCustomToken(String(token.id))
+					} catch (err) {
+						console.error('createCustomToken failed:', err)
 					}
 				}
 
@@ -92,8 +103,37 @@ export const { handlers, auth, signIn, signOut } = NextAuth(req => {
 				session.provider = token.provider as string | undefined
 
 				if (session.user) {
-					session.user.id = String(token.id || token.sub || '')
-					session.user.provider = token.provider as string | undefined
+					const userId = String(token.id || token.sub || '')
+					session.user.id = userId
+					session.user.provider = session.provider
+
+					try {
+						const userRef = db.ref(`users/${userId}`)
+						const snap = await userRef.get()
+						const now = Date.now()
+						const currentTag = normalizeTag(userId.slice(0, 4))
+
+						if (snap.exists()) {
+							await userRef.update({
+								...(session.user.name ? { name: session.user.name } : {}),
+								...(session.user.image ? { avatar: session.user.image } : {}),
+								...(currentTag ? { tag: currentTag } : {}),
+								...(session.provider ? { provider: session.provider } : {}),
+								lastSeen: now,
+							})
+						} else {
+							await userRef.set({
+								name: session.user.name || 'Unknown',
+								avatar: session.user.image || '/logo.png',
+								provider: session.provider || null,
+								tag: currentTag,
+								createdAt: now,
+								lastSeen: now,
+							})
+						}
+					} catch (err) {
+						console.error('Firebase background profile sync failed:', err)
+					}
 				}
 
 				return session
