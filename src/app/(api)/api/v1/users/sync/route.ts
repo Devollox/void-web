@@ -31,6 +31,7 @@ export async function POST(req: Request) {
 		const currentUserId = session?.user?.id ? String(session.user.id) : null
 
 		if (!currentUserId) {
+			console.warn('NoSessionUserId in /api/v1/users/sync', { session })
 			return NextResponse.json(
 				{ ok: false, error: 'NoSessionUserId', message: 'Missing session.user.id' },
 				{ status: 401 }
@@ -38,6 +39,10 @@ export async function POST(req: Request) {
 		}
 
 		if (currentUserId !== body.userId) {
+			console.warn('UserId mismatch in /api/v1/users/sync', {
+				currentUserId,
+				bodyUserId: body.userId,
+			})
 			return NextResponse.json(
 				{
 					ok: false,
@@ -69,7 +74,6 @@ export async function POST(req: Request) {
 			return NextResponse.json({ ok: true, created: false }, { status: 200 })
 		}
 
-		// Создаём НОВОГО пользователя
 		await userRef.set({
 			name: name ?? 'Unknown',
 			avatar: avatar || '/logo.png',
