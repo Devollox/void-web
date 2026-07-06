@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 	description:
 		'Void Presence documentation: learn how to install, configure, and debug your Discord Rich Presence.',
 	openGraph: {
-		title: 'Void Presence Docs',
+		title: 'Void Presence - Docs',
 		description:
 			'Read the full Void Presence documentation including features, setup steps, and usage tips.',
 		url: '/docs',

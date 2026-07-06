@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 	description:
 		"Current Void Presence status and details about Discord's Rich Presence buttons visibility bug.",
 	openGraph: {
-		title: 'Void Presence Status',
+		title: 'Void Presence - Status',
 		description:
 			"Check current Void Presence status and learn about Discord's Rich Presence buttons visibility issue.",
 		url: '/status',

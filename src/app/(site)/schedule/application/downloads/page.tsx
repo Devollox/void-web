@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 	description:
 		'Downloads analytics for all Void Presence application releases, based on GitHub release assets.',
 	openGraph: {
-		title: 'Void Presence Application Downloads',
+		title: 'Void Presence - Application Downloads',
 		description:
 			'View download counts for all Void Presence application releases and compare their adoption.',
 		url: '/schedule/application/downloads',

@@ -26,7 +26,7 @@ export const metadata: Metadata = {
 	description:
 		'Download Void Presence for Windows and keep your Discord Rich Presence always in sync.',
 	openGraph: {
-		title: 'Download Void Presence',
+		title: 'Void Presence - Download',
 		description:
 			'Get the latest Void Presence build and customize your Discord Rich Presence with profiles, buttons, and cycles.',
 		url: '/download',

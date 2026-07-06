@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 	title: 'Statuses',
 	description: 'Browse and search shared Void Presence statuses.',
 	openGraph: {
-		title: 'Void Presence Statuses',
+		title: 'Void Presence - Statuses',
 		description: 'Discover ready-to-use Void Presence statuses and import them into your setup.',
 		url: '/statuses',
 	},

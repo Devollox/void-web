@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 	description:
 		'Release history for the Void Presence installer with version timeline and GitHub release data.',
 	openGraph: {
-		title: 'Void Presence Installer Releases',
+		title: 'Void Presence - Installer Releases',
 		description: 'Track Void Presence installer releases and changelog history in one place.',
 		url: '/schedule/installer',
 	},

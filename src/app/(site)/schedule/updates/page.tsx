@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 	description:
 		'Release history for Void Presence updates with version timeline and GitHub release data.',
 	openGraph: {
-		title: 'Void Presence Updates',
+		title: 'Void Presence - Updates',
 		description: 'Track Void Presence updates and changelog history in one place.',
 		url: '/schedule/updates',
 	},

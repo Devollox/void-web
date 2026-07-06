@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 	description:
 		'Browse and search shared Void Presence profiles to quickly set up your Discord Rich Presence.',
 	openGraph: {
-		title: 'Void Presence profiles',
+		title: 'Void Presence - Profiles',
 		description: 'Discover ready-to-use Void Presence profiles and import them into your setup.',
 		url: '/presence',
 	},
