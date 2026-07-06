@@ -22,13 +22,17 @@ function normalizeTag(tag?: string): string | null {
 export async function POST(req: Request) {
 	try {
 		const body = (await req.json()) as SyncUserBody
+		console.log('[users/sync] body:', body)
 
 		if (!body?.userId) {
 			return NextResponse.json({ ok: false, error: 'MissingUserId' }, { status: 400 })
 		}
 
 		const session = await auth()
+		console.log('[users/sync] session:', session)
+
 		const currentUserId = session?.user?.id ? String(session.user.id) : null
+		console.log('[users/sync] currentUserId:', currentUserId, 'body.userId:', body.userId)
 
 		if (!currentUserId) {
 			return NextResponse.json(
@@ -57,6 +61,8 @@ export async function POST(req: Request) {
 		const normalizedTag = normalizeTag(tag)
 		const now = Date.now()
 
+		console.log('[users/sync] exists:', snap.exists(), 'normalizedTag:', normalizedTag)
+
 		if (snap.exists()) {
 			await userRef.update({
 				...(name ? { name } : {}),
@@ -65,6 +71,8 @@ export async function POST(req: Request) {
 				...(provider ? { provider } : {}),
 				lastSeen: now,
 			})
+
+			console.log('[users/sync] updated user', userId)
 
 			return NextResponse.json({ ok: true, created: false }, { status: 200 })
 		}
@@ -78,9 +86,12 @@ export async function POST(req: Request) {
 			lastSeen: now,
 		})
 
+		console.log('[users/sync] created user', userId)
+
 		return NextResponse.json({ ok: true, created: true }, { status: 200 })
 	} catch (err) {
 		const message = err instanceof Error ? err.message : String(err)
+		console.error('[users/sync] error:', err)
 		return NextResponse.json({ ok: false, error: 'InternalError', message }, { status: 500 })
 	}
 }
