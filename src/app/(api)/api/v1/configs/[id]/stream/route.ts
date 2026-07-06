@@ -23,21 +23,19 @@ async function loadConfigSnapshot(id: string, kind: ConfigKind) {
 		}
 	}
 
+	const avatar = user?.avatar || user?.image || data?.authorAvatar || '/logo.png'
+	const name = user?.name || data?.author || 'Unknown User'
+	const tag = user?.tag ? String(user.tag).padStart(4, '0') : data?.authorTag || undefined
+
 	if (kind === 'presence') {
-		return mapRawToConfig(
-			id,
-			data,
-			user?.avatar || user?.image || data?.authorAvatar || '/logo.png',
-			user?.name || data?.author || 'Unknown User'
-		)
+		const cfg = mapRawToConfig(id, data, avatar, name) as any
+		cfg.authorTag = tag
+		return cfg
 	}
 
-	return mapRawToStatus(
-		id,
-		data,
-		user?.avatar || user?.image || data?.authorAvatar || '/logo.png',
-		user?.name || data?.author || 'Unknown User'
-	)
+	const st = mapRawToStatus(id, data, avatar, name) as any
+	st.authorTag = tag
+	return st
 }
 
 export async function GET(req: Request, ctx: { params: Promise<Params> | Params }) {

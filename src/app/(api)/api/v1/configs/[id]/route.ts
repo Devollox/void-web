@@ -48,12 +48,12 @@ export async function POST(req: Request, ctx: { params: Promise<Params> | Params
 				}
 			}
 
-			const config: GetByIdResponse = mapRawToConfig(
-				id,
-				data,
-				user?.avatar || user?.image || data?.authorAvatar || '',
-				user?.name || data?.author || 'Unknown'
-			)
+			const avatar = user?.avatar || user?.image || data?.authorAvatar || '/logo.png'
+			const name = user?.name || data?.author || 'Unknown User'
+			const tag = user?.tag ? String(user.tag).padStart(4, '0') : data?.authorTag || undefined
+
+			const config = mapRawToConfig(id, data, avatar, name) as Config
+			config.authorTag = tag
 
 			return NextResponse.json(config, { status: 200 })
 		}
@@ -75,12 +75,12 @@ export async function POST(req: Request, ctx: { params: Promise<Params> | Params
 				}
 			}
 
-			const status: GetByIdResponse = mapRawToStatus(
-				id,
-				data,
-				user?.avatar || user?.image || data?.authorAvatar || '',
-				user?.name || data?.author || 'Unknown'
-			)
+			const avatar = user?.avatar || user?.image || data?.authorAvatar || '/logo.png'
+			const name = user?.name || data?.author || 'Unknown User'
+			const tag = user?.tag ? String(user.tag).padStart(4, '0') : data?.authorTag || undefined
+
+			const status = mapRawToStatus(id, data, avatar, name) as Status
+			status.authorTag = tag
 
 			return NextResponse.json(status, { status: 200 })
 		}
