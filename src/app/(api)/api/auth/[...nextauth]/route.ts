@@ -74,6 +74,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth(req => {
 					}
 
 					token.id = stableId.trim() || String(user?.id || token.sub || '')
+					token.name = user?.name || token.name || 'Unknown'
+					token.picture = user?.image || token.picture || '/logo.png'
 
 					if (token.id) {
 						try {
@@ -86,6 +88,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth(req => {
 
 				return token
 			},
+
 			async session({ session, token }) {
 				session.accessToken = token.accessToken as string | undefined
 				session.firebaseToken = token.firebaseToken as string | undefined
@@ -93,7 +96,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth(req => {
 
 				if (session.user) {
 					session.user.id = String(token.id || token.sub || '')
-					session.user.provider = token.provider as string | undefined
+					session.user.provider = session.provider
 				}
 
 				return session

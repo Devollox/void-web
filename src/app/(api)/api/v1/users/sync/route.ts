@@ -1,5 +1,6 @@
 import { admin } from '@/service/firebase-admin'
 import { NextResponse } from 'next/server'
+import { auth } from '../../../auth/[...nextauth]/route'
 
 const db = admin.database()
 
@@ -20,36 +21,31 @@ function normalizeTag(tag?: string): string | null {
 
 export async function POST(req: Request) {
 	try {
-		const authHeader = req.headers.get('Authorization')
-		if (!authHeader || !authHeader.startsWith('Bearer ')) {
-			return NextResponse.json(
-				{ ok: false, error: 'Unauthorized', message: 'Missing token' },
-				{ status: 401 }
-			)
-		}
-
-		const token = authHeader.split(' ')[1]
-		let verifiedUid: string
-
-		try {
-			const decodedToken = await admin.auth().verifyIdToken(token)
-			verifiedUid = decodedToken.uid
-		} catch (err) {
-			return NextResponse.json(
-				{ ok: false, error: 'InvalidToken', message: 'Token verification failed' },
-				{ status: 401 }
-			)
-		}
-
 		const body = (await req.json()) as SyncUserBody
 
 		if (!body?.userId) {
 			return NextResponse.json({ ok: false, error: 'MissingUserId' }, { status: 400 })
 		}
 
-		if (verifiedUid !== body.userId) {
+		const session = await auth()
+		const currentUserId = session?.user?.id ? String(session.user.id) : null
+
+		if (!currentUserId) {
 			return NextResponse.json(
-				{ ok: false, error: 'Forbidden', message: 'UID mismatch' },
+				{ ok: false, error: 'NoSessionUserId', message: 'Missing session.user.id' },
+				{ status: 401 }
+			)
+		}
+
+		if (currentUserId !== body.userId) {
+			return NextResponse.json(
+				{
+					ok: false,
+					error: 'Forbidden',
+					message: 'You can only sync your own profile',
+					currentUserId,
+					bodyUserId: body.userId,
+				},
 				{ status: 403 }
 			)
 		}
@@ -69,6 +65,7 @@ export async function POST(req: Request) {
 				...(provider ? { provider } : {}),
 				lastSeen: now,
 			})
+
 			return NextResponse.json({ ok: true, created: false }, { status: 200 })
 		}
 

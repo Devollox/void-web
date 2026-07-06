@@ -6,22 +6,18 @@ import { useEffect, useRef } from 'react'
 export function SaveUserOnMount() {
 	const { data: session, status } = useSession()
 	const user = session?.user as any
-	const token = (session as any)?.firebaseToken
 	const sentRef = useRef(false)
 
 	useEffect(() => {
 		if (status !== 'authenticated') return
-		if (!user?.id || !token) return
+		if (!user?.id) return
 		if (sentRef.current) return
 
 		sentRef.current = true
 
-		fetch('https://voidpresence.site', {
+		fetch('/api/v1/users/sync', {
 			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-				Authorization: `Bearer ${token}`,
-			},
+			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({
 				userId: String(user.id),
 				name: user.name,
@@ -30,12 +26,10 @@ export function SaveUserOnMount() {
 				provider: user.provider ?? null,
 			}),
 		}).catch(err => {
-			setTimeout(() => {
-				sentRef.current = false
-			}, 5000)
+			sentRef.current = false
 			console.error(err)
 		})
-	}, [status, user?.id, token])
+	}, [status, user?.id, user?.name, user?.image, user?.provider])
 
 	return null
 }
