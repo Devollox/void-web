@@ -17,20 +17,17 @@ redisSubscriber.on('error', () => {})
 
 async function ensurePublisherConnected() {
 	if (!redisPublisher.isOpen) {
-		try {
-			await redisPublisher.connect()
-		} catch {}
+		await redisPublisher.connect()
 	}
 }
 
 export const safePublish = async (channel: string, message: string) => {
-	try {
-		await ensurePublisherConnected()
-		if (redisPublisher.isOpen) {
-			await Promise.race([
-				redisPublisher.publish(channel, message),
-				new Promise((_, reject) => setTimeout(() => reject(new Error()), 1500)),
-			])
-		}
-	} catch {}
+	await ensurePublisherConnected()
+	if (!redisPublisher.isOpen) {
+		throw new Error('Publisher is not open')
+	}
+	await Promise.race([
+		redisPublisher.publish(channel, message),
+		new Promise((_, reject) => setTimeout(() => reject(new Error('publish timeout')), 1500)),
+	])
 }
