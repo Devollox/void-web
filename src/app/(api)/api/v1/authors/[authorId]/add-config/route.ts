@@ -1,6 +1,9 @@
+import { safePublish } from '@/lib/redis-pubsub'
 import { admin } from '@/service/firebase-admin'
 import { redis } from '@/service/redis'
 import { NextResponse } from 'next/server'
+
+const db = admin.database()
 
 type Params = { authorId: string }
 
@@ -12,8 +15,6 @@ type AddConfigBody = {
 	uploadedAt: number
 	averageColors?: string[]
 }
-
-const db = admin.database()
 
 function getClientIp(req: Request): string {
 	const forwardedFor = req.headers.get('x-forwarded-for')
@@ -45,6 +46,18 @@ async function checkRateLimit(ip: string) {
 	return { ok: true }
 }
 
+async function checkUserCreateLimit(authorId: string) {
+	const key = `rl:create-config:user:${authorId}`
+	const count = await redis.incr(key)
+	if (count === 1) {
+		await redis.expire(key, 60)
+	}
+	if (count > 10) {
+		return { limited: true }
+	}
+	return { ok: true }
+}
+
 async function registerFail(ip: string) {
 	const failKey = `rl:fails:${ip}`
 	const blockKey = `rl:block:${ip}`
@@ -65,7 +78,6 @@ export async function createPresenceConfig(
 	body: Omit<AddConfigBody, 'kind'>
 ): Promise<string> {
 	const ref = db.ref('presence-configs').push()
-
 	await ref.set({
 		...body,
 		authorId,
@@ -73,9 +85,17 @@ export async function createPresenceConfig(
 	})
 
 	const id = ref.key || 'unknown'
+	await db.ref(`users/${authorId}/configs/presence/${id}`).set(true)
 
-	const userConfigsRef = db.ref(`users/${authorId}/configs/presence/${id}`)
-	await userConfigsRef.set(true)
+	await safePublish(
+		'events:configs',
+		JSON.stringify({
+			type: 'config_created',
+			kind: 'presence',
+			authorId,
+			configId: id,
+		})
+	)
 
 	return id
 }
@@ -85,7 +105,6 @@ export async function createStatusConfig(
 	body: Omit<AddConfigBody, 'kind'>
 ): Promise<string> {
 	const ref = db.ref('status-configs').push()
-
 	await ref.set({
 		...body,
 		authorId,
@@ -93,9 +112,17 @@ export async function createStatusConfig(
 	})
 
 	const id = ref.key || 'unknown'
+	await db.ref(`users/${authorId}/configs/status/${id}`).set(true)
 
-	const userConfigsRef = db.ref(`users/${authorId}/configs/status/${id}`)
-	await userConfigsRef.set(true)
+	await safePublish(
+		'events:configs',
+		JSON.stringify({
+			type: 'config_created',
+			kind: 'status',
+			authorId,
+			configId: id,
+		})
+	)
 
 	return id
 }
@@ -138,6 +165,18 @@ export async function POST(req: Request, ctx: { params: Promise<Params> | Params
 			)
 		}
 
+		const userLimit = await checkUserCreateLimit(authorId)
+		if (userLimit.limited) {
+			return NextResponse.json(
+				{
+					ok: false,
+					error: 'UserLimit',
+					message: 'Too many configs created in a short time. Please slow down.',
+				},
+				{ status: 429 }
+			)
+		}
+
 		const body = (await req.json()) as AddConfigBody
 
 		if (!body.kind || (body.kind !== 'presence' && body.kind !== 'status')) {
@@ -165,12 +204,32 @@ export async function POST(req: Request, ctx: { params: Promise<Params> | Params
 			)
 		}
 
+		if (body.kind === 'presence' && (!body.averageColors || body.averageColors.length === 0)) {
+			body.averageColors = ['#5b5b5b']
+		}
+
 		const { kind, ...configPayload } = body
 
 		const createdId =
 			kind === 'presence'
 				? await createPresenceConfig(authorId, configPayload)
 				: await createStatusConfig(authorId, configPayload)
+
+		await redis.del(`cache:user:${authorId}`)
+
+		await redis.lpush(
+			'events:new-configs',
+			JSON.stringify({
+				authorId,
+				configId: createdId,
+				kind,
+				title: body.title,
+				createdAt: Date.now(),
+			})
+		)
+
+		const zKey = kind === 'presence' ? 'stats:presence-downloads' : 'stats:status-downloads'
+		await redis.zadd(zKey, { score: 0, member: createdId })
 
 		return NextResponse.json({ id: createdId }, { status: 200 })
 	} catch (err) {
