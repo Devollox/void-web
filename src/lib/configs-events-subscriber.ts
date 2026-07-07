@@ -256,24 +256,39 @@ async function handleEvent(payload: ConfigEventPayload) {
 	}
 }
 
-async function startListener() {
+let started = false
+let starting = false
+
+async function ensureListener() {
+	if (started || starting) return
+	starting = true
+
 	try {
-		if (process.env.NEXT_PHASE === 'phase-production-build') {
-			return
-		}
 		if (!redisSubscriber.isOpen) {
 			await redisSubscriber.connect()
 		}
 
-		await redisSubscriber.subscribe('events:configs', async (message, channel) => {
+		await redisSubscriber.subscribe('events:configs', async message => {
 			try {
 				const payload = JSON.parse(message) as ConfigEventPayload
 				await handleEvent(payload)
-			} catch (err) {}
+			} catch {}
 		})
-	} catch {}
+
+		started = true
+	} catch (err) {
+		started = false
+	} finally {
+		starting = false
+	}
 }
 
+redisSubscriber.on('error', err => {
+	started = false
+})
+
 if (process.env.NEXT_RUNTIME === 'nodejs') {
-	startListener().catch(() => {})
+	ensureListener().catch(err => {
+		started = false
+	})
 }

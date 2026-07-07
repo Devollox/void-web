@@ -36,34 +36,41 @@ export function ProfileContainerClient({
 }: Props) {
 	const [configs, setConfigs] = useState<Config[]>(initialConfigs)
 	const [statuses, setStatuses] = useState<Status[]>(initialStatuses)
+	const [loaded, setLoaded] = useState(initialConfigs.length > 0 || initialStatuses.length > 0)
 
 	useEffect(() => {
 		let cancelled = false
-		let eventSource: EventSource | null = null
+		const eventSource = new EventSource(
+			`/api/v1/authors/${encodeURIComponent(String(userId))}/stream`
+		)
 
-		async function startStream() {
-			eventSource = new EventSource(`/api/v1/authors/${encodeURIComponent(String(userId))}/stream`)
+		eventSource.addEventListener('ready', event => {
+			if (cancelled) return
+			const next = JSON.parse((event as MessageEvent).data) as AuthorConfigsResponse
+			setConfigs(next.presenceConfigs || [])
+			setStatuses(next.statusConfigs || [])
+			setLoaded(true)
+		})
 
-			eventSource.addEventListener('ready', event => {
-				if (cancelled) return
-				const next = JSON.parse((event as MessageEvent).data) as AuthorConfigsResponse
-				setConfigs(next.presenceConfigs || [])
-				setStatuses(next.statusConfigs || [])
-			})
+		eventSource.addEventListener('profile-update', event => {
+			if (cancelled) return
+			const next = JSON.parse((event as MessageEvent).data) as AuthorConfigsResponse
+			setConfigs(next.presenceConfigs || [])
+			setStatuses(next.statusConfigs || [])
+			setLoaded(true)
+		})
 
-			eventSource.addEventListener('update', event => {
-				if (cancelled) return
-				const next = JSON.parse((event as MessageEvent).data) as AuthorConfigsResponse
-				setConfigs(next.presenceConfigs || [])
-				setStatuses(next.statusConfigs || [])
-			})
-		}
-
-		startStream()
+		eventSource.addEventListener('update', event => {
+			if (cancelled) return
+			const next = JSON.parse((event as MessageEvent).data) as AuthorConfigsResponse
+			setConfigs(next.presenceConfigs || [])
+			setStatuses(next.statusConfigs || [])
+			setLoaded(true)
+		})
 
 		return () => {
 			cancelled = true
-			eventSource?.close()
+			eventSource.close()
 		}
 	}, [userId])
 

@@ -33,7 +33,6 @@ export function ProfileDetailsClient({ user, lastConfig, authorID }: Props) {
 	}, [])
 
 	const configData: any = lastConfig?.configData
-
 	const cycles = configData?.cycles?.length ? configData.cycles : [{ details: '', state: '' }]
 	const images = configData?.imageCycles?.length ? configData.imageCycles : [{ largeImage: '' }]
 	const buttonsList = configData?.buttonPairs?.length
