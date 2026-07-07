@@ -71,54 +71,28 @@ async function registerFail(ip: string) {
 }
 
 async function loadAuthorConfigs(authorId: string) {
-	const redisKey = `cache:user:${authorId}`
-	const cachedUserJson = await redis.get<string>(redisKey)
-	let userRaw: UserRaw | null = null
+	const userSnap = await db.ref(`users/${authorId}`).get()
 
-	if (cachedUserJson) {
-		try {
-			userRaw = typeof cachedUserJson === 'object' ? cachedUserJson : JSON.parse(cachedUserJson)
-		} catch {
-			userRaw = null
-		}
+	if (!userSnap.exists()) {
+		return null
 	}
 
-	if (!userRaw) {
-		const userSnap = await db.ref(`users/${authorId}`).get()
+	const rawData = userSnap.val() as UserRaw
 
-		if (!userSnap.exists()) {
-			return null
-		}
-
-		const rawData = userSnap.val() as UserRaw
-		userRaw = {
-			name: rawData.name ?? null,
-			avatar: rawData.avatar ?? rawData.image ?? null,
-			provider: rawData.provider ?? null,
-			tag: rawData.tag ?? null,
-			createdAt: rawData.createdAt ?? null,
-			lastSeen: rawData.lastSeen ?? null,
-			configs: rawData.configs ?? null,
-		}
-		await redis.set(redisKey, JSON.stringify(userRaw), { ex: REDIS_TTL })
-	}
-
-	if (!userRaw) return null
-
-	const presenceMap = userRaw.configs?.presence || {}
-	const statusMap = userRaw.configs?.status || {}
+	const presenceMap = rawData.configs?.presence || {}
+	const statusMap = rawData.configs?.status || {}
 
 	const presenceIds = Object.keys(presenceMap).filter(id => presenceMap[id])
 	const statusIds = Object.keys(statusMap).filter(id => statusMap[id])
 
 	const [presenceSnaps, statusSnaps] = await Promise.all([
-		Promise.all(presenceIds.map((id: string) => db.ref(`presence-configs/${id}`).get())),
-		Promise.all(statusIds.map((id: string) => db.ref(`status-configs/${id}`).get())),
+		Promise.all(presenceIds.map(id => db.ref(`presence-configs/${id}`).get())),
+		Promise.all(statusIds.map(id => db.ref(`status-configs/${id}`).get())),
 	])
 
-	const avatarFromUser = userRaw.avatar || userRaw.image || '/logo.png'
-	const tagFromUser = userRaw.tag || userRaw.authorTag || null
-	const authorName = userRaw.name || 'Unknown User'
+	const avatarFromUser = rawData.avatar || rawData.image || '/logo.png'
+	const tagFromUser = rawData.tag || rawData.authorTag || null
+	const authorName = rawData.name || 'Unknown User'
 	const formattedTag = tagFromUser ? String(tagFromUser).padStart(4, '0') : undefined
 
 	const presenceConfigs = presenceSnaps
@@ -174,28 +148,18 @@ async function loadAuthorConfigs(authorId: string) {
 		})
 		.filter((st): st is NonNullable<typeof st> => st !== null)
 
-	const syncedPresenceMap: Record<string, boolean> = {}
-	for (let i = 0; i < presenceConfigs.length; i++) {
-		syncedPresenceMap[presenceConfigs[i].id] = true
-	}
-
-	const syncedStatusMap: Record<string, boolean> = {}
-	for (let i = 0; i < statusConfigs.length; i++) {
-		syncedStatusMap[statusConfigs[i].id] = true
-	}
-
 	return {
 		user: {
 			id: authorId,
-			name: userRaw.name || null,
-			avatar: userRaw.avatar || userRaw.image || null,
+			name: rawData.name || null,
+			avatar: avatarFromUser || null,
 			tag: formattedTag || null,
-			provider: userRaw.provider || null,
-			createdAt: userRaw.createdAt || null,
-			lastSeen: userRaw.lastSeen || null,
+			provider: rawData.provider || null,
+			createdAt: rawData.createdAt || null,
+			lastSeen: rawData.lastSeen || null,
 			configs: {
-				presence: syncedPresenceMap,
-				status: syncedStatusMap,
+				presence: Object.fromEntries(presenceConfigs.map(cfg => [cfg.id, true])),
+				status: Object.fromEntries(statusConfigs.map(cfg => [cfg.id, true])),
 			},
 		},
 		presenceConfigs,

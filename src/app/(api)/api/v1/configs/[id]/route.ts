@@ -5,13 +5,11 @@ import { NextResponse } from 'next/server'
 import { Config, ConfigKind, Status } from '../route'
 
 const db = admin.database()
-
-type Params = { id: string }
-type GetByIdPayload = { kind: ConfigKind }
-
 const USER_CACHE_TTL = 60
 
-export async function POST(req: Request, ctx: { params: Promise<Params> | Params }) {
+type Params = { id: string }
+
+export async function GET(req: Request, ctx: { params: Promise<Params> | Params }) {
 	try {
 		const { id } = 'then' in ctx.params ? await ctx.params : ctx.params
 
@@ -22,20 +20,11 @@ export async function POST(req: Request, ctx: { params: Promise<Params> | Params
 			)
 		}
 
-		const body = (await req.json()) as GetByIdPayload
-
-		if (!body || !body.kind) {
-			return NextResponse.json(
-				{ error: 'InvalidPayload', message: 'kind is required' },
-				{ status: 400 }
-			)
-		}
-
-		const { kind } = body
+		const kind = new URL(req.url).searchParams.get('kind') as ConfigKind | null
 
 		if (kind !== 'presence' && kind !== 'status') {
 			return NextResponse.json(
-				{ error: 'InvalidKind', message: `Unsupported kind: ${kind}` },
+				{ error: 'InvalidKind', message: 'kind query param is required' },
 				{ status: 400 }
 			)
 		}

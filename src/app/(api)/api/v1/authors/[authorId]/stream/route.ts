@@ -1,6 +1,5 @@
 import { sseManager } from '@/lib/sse-manager'
 import '@api/_bootstrap'
-import { loadAuthorConfigsById } from '@lib/shared'
 import { randomUUID } from 'crypto'
 import { NextResponse } from 'next/server'
 
@@ -15,15 +14,6 @@ export async function GET(req: Request, ctx: { params: Promise<Params> | Params 
 		return NextResponse.json({ ok: false, error: 'MissingAuthorId' }, { status: 400 })
 	}
 
-	const initial = await loadAuthorConfigsById(authorId)
-	if (!initial) {
-		return NextResponse.json({
-			user: null,
-			presenceConfigs: [],
-			statusConfigs: [],
-		})
-	}
-
 	const encoder = new TextEncoder()
 	let closed = false
 	const streamId = randomUUID()
@@ -36,8 +26,6 @@ export async function GET(req: Request, ctx: { params: Promise<Params> | Params 
 					controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`))
 				} catch {}
 			}
-
-			send('ready', initial)
 
 			sseManager.addAuthorSub({
 				id: streamId,
@@ -74,7 +62,6 @@ export async function GET(req: Request, ctx: { params: Promise<Params> | Params 
 			'Content-Type': 'text/event-stream; charset=utf-8',
 			'Cache-Control': 'no-cache, no-transform',
 			Connection: 'keep-alive',
-			'Content-Encoding': 'none',
 			'X-Accel-Buffering': 'no',
 		},
 	})

@@ -2,7 +2,6 @@ import { sseManager } from '@/lib/sse-manager'
 import { admin } from '@/service/firebase-admin'
 import { redis } from '@/service/redis'
 import '@api/_bootstrap'
-import { loadAuthorConfigsById } from '@lib/shared'
 import { randomUUID } from 'crypto'
 
 const db = admin.database()
@@ -40,7 +39,7 @@ async function resolveUserByHandle(username: string, tag: string) {
 	const usersSnap = await db.ref('users').get()
 	if (!usersSnap.exists()) return null
 
-	const users = usersSnap.val() as Record<string, any>
+	const users = usersSnap.val() as Record<string, UserRaw>
 
 	const entry = Object.entries(users).find(
 		([, u]) =>
@@ -91,18 +90,6 @@ export async function GET(req: Request) {
 
 			authorId = String(resolved.authorId)
 
-			const initial = await loadAuthorConfigsById(authorId)
-			if (!initial || !initial.user) {
-				send('not-found', { username, tag })
-				try {
-					controller.close()
-				} catch {}
-				closed = true
-				return
-			}
-
-			send('ready', initial)
-
 			sseManager.addAuthorSub({
 				id: streamId,
 				authorId,
@@ -129,7 +116,9 @@ export async function GET(req: Request) {
 		cancel() {
 			if (closed) return
 			closed = true
-			sseManager.removeAuthorSub(streamId)
+			if (authorId) {
+				sseManager.removeAuthorSub(streamId)
+			}
 		},
 	})
 

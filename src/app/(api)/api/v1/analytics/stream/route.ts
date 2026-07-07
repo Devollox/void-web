@@ -1,22 +1,35 @@
 import { sseManager } from '@/lib/sse-manager'
-import { mapRawToStats, type Stats } from '@/service/firebase'
 import { admin } from '@/service/firebase-admin'
 import '@api/_bootstrap'
 import { randomUUID } from 'crypto'
 
 const db = admin.database()
 
-function toStats(raw: any): Stats {
-	return mapRawToStats(raw || {})
+async function loadStats() {
+	const [downloadsSnap, visitorsSnap] = await Promise.all([
+		db.ref('stats/downloads').get(),
+		db.ref('stats/visitors').get(),
+	])
+
+	const downloads = downloadsSnap.exists() ? downloadsSnap.val() : { count: 0, lastUpdated: 0 }
+	const visitors = visitorsSnap.exists() ? visitorsSnap.val() : { count: 0, lastUpdated: 0 }
+
+	return {
+		downloads: {
+			count: typeof downloads?.count === 'number' ? downloads.count : 0,
+			lastUpdated: typeof downloads?.lastUpdated === 'number' ? downloads.lastUpdated : 0,
+		},
+		visitors: {
+			count: typeof visitors?.count === 'number' ? visitors.count : 0,
+			lastUpdated: typeof visitors?.lastUpdated === 'number' ? visitors.lastUpdated : 0,
+		},
+	}
 }
 
 export async function GET(req: Request) {
 	const encoder = new TextEncoder()
 	let closed = false
 	const streamId = randomUUID()
-
-	const initialSnap = await db.ref('stats').get()
-	const initial = toStats(initialSnap.val())
 
 	const stream = new ReadableStream({
 		async start(controller) {
@@ -27,7 +40,8 @@ export async function GET(req: Request) {
 				} catch {}
 			}
 
-			send('ready', initial)
+			const initial = await loadStats()
+			send('update', initial)
 
 			sseManager.addStatsSub({
 				id: streamId,

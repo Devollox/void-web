@@ -36,14 +36,15 @@ export function ConfigDetailsClient({ configId, initialPreviewTick }: Props) {
 
 		async function loadInitialConfig() {
 			try {
-				const res = await fetch(`/api/v1/configs/${configId}`, {
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({ kind: 'presence' }),
+				const res = await fetch(`/api/v1/configs/${configId}?kind=presence`, {
+					method: 'GET',
 				})
 
 				if (!res.ok) {
-					if (!cancelled) setConfig(null)
+					if (!cancelled) {
+						setConfig(null)
+						setDeleted(res.status === 404)
+					}
 					return false
 				}
 
@@ -55,22 +56,37 @@ export function ConfigDetailsClient({ configId, initialPreviewTick }: Props) {
 			}
 		}
 
+		async function refetchConfig() {
+			try {
+				const res = await fetch(`/api/v1/configs/${configId}?kind=presence`, {
+					method: 'GET',
+				})
+				if (!res.ok) {
+					if (!cancelled && res.status === 404) {
+						setConfig(null)
+						setDeleted(true)
+					}
+					return
+				}
+				const data = (await res.json()) as Config
+				if (!cancelled) setConfig(data)
+			} catch {}
+		}
+
 		async function startStream() {
 			const ok = await loadInitialConfig()
 			if (!ok || cancelled) return
 
 			eventSource = new EventSource(`/api/v1/configs/${configId}/stream?kind=presence`)
 
-			eventSource.addEventListener('ready', event => {
+			eventSource.addEventListener('update', () => {
 				if (cancelled) return
-				const next = JSON.parse((event as MessageEvent).data) as Config
-				setConfig(next)
+				refetchConfig()
 			})
 
-			eventSource.addEventListener('update', event => {
+			eventSource.addEventListener('downloads', () => {
 				if (cancelled) return
-				const next = JSON.parse((event as MessageEvent).data) as Config
-				setConfig(next)
+				refetchConfig()
 			})
 
 			eventSource.addEventListener('not-found', () => {
@@ -269,9 +285,9 @@ export function ConfigDetailsClient({ configId, initialPreviewTick }: Props) {
 								<section className={styles.addon_actions}>
 									<div className={styles.btn_container}>
 										<a
-											href={`/profile/${encodeURIComponent(config.author)}?tag=${encodeURIComponent(
-												String(config.authorTag ?? '').padStart(4, '0')
-											)}`}
+											href={`/profile/${encodeURIComponent(
+												config.author
+											)}?tag=${encodeURIComponent(String(config.authorTag ?? '').padStart(4, '0'))}`}
 											className={styles.download_btn_primary}
 										>
 											Open profile

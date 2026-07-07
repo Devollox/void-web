@@ -44,29 +44,26 @@ export function ProfileContainerClient({
 			`/api/v1/authors/${encodeURIComponent(String(userId))}/stream`
 		)
 
-		eventSource.addEventListener('ready', event => {
+		const handleUpdate = async () => {
 			if (cancelled) return
-			const next = JSON.parse((event as MessageEvent).data) as AuthorConfigsResponse
-			setConfigs(next.presenceConfigs || [])
-			setStatuses(next.statusConfigs || [])
-			setLoaded(true)
-		})
+			try {
+				const res = await fetch(`/api/v1/authors/${encodeURIComponent(String(userId))}/configs`)
+				if (!res.ok) return
+				const next = (await res.json()) as AuthorConfigsResponse
+				if (cancelled) return
+				setConfigs(next.presenceConfigs || [])
+				setStatuses(next.statusConfigs || [])
+				setLoaded(true)
+			} catch {}
+		}
 
-		eventSource.addEventListener('profile-update', event => {
-			if (cancelled) return
-			const next = JSON.parse((event as MessageEvent).data) as AuthorConfigsResponse
-			setConfigs(next.presenceConfigs || [])
-			setStatuses(next.statusConfigs || [])
-			setLoaded(true)
-		})
+		eventSource.addEventListener('profile-update', handleUpdate)
+		eventSource.addEventListener('update', handleUpdate)
+		eventSource.addEventListener('created', handleUpdate)
+		eventSource.addEventListener('deleted', handleUpdate)
+		eventSource.addEventListener('downloads', handleUpdate)
 
-		eventSource.addEventListener('update', event => {
-			if (cancelled) return
-			const next = JSON.parse((event as MessageEvent).data) as AuthorConfigsResponse
-			setConfigs(next.presenceConfigs || [])
-			setStatuses(next.statusConfigs || [])
-			setLoaded(true)
-		})
+		eventSource.onerror = () => {}
 
 		return () => {
 			cancelled = true

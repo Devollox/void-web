@@ -86,6 +86,7 @@ export async function POST(req: Request) {
 				if (authorId) {
 					sseManager.notifyAuthorDownloads(authorId, body.id, 'status', downloads)
 				}
+				sseManager.notifyConfigListDownloads(body.id, 'status', downloads)
 				break
 			}
 
@@ -105,6 +106,7 @@ export async function POST(req: Request) {
 				if (authorId) {
 					sseManager.notifyAuthorDownloads(authorId, body.id, 'presence', downloads)
 				}
+				sseManager.notifyConfigListDownloads(body.id, 'presence', downloads)
 				break
 			}
 

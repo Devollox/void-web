@@ -225,7 +225,7 @@ export function StatusesGrid({
 						)
 					})}
 
-					{hasMore && (
+					{hasMore && loadingMore && (
 						<>
 							<div className={`${styles.skeleton_card_wrap} ${styles.skeleton_card_wrap_status}`}>
 								<SkeletonCard height='status' />

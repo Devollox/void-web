@@ -60,6 +60,24 @@ export function StatusClient({
 		setSearchTerm('')
 	}, [])
 
+	const mergeStatuses = useCallback(
+		(items: Status[], totalFromServer?: number) => {
+			setStatuses(prev => {
+				const byId = new Map(prev.map(s => [s.id, s]))
+				for (const item of items) {
+					byId.set(item.id, item)
+				}
+				const merged = Array.from(byId.values())
+				if (typeof totalFromServer === 'number') {
+					setTotal(totalFromServer)
+					setHasMore(merged.length < totalFromServer && items.length > 0 && items.length >= limit)
+				}
+				return merged
+			})
+		},
+		[limit]
+	)
+
 	const loadMore = useCallback(async () => {
 		if (!hasMore || isFetchingRef.current) return
 		isFetchingRef.current = true
@@ -92,24 +110,17 @@ export function StatusClient({
 				return
 			}
 
-			setStatuses(prev => {
-				const byId = new Map(prev.map(s => [s.id, s]))
-				for (const item of data.items) {
-					byId.set(item.id, item)
-				}
-				const merged = Array.from(byId.values())
-				setHasMore(merged.length < data.total)
-				return merged
-			})
-
-			setTotal(data.total)
+			mergeStatuses(data.items, data.total)
 			setOffset(prev => prev + data.items.length)
+			if (data.items.length < limit) {
+				setHasMore(false)
+			}
 		} finally {
 			setLoadingMore(false)
 			isFetchingRef.current = false
 			if (loadingFirst) setLoadingFirst(false)
 		}
-	}, [offset, limit, hasMore, loadingFirst])
+	}, [offset, limit, hasMore, loadingFirst, mergeStatuses])
 
 	useEffect(() => {
 		if (!sentinelRef.current) return
@@ -124,7 +135,7 @@ export function StatusClient({
 			},
 			{
 				root: null,
-				rootMargin: '300px',
+				rootMargin: '0px 0px 50% 0px',
 				threshold: 0,
 			}
 		)
@@ -139,52 +150,87 @@ export function StatusClient({
 	useEffect(() => {
 		const es = new EventSource('/api/v1/configs/stream?kind=status')
 
-		es.addEventListener('ready', e => {
-			const data = JSON.parse((e as MessageEvent).data) as Status[]
-			setStatuses(data)
-			setTotal(data.length)
-			setOffset(data.length)
-			setHasMore(false)
-			if (loadingFirst) setLoadingFirst(false)
-		})
+		es.addEventListener('created', async e => {
+			const { kind } = JSON.parse((e as MessageEvent).data) as {
+				id: string
+				kind: 'status' | 'presence'
+			}
 
-		es.addEventListener('created', e => {
-			const st = JSON.parse((e as MessageEvent).data) as Status
-			setStatuses(prev => {
-				const byId = new Map(prev.map(s => [s.id, s]))
-				byId.set(st.id, st)
-				const next = Array.from(byId.values())
-				setTotal(next.length)
-				setHasMore(next.length < initialTotal)
-				return next
-			})
+			if (kind !== 'status') return
+
+			try {
+				const res = await fetch('/api/v1/configs', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						kind: 'status',
+						offset: 0,
+						limit,
+					}),
+				})
+
+				if (!res.ok) return
+
+				const data = (await res.json()) as {
+					items: Status[]
+					total: number
+					offset: number
+					limit: number
+				}
+
+				if (!data.items || data.items.length === 0) return
+
+				mergeStatuses(data.items, data.total)
+				setOffset(data.items.length)
+				if (data.items.length < limit) {
+					setHasMore(false)
+				}
+				setLoadingFirst(false)
+			} catch {}
 		})
 
 		es.addEventListener('deleted', e => {
-			const { id } = JSON.parse((e as MessageEvent).data) as { id: string }
-			setStatuses(prev => {
-				const next = prev.filter(s => s.id !== id)
-				setTotal(next.length)
-				setHasMore(next.length < initialTotal)
-				return next
-			})
+			const { id, kind } = JSON.parse((e as MessageEvent).data) as {
+				id: string
+				kind: 'status' | 'presence'
+			}
+
+			if (kind !== 'status') return
+
+			setStatuses(prev => prev.filter(s => s.id !== id))
+			setTotal(prev => (prev > 0 ? prev - 1 : 0))
 		})
 
 		es.addEventListener('downloads', e => {
-			const { id, downloads } = JSON.parse((e as MessageEvent).data) as {
+			const raw = JSON.parse((e as MessageEvent).data) as {
 				id: string
-				downloads: number
+				kind: 'status' | 'presence'
+				downloads?: number
 			}
-			setStatuses(prev => {
-				const next = prev.map(s => (s.id === id ? { ...s, downloads } : s))
-				return next
-			})
+
+			if (raw.kind !== 'status') return
+			if (typeof raw.downloads !== 'number') return
+
+			const downloads: number = raw.downloads
+
+			setStatuses(prev =>
+				prev.map(s =>
+					s.id === raw.id
+						? {
+								...s,
+								downloads,
+							}
+						: s
+				)
+			)
 		})
+
+		es.onerror = () => {}
 
 		return () => {
 			es.close()
 		}
-	}, [loadingFirst])
+	}, [limit, mergeStatuses])
 
 	const filteredStatuses = useMemo(
 		() => filterStatuses(statuses, searchTerm),

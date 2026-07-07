@@ -31,7 +31,7 @@ function normalizeTag(tag?: string): string | null {
 	return head.padStart(4, '0')
 }
 
-const redisKeyForUserCache = (userId: string) => `cache:user:${userId}`
+const redisKeyForUserProfile = (userId: string) => `user:profile:${userId}`
 const USER_CACHE_TTL = 60
 
 export async function POST(req: Request) {
@@ -51,7 +51,7 @@ export async function POST(req: Request) {
 
 		const { userId, name, avatar, tag, provider } = body
 		const userRef = db.ref(`users/${userId}`)
-		const rKey = redisKeyForUserCache(userId)
+		const rKey = redisKeyForUserProfile(userId)
 
 		const normalizedTag = normalizeTag(tag)
 		const now = Date.now()
@@ -114,7 +114,7 @@ export async function POST(req: Request) {
 		await redis.set(rKey, JSON.stringify(updatedUser), { ex: USER_CACHE_TTL })
 
 		return NextResponse.json({ ok: true, created: !existingUser }, { status: 200 })
-	} catch (err) {
+	} catch {
 		return NextResponse.json({ ok: false, error: 'InternalError' }, { status: 500 })
 	}
 }

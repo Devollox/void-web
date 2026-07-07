@@ -232,6 +232,12 @@ export function PresenceGrid({
 							config.author || 'User'
 						)}?tag=${encodeURIComponent(tagString)}`
 
+						const rawDownloads = (config as any).downloads
+						const downloads =
+							typeof rawDownloads === 'number'
+								? rawDownloads
+								: parseInt(String(rawDownloads ?? '0')) || 0
+
 						return (
 							<div
 								key={config.id}
@@ -252,9 +258,7 @@ export function PresenceGrid({
 										<div className={styles.download_tag_group}>
 											<div className={styles.download_tag}>
 												<Download size={14} className={styles.download_icon} />
-												<span className={styles.download_text}>
-													{config.downloads.toLocaleString()}
-												</span>
+												<span className={styles.download_text}>{downloads.toLocaleString()}</span>
 											</div>
 											{canDelete && (
 												<button
@@ -296,7 +300,7 @@ export function PresenceGrid({
 						)
 					})}
 
-					{hasMore && (
+					{hasMore && loadingMore && (
 						<>
 							<div className={`${styles.skeleton_card_wrap} ${styles.skeleton_card_wrap_presence}`}>
 								<SkeletonCard height='presence' />

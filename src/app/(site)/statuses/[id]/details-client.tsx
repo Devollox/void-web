@@ -1,7 +1,7 @@
 'use client'
 
+import StatusPreview from '@/components/statuses-preview/status-user'
 import type { Status } from '@/service/firebase'
-import StatusPreview from '@components/statuses-preview/status-user'
 import { useSession } from 'next-auth/react'
 import { useEffect, useMemo, useState } from 'react'
 import styles from '../../presence/[id]/config-details.module.scss'
@@ -33,14 +33,15 @@ export function StatusDetailsClient({ statusId, initialPreviewTick }: Props) {
 
 		async function loadInitialStatus() {
 			try {
-				const res = await fetch(`/api/v1/configs/${statusId}`, {
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({ kind: 'status' }),
+				const res = await fetch(`/api/v1/configs/${statusId}?kind=status`, {
+					method: 'GET',
 				})
 
 				if (!res.ok) {
-					if (!cancelled) setStatus(null)
+					if (!cancelled) {
+						setStatus(null)
+						setDeleted(res.status === 404)
+					}
 					return false
 				}
 
@@ -52,22 +53,35 @@ export function StatusDetailsClient({ statusId, initialPreviewTick }: Props) {
 			}
 		}
 
+		async function refetchStatus() {
+			try {
+				const res = await fetch(`/api/v1/configs/${statusId}?kind=status`, { method: 'GET' })
+				if (!res.ok) {
+					if (res.status === 404 && !cancelled) {
+						setStatus(null)
+						setDeleted(true)
+					}
+					return
+				}
+				const data = (await res.json()) as Status
+				if (!cancelled) setStatus(data)
+			} catch {}
+		}
+
 		async function startStream() {
 			const ok = await loadInitialStatus()
 			if (!ok || cancelled) return
 
 			eventSource = new EventSource(`/api/v1/configs/${statusId}/stream?kind=status`)
 
-			eventSource.addEventListener('ready', event => {
+			eventSource.addEventListener('update', () => {
 				if (cancelled) return
-				const next = JSON.parse((event as MessageEvent).data) as Status
-				setStatus(next)
+				refetchStatus()
 			})
 
-			eventSource.addEventListener('update', event => {
+			eventSource.addEventListener('downloads', () => {
 				if (cancelled) return
-				const next = JSON.parse((event as MessageEvent).data) as Status
-				setStatus(next)
+				refetchStatus()
 			})
 
 			eventSource.addEventListener('not-found', () => {
@@ -75,6 +89,10 @@ export function StatusDetailsClient({ statusId, initialPreviewTick }: Props) {
 				setStatus(null)
 				setDeleted(true)
 			})
+
+			eventSource.onerror = () => {
+				if (cancelled) return
+			}
 		}
 
 		startStream()

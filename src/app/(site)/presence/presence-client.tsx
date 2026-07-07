@@ -60,6 +60,24 @@ export function ConfigsClient({
 		setSearchTerm('')
 	}, [])
 
+	const mergeConfigs = useCallback(
+		(items: Config[], totalFromServer?: number) => {
+			setConfigs(prev => {
+				const byId = new Map(prev.map(c => [c.id, c]))
+				for (const item of items) {
+					byId.set(item.id, item)
+				}
+				const merged = Array.from(byId.values())
+				if (typeof totalFromServer === 'number') {
+					setTotal(totalFromServer)
+					setHasMore(merged.length < totalFromServer && items.length > 0 && items.length >= limit)
+				}
+				return merged
+			})
+		},
+		[limit]
+	)
+
 	const loadMore = useCallback(async () => {
 		if (!hasMore || isFetchingRef.current) return
 		isFetchingRef.current = true
@@ -92,24 +110,17 @@ export function ConfigsClient({
 				return
 			}
 
-			setConfigs(prev => {
-				const byId = new Map(prev.map(c => [c.id, c]))
-				for (const item of data.items) {
-					byId.set(item.id, item)
-				}
-				const merged = Array.from(byId.values())
-				setHasMore(merged.length < data.total)
-				return merged
-			})
-
-			setTotal(data.total)
+			mergeConfigs(data.items, data.total)
 			setOffset(prev => prev + data.items.length)
+			if (data.items.length < limit) {
+				setHasMore(false)
+			}
 		} finally {
 			setLoadingMore(false)
 			isFetchingRef.current = false
 			if (loadingFirst) setLoadingFirst(false)
 		}
-	}, [offset, limit, hasMore, loadingFirst])
+	}, [offset, limit, hasMore, loadingFirst, mergeConfigs])
 
 	useEffect(() => {
 		if (!sentinelRef.current) return
@@ -124,7 +135,7 @@ export function ConfigsClient({
 			},
 			{
 				root: null,
-				rootMargin: '300px',
+				rootMargin: '0px 0px 50% 0px',
 				threshold: 0,
 			}
 		)
@@ -139,43 +150,87 @@ export function ConfigsClient({
 	useEffect(() => {
 		const es = new EventSource('/api/v1/configs/stream?kind=presence')
 
-		es.addEventListener('ready', e => {
-			const data = JSON.parse((e as MessageEvent).data) as Config[]
-			setConfigs(data)
-			setTotal(data.length)
-			setOffset(data.length)
-			setHasMore(false)
-			if (loadingFirst) setLoadingFirst(false)
-		})
+		es.addEventListener('created', async e => {
+			const { kind } = JSON.parse((e as MessageEvent).data) as {
+				id: string
+				kind: 'presence' | 'status'
+			}
 
-		es.addEventListener('created', e => {
-			const cfg = JSON.parse((e as MessageEvent).data) as Config
-			setConfigs(prev => {
-				const byId = new Map(prev.map(c => [c.id, c]))
-				byId.set(cfg.id, cfg)
-				return Array.from(byId.values())
-			})
-			setTotal(prev => prev + 1)
+			if (kind !== 'presence') return
+
+			try {
+				const res = await fetch('/api/v1/configs', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						kind: 'presence',
+						offset: 0,
+						limit,
+					}),
+				})
+
+				if (!res.ok) return
+
+				const data = (await res.json()) as {
+					items: Config[]
+					total: number
+					offset: number
+					limit: number
+				}
+
+				if (!data.items || data.items.length === 0) return
+
+				mergeConfigs(data.items, data.total)
+				setOffset(data.items.length)
+				if (data.items.length < limit) {
+					setHasMore(false)
+				}
+				setLoadingFirst(false)
+			} catch {}
 		})
 
 		es.addEventListener('deleted', e => {
-			const { id } = JSON.parse((e as MessageEvent).data) as { id: string }
+			const { id, kind } = JSON.parse((e as MessageEvent).data) as {
+				id: string
+				kind: 'presence' | 'status'
+			}
+
+			if (kind !== 'presence') return
+
 			setConfigs(prev => prev.filter(c => c.id !== id))
 			setTotal(prev => (prev > 0 ? prev - 1 : 0))
 		})
 
 		es.addEventListener('downloads', e => {
-			const { id, downloads } = JSON.parse((e as MessageEvent).data) as {
+			const raw = JSON.parse((e as MessageEvent).data) as {
 				id: string
-				downloads: number
+				kind: 'presence' | 'status'
+				downloads?: number
 			}
-			setConfigs(prev => prev.map(c => (c.id === id ? { ...c, downloads } : c)))
+
+			if (raw.kind !== 'presence') return
+			if (typeof raw.downloads !== 'number') return
+
+			const downloads: number = raw.downloads
+
+			setConfigs(prev =>
+				prev.map(c =>
+					c.id === raw.id
+						? {
+								...c,
+								downloads,
+							}
+						: c
+				)
+			)
 		})
+
+		es.onerror = () => {}
 
 		return () => {
 			es.close()
 		}
-	}, [loadingFirst])
+	}, [limit, mergeConfigs])
 
 	const filteredConfigs = useMemo(() => filterConfigs(configs, searchTerm), [configs, searchTerm])
 	const sortedConfigs = useMemo(() => sortConfigs(filteredConfigs), [filteredConfigs])

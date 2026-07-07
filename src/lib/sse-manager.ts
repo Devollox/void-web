@@ -99,6 +99,14 @@ class SseManager {
 		this.broadcastToAuthor(authorId, 'downloads', { id, kind, downloads })
 	}
 
+	notifyConfigListDownloads(id: string, kind: 'presence' | 'status', downloads: number) {
+		for (const sub of this.configListSubs.values()) {
+			if (sub.kind === kind) {
+				sub.send('downloads', { id, kind, downloads })
+			}
+		}
+	}
+
 	notifyAuthorProfileUpdate(authorId: string, data: any) {
 		this.broadcastToAuthor(authorId, 'profile-update', data)
 	}

@@ -1,6 +1,6 @@
 import { redisSubscriber } from '@/lib/redis-pubsub'
 import { sseManager } from '@/lib/sse-manager'
-import { mapRawToConfig, mapRawToStats, mapRawToStatus, Stats } from '@/service/firebase'
+import { mapRawToStats, Stats } from '@/service/firebase'
 import { admin } from '@/service/firebase-admin'
 import { redis } from '@/service/redis'
 
@@ -28,58 +28,6 @@ async function pushStatsToSubscribers() {
 	const snap = await db.ref('stats').get()
 	const stats = toStats(snap.val())
 	sseManager.broadcastStats('update', stats)
-}
-
-async function loadConfigSnapshot(configId: string, kind: ConfigKind) {
-	const refPath =
-		kind === 'presence' ? `presence-configs/${configId}` : `status-configs/${configId}`
-	const snap = await db.ref(refPath).get()
-	if (!snap.exists()) return null
-
-	const data = snap.val() as any
-	const authorId = data?.authorId ? String(data.authorId) : null
-
-	let user: any = null
-	if (authorId) {
-		const redisKey = `cache:user:${authorId}`
-		const cachedUserJson = await redis.get<string>(redisKey)
-		if (cachedUserJson) {
-			try {
-				user = typeof cachedUserJson === 'object' ? cachedUserJson : JSON.parse(cachedUserJson)
-			} catch {
-				user = null
-			}
-		}
-		if (!user) {
-			const userSnap = await db.ref(`users/${authorId}`).get()
-			if (userSnap.exists()) {
-				const raw = userSnap.val() as any
-				user = {
-					name: raw.name ?? null,
-					avatar: raw.avatar ?? null,
-					provider: raw.provider ?? null,
-					tag: raw.tag ?? null,
-					createdAt: raw.createdAt ?? null,
-					lastSeen: raw.lastSeen ?? null,
-				}
-				await redis.set(redisKey, JSON.stringify(user), { ex: USER_CACHE_TTL })
-			}
-		}
-	}
-
-	const avatar = user?.avatar || user?.image || data?.authorAvatar || '/logo.png'
-	const name = user?.name || data?.author || 'Unknown User'
-	const tag = user?.tag ? String(user.tag).padStart(4, '0') : data?.authorTag || undefined
-
-	if (kind === 'presence') {
-		const cfg = mapRawToConfig(configId, data, avatar, name) as any
-		cfg.authorTag = tag
-		return cfg
-	}
-
-	const st = mapRawToStatus(configId, data, avatar, name) as any
-	st.authorTag = tag
-	return st
 }
 
 async function loadAuthorConfigs(authorId: string) {
@@ -193,12 +141,12 @@ async function loadAuthorConfigs(authorId: string) {
 
 async function handleEvent(payload: ConfigEventPayload) {
 	if (payload.type === 'config_created') {
-		const snapshot = await loadConfigSnapshot(payload.configId, payload.kind)
-		if (!snapshot) return
-
 		const listSubs = sseManager.getConfigListSubsByKind(payload.kind)
 		for (const sub of listSubs) {
-			sub.send('created', snapshot)
+			sub.send('created', {
+				id: payload.configId,
+				kind: payload.kind,
+			})
 		}
 
 		if (payload.authorId) {
@@ -220,21 +168,20 @@ async function handleEvent(payload: ConfigEventPayload) {
 	}
 
 	if (payload.type === 'downloads_updated') {
-		const snapshot = await loadConfigSnapshot(payload.configId, payload.kind)
-		if (!snapshot) return
-
 		const listSubs = sseManager.getConfigListSubsByKind(payload.kind)
 		for (const sub of listSubs) {
 			sub.send('downloads', {
 				id: payload.configId,
 				kind: payload.kind,
-				downloads: snapshot.downloads,
 			})
 		}
 
 		const detailsSubs = sseManager.getConfigDetailsSubsByConfig(payload.kind, payload.configId)
 		for (const sub of detailsSubs) {
-			sub.send('update', snapshot)
+			sub.send('update', {
+				id: payload.configId,
+				kind: payload.kind,
+			})
 		}
 	}
 
@@ -292,19 +239,19 @@ async function ensureListener() {
 		})
 
 		started = true
-	} catch (err) {
+	} catch {
 		started = false
 	} finally {
 		starting = false
 	}
 }
 
-redisSubscriber.on('error', err => {
+redisSubscriber.on('error', () => {
 	started = false
 })
 
 if (process.env.NEXT_RUNTIME === 'nodejs') {
-	ensureListener().catch(err => {
+	ensureListener().catch(() => {
 		started = false
 	})
 }

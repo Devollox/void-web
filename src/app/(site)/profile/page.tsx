@@ -74,13 +74,11 @@ export default async function ProfilePage() {
 										</section>
 									</div>
 								</div>
-
 								<div className={styles.addon_details_middle_column}>
 									<div className={styles.rpc_card_preview}>
 										<div className={styles.skel_rpc} />
 									</div>
 								</div>
-
 								<div className={styles.addon_details_middle_column}>
 									<div className={styles.actions_panel}>
 										<div className={styles.skel_actions_title} />

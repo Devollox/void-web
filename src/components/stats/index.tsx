@@ -2,7 +2,7 @@
 
 import { type Stats } from '@/service/firebase'
 import CountUp from '@lib/count-up'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import styles from './stats.module.scss'
 
 const DEFAULT_STATS: Stats = {
@@ -13,8 +13,6 @@ const DEFAULT_STATS: Stats = {
 export default function StatsBlock() {
 	const [stats, setStats] = useState<Stats>(DEFAULT_STATS)
 	const [loaded, setLoaded] = useState(false)
-	const pendingRef = useRef<Stats | null>(null)
-	const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
 	useEffect(() => {
 		async function trackVisitor() {
@@ -26,57 +24,71 @@ export default function StatsBlock() {
 				})
 			} catch {}
 		}
-
 		trackVisitor()
 	}, [])
 
 	useEffect(() => {
-		const flush = () => {
-			if (!pendingRef.current) return
-			setStats(pendingRef.current)
-			setLoaded(true)
-			pendingRef.current = null
-			timerRef.current = null
-		}
-
-		const scheduleFlush = (nextStats: Stats) => {
-			pendingRef.current = nextStats
-			if (timerRef.current) return
-			timerRef.current = setTimeout(flush, 180)
-		}
-
 		const es = new EventSource('/api/v1/analytics/stream')
 
-		const handleMessage = (ev: MessageEvent) => {
+		const handleUpdate = (ev: MessageEvent) => {
 			try {
-				const data = JSON.parse(ev.data) as Stats
-				scheduleFlush(data)
+				const data = JSON.parse(ev.data) as Partial<Stats> | Stats
+
+				setStats(prev => {
+					const next: Stats = {
+						downloads: {
+							count:
+								typeof data.downloads?.count === 'number'
+									? data.downloads.count
+									: prev.downloads.count,
+							lastUpdated:
+								typeof data.downloads?.lastUpdated === 'number'
+									? data.downloads.lastUpdated
+									: prev.downloads.lastUpdated,
+						},
+						visitors: {
+							count:
+								typeof data.visitors?.count === 'number'
+									? data.visitors.count
+									: prev.visitors.count,
+							lastUpdated:
+								typeof data.visitors?.lastUpdated === 'number'
+									? data.visitors.lastUpdated
+									: prev.visitors.lastUpdated,
+						},
+					}
+
+					if (
+						typeof next.downloads.count === 'number' &&
+						typeof next.visitors.count === 'number' &&
+						!loaded
+					) {
+						setLoaded(true)
+					}
+
+					return next
+				})
 			} catch {}
 		}
 
-		es.addEventListener('ready', handleMessage)
-		es.addEventListener('update', handleMessage)
-
+		es.addEventListener('update', handleUpdate)
 		es.onerror = () => {}
 
 		return () => {
-			es.removeEventListener('ready', handleMessage)
-			es.removeEventListener('update', handleMessage)
+			es.removeEventListener('update', handleUpdate)
 			es.close()
-			if (timerRef.current) clearTimeout(timerRef.current)
 		}
-	}, [])
+	}, [loaded])
+
+	const downloadsCount = stats?.downloads?.count ?? 0
+	const visitorsCount = stats?.visitors?.count ?? 0
 
 	return (
 		<div className={styles.downloads_container}>
-			<strong>
-				{loaded ? <CountUp to={stats.downloads.count} duration={2.5} /> : <span>0</span>}
-			</strong>
+			<strong>{loaded ? <CountUp to={downloadsCount} duration={2.5} /> : <span>0</span>}</strong>
 			<span> Downloads</span>
 
-			<strong>
-				{loaded ? <CountUp to={stats.visitors.count} duration={2.5} /> : <span>0</span>}
-			</strong>
+			<strong>{loaded ? <CountUp to={visitorsCount} duration={2.5} /> : <span>0</span>}</strong>
 			<span> Visitors</span>
 		</div>
 	)
