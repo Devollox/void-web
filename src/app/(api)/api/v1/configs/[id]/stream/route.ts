@@ -80,19 +80,23 @@ export async function GET(req: Request, ctx: { params: Promise<Params> | Params 
 				} catch {}
 			}
 
-			const initial = await loadConfigSnapshot(id, kind)
-			if (!initial) {
-				send('not-found', { id, kind })
+			const refPath = kind === 'presence' ? `presence-configs/${id}` : `status-configs/${id}`
+			const ref = db.ref(refPath)
+
+			const MAX_STREAM_MS = 5 * 60 * 1000
+			let ping: ReturnType<typeof setInterval> | undefined
+			let hardTimeout: ReturnType<typeof setTimeout> | undefined
+
+			const cleanup = () => {
+				if (closed) return
+				closed = true
+				if (ping) clearInterval(ping)
+				if (hardTimeout) clearTimeout(hardTimeout)
+				ref.off('value', onValueHandler)
 				try {
 					controller.close()
 				} catch {}
-				return
 			}
-
-			send('ready', initial)
-
-			const refPath = kind === 'presence' ? `presence-configs/${id}` : `status-configs/${id}`
-			const ref = db.ref(refPath)
 
 			const onValueHandler = async () => {
 				if (closed) return
@@ -105,24 +109,29 @@ export async function GET(req: Request, ctx: { params: Promise<Params> | Params 
 				send('update', next)
 			}
 
+			const initial = await loadConfigSnapshot(id, kind)
+			if (!initial) {
+				send('not-found', { id, kind })
+				try {
+					controller.close()
+				} catch {}
+				return
+			}
+
+			send('ready', initial)
+
 			ref.on('value', onValueHandler)
 
-			const ping = setInterval(() => {
+			ping = setInterval(() => {
 				if (closed) return
 				try {
 					controller.enqueue(encoder.encode(`event: ping\ndata: {}\n\n`))
 				} catch {}
 			}, 25000)
 
-			const cleanup = () => {
-				if (closed) return
-				closed = true
-				clearInterval(ping)
-				ref.off('value', onValueHandler)
-				try {
-					controller.close()
-				} catch {}
-			}
+			hardTimeout = setTimeout(() => {
+				cleanup()
+			}, MAX_STREAM_MS)
 
 			req.signal.addEventListener('abort', cleanup)
 		},

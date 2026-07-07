@@ -134,10 +134,16 @@ export async function GET(req: Request) {
 				} catch {}
 			}, 25000)
 
+			const MAX_STREAM_MS = 5 * 60 * 1000
+			const hardTimeout = setTimeout(() => {
+				cleanup()
+			}, MAX_STREAM_MS)
+
 			const cleanup = () => {
 				if (closed) return
 				closed = true
 				clearInterval(ping)
+				clearTimeout(hardTimeout)
 				ref.off('value', onValueHandler)
 				try {
 					controller.close()

@@ -155,7 +155,9 @@ export async function GET(req: Request, ctx: { params: Promise<Params> | Params 
 			{
 				ok: false,
 				error: 'TooManyAttempts',
-				message: `Too many invalid requests. Try again in ${Math.ceil((rl.remainingMs ?? 0) / 1000)} seconds.`,
+				message: `Too many invalid requests. Try again in ${Math.ceil(
+					(rl.remainingMs ?? 0) / 1000
+				)} seconds.`,
 			},
 			{ status: 429 }
 		)
@@ -194,19 +196,11 @@ export async function GET(req: Request, ctx: { params: Promise<Params> | Params 
 				} catch {}
 			}
 
-			const cleanup = () => {
-				if (closed) return
-				closed = true
-				clearInterval(ping)
-				userRef.off('value', onValueHandler)
-				try {
-					controller.close()
-				} catch {}
-			}
-
-			send('ready', initial)
-
 			const userRef = db.ref(`users/${authorId}`)
+
+			const MAX_STREAM_MS = 5 * 60 * 1000
+			let ping: ReturnType<typeof setInterval> | undefined
+			let hardTimeout: ReturnType<typeof setTimeout> | undefined
 
 			const onValueHandler = async () => {
 				if (closed) return
@@ -219,14 +213,31 @@ export async function GET(req: Request, ctx: { params: Promise<Params> | Params 
 				send('update', next)
 			}
 
+			const cleanup = () => {
+				if (closed) return
+				closed = true
+				if (ping) clearInterval(ping)
+				if (hardTimeout) clearTimeout(hardTimeout)
+				userRef.off('value', onValueHandler)
+				try {
+					controller.close()
+				} catch {}
+			}
+
+			send('ready', initial)
+
 			userRef.on('value', onValueHandler)
 
-			const ping = setInterval(() => {
+			ping = setInterval(() => {
 				if (closed) return
 				try {
 					controller.enqueue(encoder.encode(`event: ping\ndata: {}\n\n`))
 				} catch {}
 			}, 25000)
+
+			hardTimeout = setTimeout(() => {
+				cleanup()
+			}, MAX_STREAM_MS)
 
 			req.signal.addEventListener('abort', cleanup)
 		},
