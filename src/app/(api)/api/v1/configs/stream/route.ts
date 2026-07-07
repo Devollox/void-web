@@ -159,9 +159,7 @@ export async function GET(req: Request) {
 	const stream = new ReadableStream({
 		async start(controller) {
 			const send = (event: string, data: any) => {
-				if (closed) {
-					return
-				}
+				if (closed) return
 				try {
 					const payload = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`
 					controller.enqueue(encoder.encode(payload))
