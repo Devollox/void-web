@@ -19,13 +19,16 @@ export const metadata: Metadata = {
 const API_BASE_V1 = 'https://api.voidpresence.site'
 
 const endpoints: ApiEndpoint[] = [
+	//
+	// GITHUB
+	//
 	{
 		id: 'github-releases',
 		method: 'POST',
 		path: '/v1/github/releases',
 		title: 'Get latest GitHub release',
 		description:
-			'Returns latest release info from GitHub for the selected Void Presence app (application, installer or updates).',
+			'Returns the latest GitHub release info for the selected Void Presence app (desktop app, installer, or auto-updater).',
 		group: 'github',
 		hasExample: true,
 		samplePayload: {
@@ -49,55 +52,60 @@ const endpoints: ApiEndpoint[] = [
   .then(info => console.log(info))`,
 	},
 
+	//
+	// AUTHORS — RESOLVE BY HANDLE
+	//
 	{
 		id: 'authors-resolve-get',
 		method: 'GET',
 		path: '/v1/authors/resolve',
 		title: 'Resolve author by username and tag',
 		description:
-			'Resolves author profile and configs by username and tag. Query: ?username=User&tag=1234. Used by /profile/{username}?tag=XXXX.',
+			'Resolves an author profile and all their configs by handle (username + tag). Query: ?username=User&tag=1234.',
 		group: 'authors',
 		hasExample: true,
 		samplePayload: {
-			user: {
-				name: 'Author Name',
-				avatar: 'https://example.com/avatar.png',
-				tag: '1234',
-				provider: 'discord',
-				createdAt: 123456789,
-				lastSeen: 123456789,
-			},
-			presenceConfigs: [
-				{
-					id: 'cfg-1',
-					title: 'Presence config title',
-					author: 'Author Name',
-					authorAvatar: 'https://example.com/avatar.png',
-					authorTag: '1234',
-					downloads: 0,
-					description: 'Config description',
-					averageColors: ['#ffffff'],
-					configData: {
-						cycles: [{ details: 'Details line', state: 'State line' }],
-						imageCycles: [],
-						buttonPairs: [],
+			responseBody: {
+				user: {
+					name: 'Author Name',
+					avatar: 'https://example.com/avatar.png',
+					tag: '1234',
+					provider: 'discord',
+					createdAt: 123456789,
+					lastSeen: 123456789,
+				},
+				presenceConfigs: [
+					{
+						id: 'cfg-1',
+						title: 'Presence config title',
+						author: 'Author Name',
+						authorAvatar: 'https://example.com/avatar.png',
+						authorTag: '1234',
+						downloads: 0,
+						description: 'Config description',
+						averageColors: ['#ffffff'],
+						configData: {
+							cycles: [{ details: 'Details line', state: 'State line' }],
+							imageCycles: [],
+							buttonPairs: [],
+						},
+						uploadedAt: 123456789,
 					},
-					uploadedAt: 123456789,
-				},
-			],
-			statusConfigs: [
-				{
-					id: 'status-1',
-					title: 'Status config title',
-					author: 'Author Name',
-					authorAvatar: 'https://example.com/avatar.png',
-					authorTag: '1234',
-					downloads: 0,
-					description: 'Status description',
-					configData: { statusCycles: [{ text: 'Example status text' }] },
-					uploadedAt: 123456789,
-				},
-			],
+				],
+				statusConfigs: [
+					{
+						id: 'status-1',
+						title: 'Status config title',
+						author: 'Author Name',
+						authorAvatar: 'https://example.com/avatar.png',
+						authorTag: '1234',
+						downloads: 0,
+						description: 'Status description',
+						configData: { statusCycles: [{ text: 'Example status text' }] },
+						uploadedAt: 123456789,
+					},
+				],
+			},
 		},
 		fetchPayload: `fetch('${API_BASE_V1}/v1/authors/resolve?username=Author%20Name&tag=1234')
   .then(res => res.json())
@@ -241,6 +249,9 @@ es.addEventListener('not-found', () => {
 })`,
 	},
 
+	//
+	// AUTHORS BY ID
+	//
 	{
 		id: 'authors-create-config',
 		method: 'POST',
@@ -325,51 +336,53 @@ es.addEventListener('not-found', () => {
 		path: '/v1/authors/{authorId}/configs',
 		title: 'Get author profile and configs',
 		description:
-			'Returns author profile and all of their presence/status configs by authorId (Discord snowflake). Used by internal profile pages.',
+			'Returns an author profile and all of their presence/status configs by authorId (Discord snowflake). Used by internal profile pages.',
 		group: 'authors',
 		authRequired: false,
 		hasExample: true,
 		samplePayload: {
-			user: {
-				id: '123456789',
-				name: 'Author Name',
-				avatar: 'https://example.com/avatar.png',
-				tag: '1234',
-				provider: 'discord',
-				createdAt: 123456789,
-				lastSeen: 123456789,
-			},
-			presenceConfigs: [
-				{
-					id: 'cfg-1',
-					title: 'Presence config title',
-					author: 'Author Name',
-					authorAvatar: 'https://example.com/avatar.png',
-					authorTag: '1234',
-					downloads: 0,
-					description: 'Config description',
-					configData: {
-						cycles: [{ details: 'Details line', state: 'State line' }],
-						imageCycles: [],
-						buttonPairs: [],
+			responseBody: {
+				user: {
+					id: '123456789',
+					name: 'Author Name',
+					avatar: 'https://example.com/avatar.png',
+					tag: '1234',
+					provider: 'discord',
+					createdAt: 123456789,
+					lastSeen: 123456789,
+				},
+				presenceConfigs: [
+					{
+						id: 'cfg-1',
+						title: 'Presence config title',
+						author: 'Author Name',
+						authorAvatar: 'https://example.com/avatar.png',
+						authorTag: '1234',
+						downloads: 0,
+						description: 'Config description',
+						configData: {
+							cycles: [{ details: 'Details line', state: 'State line' }],
+							imageCycles: [],
+							buttonPairs: [],
+						},
+						averageColors: ['#ffffff'],
+						uploadedAt: 123456789,
 					},
-					averageColors: ['#ffffff'],
-					uploadedAt: 123456789,
-				},
-			],
-			statusConfigs: [
-				{
-					id: 'status-1',
-					title: 'Status config title',
-					author: 'Author Name',
-					authorAvatar: 'https://example.com/avatar.png',
-					authorTag: '1234',
-					downloads: 0,
-					description: 'Status description',
-					configData: { statusCycles: [{ text: 'Example status text' }] },
-					uploadedAt: 123456789,
-				},
-			],
+				],
+				statusConfigs: [
+					{
+						id: 'status-1',
+						title: 'Status config title',
+						author: 'Author Name',
+						authorAvatar: 'https://example.com/avatar.png',
+						authorTag: '1234',
+						downloads: 0,
+						description: 'Status description',
+						configData: { statusCycles: [{ text: 'Example status text' }] },
+						uploadedAt: 123456789,
+					},
+				],
+			},
 		},
 		fetchPayload: `fetch('${API_BASE_V1}/v1/authors/123456789/configs')
   .then(res => res.json())
@@ -387,29 +400,44 @@ es.addEventListener('not-found', () => {
 		hasExample: false,
 	},
 
+	//
+	// CONFIGS
+	//
 	{
 		id: 'configs-list',
 		method: 'POST',
 		path: '/api/v1/configs',
-		title: 'List all configs once',
+		title: 'List configs (ranked)',
 		description:
-			'Returns a snapshot list of all presence or status configs. Body: { kind: "presence" | "status" }.',
+			'Returns a ranked slice of presence or status configs (sorted by downloads). Body: { kind, offset?, limit? }. If ranking is empty, falls back to scanning all configs.',
 		group: 'configs',
 		hasExample: true,
-		samplePayload: [
-			{
-				id: '123456789',
-				title: 'Config title',
-				author: 'Author name',
-				authorAvatar: 'https://example.com/avatar.png',
-				authorTag: '1234',
-				downloads: 0,
-				description: 'Config description',
-				averageColors: ['#ffffff'],
-				configData: {},
-				uploadedAt: 123456789,
+		samplePayload: {
+			requestBody: { kind: 'presence' },
+			responseBody: {
+				items: [
+					{
+						id: '123456789',
+						title: 'Config title',
+						author: 'Author name',
+						authorAvatar: 'https://example.com/avatar.png',
+						authorTag: '1234',
+						downloads: 0,
+						description: 'Config description',
+						averageColors: ['#ffffff'],
+						configData: {
+							cycles: [{ details: 'Details line', state: 'State line' }],
+							imageCycles: [],
+							buttonPairs: [],
+						},
+						uploadedAt: 123456789,
+					},
+				],
+				total: 1,
+				offset: 0,
+				limit: 24,
 			},
-		],
+		},
 		fetchPayload: `fetch('https://voidpresence.site/api/v1/configs', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
@@ -424,7 +452,7 @@ es.addEventListener('not-found', () => {
 		path: '/api/v1/configs/stream',
 		title: 'Stream all configs',
 		description:
-			'Streams a live list of all configs via SSE. Query: kind=presence|status. Events: ready, update, ping.',
+			'Streams a live list of configs via SSE. Query: kind=presence|status. Events: ready, update, ping.',
 		group: 'configs',
 		hasExample: false,
 	},
@@ -447,7 +475,11 @@ es.addEventListener('not-found', () => {
 				authorTag: '1234',
 				downloads: 0,
 				description: 'Config description',
-				configData: {},
+				configData: {
+					cycles: [{ details: 'Details line', state: 'State line' }],
+					imageCycles: [],
+					buttonPairs: [],
+				},
 				averageColors: ['#ffffff'],
 				uploadedAt: 123456789,
 			},
@@ -483,7 +515,7 @@ es.addEventListener('not-found', () => {
 			status: '200 OK',
 			headers: {
 				'Content-Type': 'application/json',
-				'Content-Disposition': 'attachment; filename="config.json"',
+				'Content-Disposition': 'attachment; filename="Config title.json"',
 			},
 		},
 		fetchPayload: `fetch('https://voidpresence.site/api/v1/configs/123456789/download?kind=presence')
@@ -500,9 +532,11 @@ es.addEventListener('not-found', () => {
 		group: 'configs',
 		hasExample: true,
 		samplePayload: {
-			cycles: [],
-			imageCycles: [],
-			buttonPairs: [],
+			responseBody: {
+				cycles: [],
+				imageCycles: [],
+				buttonPairs: [],
+			},
 		},
 		fetchPayload: `fetch('https://voidpresence.site/api/v1/configs/123456789/copy?kind=presence')
   .then(res => res.json())
@@ -519,8 +553,9 @@ es.addEventListener('not-found', () => {
 		authRequired: true,
 		hasExample: true,
 		samplePayload: {
-			ok: true,
-			ownerId: '123456789',
+			responseBody: {
+				ok: true,
+			},
 		},
 		fetchPayload: `fetch('https://voidpresence.site/api/v1/configs/123456789/delete?kind=presence', {
   method: 'DELETE',
@@ -529,6 +564,9 @@ es.addEventListener('not-found', () => {
   .then(result => console.log(result))`,
 	},
 
+	//
+	// ANALYTICS
+	//
 	{
 		id: 'analytics-app',
 		method: 'POST',
@@ -610,12 +648,16 @@ es.addEventListener('not-found', () => {
 		hasExample: false,
 	},
 
+	//
+	// AUTH
+	//
 	{
 		id: 'auth-session',
 		method: 'GET',
 		path: '/api/auth/session',
 		title: 'Get current session',
-		description: 'Returns the current next-auth session including provider details and tokens.',
+		description:
+			'Returns the current next-auth session including provider details and any extra tokens exposed via callbacks.',
 		group: 'auth',
 		authRequired: true,
 		hasExample: true,
@@ -627,8 +669,6 @@ es.addEventListener('not-found', () => {
 			},
 			expires: '2026-07-01T21:59:00.000Z',
 			provider: 'discord',
-			accessToken: 'access-token',
-			firebaseToken: 'firebase-custom-token',
 		},
 		fetchPayload: `fetch('https://voidpresence.site/api/auth/session')
   .then(res => res.json())
@@ -658,13 +698,6 @@ es.addEventListener('not-found', () => {
 		description: 'Route used by next-auth to handle OAuth callbacks for configured providers.',
 		group: 'auth',
 		hasExample: false,
-		samplePayload: {
-			ok: true,
-			provider: 'discord',
-		},
-		fetchPayload: `fetch('https://voidpresence.site/api/auth/callback/discord')
-  .then(res => res.json())
-  .then(result => console.log(result))`,
 	},
 	{
 		id: 'auth-steam-bridge',
@@ -688,12 +721,17 @@ es.addEventListener('not-found', () => {
   .then(res => res.json())
   .then(result => console.log(result.normalizedParams))`,
 	},
+
+	//
+	// USERS
+	//
 	{
 		id: 'users-get-profile',
 		method: 'GET',
 		path: '/api/auth/users/sync',
 		title: 'Get user profile',
-		description: 'Returns user profile data without configs, looked up by user id.',
+		description:
+			'Returns the current user profile data without configs, looked up by session user id.',
 		group: 'users',
 		hasExample: true,
 		authRequired: true,
