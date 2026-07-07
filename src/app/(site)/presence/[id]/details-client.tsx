@@ -161,8 +161,7 @@ export function ConfigDetailsClient({ configId, initialPreviewTick }: Props) {
 
 			setDeleted(true)
 			setConfig(null)
-		} catch (err) {
-			console.error('Failed to delete config', err)
+		} catch {
 		} finally {
 			setDeleting(false)
 		}
@@ -246,9 +245,7 @@ export function ConfigDetailsClient({ configId, initialPreviewTick }: Props) {
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ type: 'presence_download', id: config.id }),
 			})
-		} catch (err) {
-			console.error('Failed to track open in app', err)
-		}
+		} catch {}
 	}
 
 	return (

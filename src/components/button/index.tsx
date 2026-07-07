@@ -28,7 +28,6 @@ export default function Button() {
 					setDownloadUrl(exeAsset.browser_download_url)
 				}
 			} catch (error) {
-				console.error('Error fetching latest installer release:', error)
 			} finally {
 				setLoading(false)
 			}
@@ -52,7 +51,6 @@ export default function Button() {
 				body: JSON.stringify({ type: 'app_download', channel: 'installer' }),
 			})
 		} catch (error) {
-			console.error('Failed to track app_download analytics:', error)
 		} finally {
 			const link = document.createElement('a')
 			link.href = downloadUrl

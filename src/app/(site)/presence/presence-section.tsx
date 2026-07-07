@@ -8,9 +8,16 @@ import styles from './presence.module.scss'
 type Props = {
 	initialSearchTerm: string
 	initialConfigs: Config[]
+	initialTotal: number
+	initialLimit: number
 }
 
-export function ConfigsSection({ initialSearchTerm, initialConfigs }: Props) {
+export function ConfigsSection({
+	initialSearchTerm,
+	initialConfigs,
+	initialTotal,
+	initialLimit,
+}: Props) {
 	return (
 		<Page>
 			<PageHeader
@@ -20,7 +27,12 @@ export function ConfigsSection({ initialSearchTerm, initialConfigs }: Props) {
 
 			<section className={styles.section_themes_panel}>
 				<div className={styles.themes_panel}>
-					<ConfigsClient initialConfigs={initialConfigs} initialSearchTerm={initialSearchTerm} />
+					<ConfigsClient
+						initialConfigs={initialConfigs}
+						initialSearchTerm={initialSearchTerm}
+						initialTotal={initialTotal}
+						initialLimit={initialLimit}
+					/>
 				</div>
 			</section>
 

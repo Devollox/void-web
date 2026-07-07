@@ -2,32 +2,50 @@ import { createClient } from 'redis'
 
 const url = process.env.REDIS_URL || 'redis://localhost:6379'
 
-export const redisPublisher = createClient({ url })
+export const redisPublisher = createClient({
+	url,
+	socket: {
+		connectTimeout: 5000,
+		keepAlive: true,
+	},
+})
 export const redisSubscriber = createClient({ url })
 
-redisPublisher.on('error', () => {})
-redisSubscriber.on('error', () => {})
-
-let isPublisherConnecting = false
-
 async function ensurePublisherConnected() {
-	if (redisPublisher.isOpen) return
-	if (isPublisherConnecting) {
-		await new Promise(resolve => setTimeout(resolve, 100))
-		return ensurePublisherConnected()
+	if (process.env.NEXT_PHASE === 'phase-production-build') {
+		return false
 	}
-	isPublisherConnecting = true
+
+	if (redisPublisher.isOpen) {
+		return true
+	}
+
 	try {
-		await redisPublisher.connect()
-	} finally {
-		isPublisherConnecting = false
+		await Promise.race([
+			redisPublisher.connect(),
+			new Promise((_, reject) =>
+				setTimeout(() => reject(new Error('Connection timeout exceeded')), 3000)
+			),
+		])
+
+		return redisPublisher.isOpen
+	} catch {
+		return false
 	}
 }
 
 export const safePublish = async (channel: string, message: string) => {
 	try {
-		await ensurePublisherConnected()
-		if (!redisPublisher.isOpen) return
-		await redisPublisher.publish(channel, message)
+		const isConnected = await ensurePublisherConnected()
+		if (!isConnected) {
+			return
+		}
+
+		const receiverCount = await Promise.race([
+			redisPublisher.publish(channel, message),
+			new Promise<number>((_, reject) =>
+				setTimeout(() => reject(new Error('Publish command timeout')), 2000)
+			),
+		])
 	} catch {}
 }

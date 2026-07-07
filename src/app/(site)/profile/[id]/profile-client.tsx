@@ -107,11 +107,61 @@ export function ProfileClient({
 				setLiveStatuses(next.statusConfigs || [])
 			})
 
-			es.addEventListener('update', event => {
+			es.addEventListener('profile-update', event => {
 				if (cancelled) return
 				const next = JSON.parse((event as MessageEvent).data) as AuthorConfigsResponse
 				setLiveConfigs(next.presenceConfigs || [])
 				setLiveStatuses(next.statusConfigs || [])
+			})
+
+			es.addEventListener('created', event => {
+				if (cancelled) return
+				const payload = JSON.parse((event as MessageEvent).data) as
+					| (Config & { kind: 'presence' })
+					| (Status & { kind: 'status' })
+
+				if (payload.kind === 'presence') {
+					setLiveConfigs(prev => {
+						const byId = new Map(prev.map(c => [c.id, c]))
+						byId.set(payload.id, payload as Config)
+						return Array.from(byId.values())
+					})
+				} else {
+					setLiveStatuses(prev => {
+						const byId = new Map(prev.map(s => [s.id, s]))
+						byId.set(payload.id, payload as Status)
+						return Array.from(byId.values())
+					})
+				}
+			})
+
+			es.addEventListener('deleted', event => {
+				if (cancelled) return
+				const { id, kind } = JSON.parse((event as MessageEvent).data) as {
+					id: string
+					kind: 'presence' | 'status'
+				}
+
+				if (kind === 'presence') {
+					setLiveConfigs(prev => prev.filter(c => c.id !== id))
+				} else {
+					setLiveStatuses(prev => prev.filter(s => s.id !== id))
+				}
+			})
+
+			es.addEventListener('downloads', event => {
+				if (cancelled) return
+				const { id, kind, downloads } = JSON.parse((event as MessageEvent).data) as {
+					id: string
+					kind: 'presence' | 'status'
+					downloads: number
+				}
+
+				if (kind === 'presence') {
+					setLiveConfigs(prev => prev.map(c => (c.id === id ? { ...c, downloads } : c)))
+				} else {
+					setLiveStatuses(prev => prev.map(s => (s.id === id ? { ...s, downloads } : s)))
+				}
 			})
 
 			es.addEventListener('not-found', () => {

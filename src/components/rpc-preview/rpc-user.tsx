@@ -37,6 +37,7 @@ interface RpcPreviewProps {
 	currentIndex?: number
 	config?: Partial<ConfigData>
 	avatarSrc?: string
+	profileHref?: string
 }
 
 const FALLBACK_AVATAR = '/logo.png'
@@ -47,10 +48,12 @@ const RpcUser = memo(
 		username = 'Devollox',
 		discriminator = '#0001',
 		avatarSrc,
+		profileHref,
 	}: {
 		username?: string
 		discriminator?: string
 		avatarSrc?: string
+		profileHref?: string
 	}) => {
 		const initialSrc = avatarSrc || FALLBACK_AVATAR
 		const [imgSrc, setImgSrc] = useState(initialSrc)
@@ -69,26 +72,52 @@ const RpcUser = memo(
 				: `#${discriminator}`
 			: '#0000'
 
-		return (
-			<div className={styles.rpc_user}>
-				<div className={styles.rpc_avatar}>
-					<div className={styles.avatar_placeholder}>
-						<img
-							src={imgSrc}
-							alt='Avatar'
-							width={48}
-							height={48}
-							onError={() => setImgSrc(FALLBACK_AVATAR)}
-						/>
+		const content = (
+			<>
+				{profileHref ? (
+					<a
+						href={profileHref}
+						className={styles.rpc_user_link}
+						onClick={e => {
+							if (e.metaKey || e.ctrlKey || e.button === 1) return
+						}}
+					>
+						<div className={styles.rpc_avatar}>
+							<div className={styles.avatar_placeholder}>
+								<img
+									src={imgSrc}
+									alt='Avatar'
+									width={48}
+									height={48}
+									onError={() => setImgSrc(FALLBACK_AVATAR)}
+								/>
+							</div>
+							<div className={styles.status_indicator} />
+						</div>
+					</a>
+				) : (
+					<div className={styles.rpc_avatar}>
+						<div className={styles.avatar_placeholder}>
+							<img
+								src={imgSrc}
+								alt='Avatar'
+								width={48}
+								height={48}
+								onError={() => setImgSrc(FALLBACK_AVATAR)}
+							/>
+						</div>
+						<div className={styles.status_indicator} />
 					</div>
-					<div className={styles.status_indicator} />
-				</div>
+				)}
+
 				<div>
 					<div className={styles.username}>{username}</div>
 					<div className={styles.discriminator}>{displayTag}</div>
 				</div>
-			</div>
+			</>
 		)
+
+		return <div className={styles.rpc_user}>{content}</div>
 	}
 )
 RpcUser.displayName = 'RpcUser'
@@ -218,6 +247,7 @@ export default function RpcPreview({
 	currentIndex,
 	config,
 	avatarSrc,
+	profileHref,
 }: RpcPreviewProps) {
 	const buttons: Array<{ label: string; url: string }> = []
 
@@ -234,7 +264,12 @@ export default function RpcPreview({
 
 	return (
 		<div className={styles.rpc_preview}>
-			<RpcUser username={username} discriminator={discriminator} avatarSrc={avatarSrc} />
+			<RpcUser
+				username={username}
+				discriminator={discriminator}
+				avatarSrc={avatarSrc}
+				profileHref={profileHref}
+			/>
 			<RpcActivity
 				activityType={activityType}
 				currentCycle={currentCycle}

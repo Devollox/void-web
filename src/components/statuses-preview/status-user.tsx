@@ -21,6 +21,7 @@ interface StatusPreviewProps {
 	currentIndex?: number
 	config?: Partial<StatusConfigData>
 	avatarSrc?: string
+	profileHref?: string
 }
 
 const FALLBACK_AVATAR = '/logo.png'
@@ -29,10 +30,12 @@ const StatusUser = ({
 	username = 'Devollox',
 	discriminator = '#0001',
 	avatarSrc,
+	profileHref,
 }: {
 	username?: string
 	discriminator?: string
 	avatarSrc?: string
+	profileHref?: string
 }) => {
 	const initialSrc = avatarSrc || FALLBACK_AVATAR
 	const [imgSrc, setImgSrc] = useState(initialSrc)
@@ -45,27 +48,54 @@ const StatusUser = ({
 		setImgSrc(nextSrc)
 	}, [avatarSrc])
 
-	return (
-		<div className={styles.rpc_user}>
-			<div className={styles.rpc_avatar}>
-				<div className={styles.avatar_placeholder}>
-					<Image
-						src={imgSrc}
-						alt='Avatar'
-						width={48}
-						height={48}
-						unoptimized
-						onError={() => setImgSrc(FALLBACK_AVATAR)}
-					/>
+	const content = (
+		<>
+			{profileHref ? (
+				<a
+					href={profileHref}
+					className={styles.rpc_user_link}
+					onClick={e => {
+						if (e.metaKey || e.ctrlKey || e.button === 1) return
+					}}
+				>
+					<div className={styles.rpc_avatar}>
+						<div className={styles.avatar_placeholder}>
+							<Image
+								src={imgSrc}
+								alt='Avatar'
+								width={48}
+								height={48}
+								unoptimized
+								onError={() => setImgSrc(FALLBACK_AVATAR)}
+							/>
+						</div>
+						<div className={styles.status_indicator} />
+					</div>
+				</a>
+			) : (
+				<div className={styles.rpc_avatar}>
+					<div className={styles.avatar_placeholder}>
+						<Image
+							src={imgSrc}
+							alt='Avatar'
+							width={48}
+							height={48}
+							unoptimized
+							onError={() => setImgSrc(FALLBACK_AVATAR)}
+						/>
+					</div>
+					<div className={styles.status_indicator} />
 				</div>
-				<div className={styles.status_indicator} />
-			</div>
+			)}
+
 			<div>
 				<div className={styles.username}>{username}</div>
 				<div className={styles.discriminator}>{discriminator}</div>
 			</div>
-		</div>
+		</>
 	)
+
+	return <div className={styles.rpc_user}>{content}</div>
 }
 
 const StatusDetails = ({
@@ -117,10 +147,16 @@ export default function StatusPreview({
 	currentIndex,
 	config,
 	avatarSrc,
+	profileHref,
 }: StatusPreviewProps) {
 	return (
 		<div className={styles.rpc_preview}>
-			<StatusUser username={username} discriminator={discriminator} avatarSrc={avatarSrc} />
+			<StatusUser
+				username={username}
+				discriminator={discriminator}
+				avatarSrc={avatarSrc}
+				profileHref={profileHref}
+			/>
 			<StatusActivity
 				activityType={activityType}
 				currentStatus={currentStatus}

@@ -1,4 +1,5 @@
 import { admin } from '@/service/firebase-admin'
+import { redis } from '@/service/redis'
 import { NextResponse } from 'next/server'
 
 const db = admin.database()
@@ -8,25 +9,31 @@ type Body = {
 	tag: string
 }
 
-const userHandleCache: Record<string, { data: any; updatedAt: number }> = {}
-const CACHE_TTL = 30000
+const REDIS_TTL = 60
 
 async function resolveAuthor(username: string, tag: string) {
 	if (!username || !tag) {
 		return NextResponse.json({ ok: false, error: 'BadRequest' }, { status: 400 })
 	}
 
-	const cacheKey = `${username}#${tag}`
-	const now = Date.now()
+	const handleCacheKey = `cache:handle:${username.toLowerCase()}#${tag}`
+	const cachedHandle = await redis.get<string>(handleCacheKey)
 
 	let authorId: string | null = null
 	let userRaw: any = null
 
-	if (userHandleCache[cacheKey] && now - userHandleCache[cacheKey].updatedAt < CACHE_TTL) {
-		const cached = userHandleCache[cacheKey].data
-		authorId = cached.authorId
-		userRaw = cached.userRaw
-	} else {
+	if (cachedHandle) {
+		try {
+			const resolved = typeof cachedHandle === 'object' ? cachedHandle : JSON.parse(cachedHandle)
+			authorId = resolved.authorId
+			userRaw = resolved.userRaw
+		} catch {
+			authorId = null
+			userRaw = null
+		}
+	}
+
+	if (!authorId || !userRaw) {
 		const usersSnap = await db.ref('users').get()
 		if (!usersSnap.exists()) {
 			return NextResponse.json({ ok: false, error: 'NotFound' }, { status: 404 })
@@ -44,8 +51,23 @@ async function resolveAuthor(username: string, tag: string) {
 		}
 
 		;[authorId, userRaw] = entry
-		userHandleCache[cacheKey] = { data: { authorId, userRaw }, updatedAt: now }
+		await redis.set(handleCacheKey, JSON.stringify({ authorId, userRaw }), { ex: REDIS_TTL })
 	}
+
+	const userCacheKey = `cache:user:${authorId}`
+	await redis.set(
+		userCacheKey,
+		JSON.stringify({
+			name: userRaw.name ?? null,
+			avatar: userRaw.avatar ?? userRaw.image ?? null,
+			provider: userRaw.provider ?? null,
+			tag: userRaw.tag ?? null,
+			createdAt: userRaw.createdAt ?? null,
+			lastSeen: userRaw.lastSeen ?? null,
+			configs: userRaw.configs ?? null,
+		}),
+		{ ex: REDIS_TTL }
+	)
 
 	const presenceMap = userRaw?.configs?.presence || {}
 	const statusMap = userRaw?.configs?.status || {}
@@ -54,8 +76,8 @@ async function resolveAuthor(username: string, tag: string) {
 	const statusIds = Object.keys(statusMap).filter(id => statusMap[id])
 
 	const [presenceSnaps, statusSnaps] = await Promise.all([
-		Promise.all(presenceIds.map(id => db.ref(`presence-configs/${id}`).get())),
-		Promise.all(statusIds.map(id => db.ref(`status-configs/${id}`).get())),
+		Promise.all(presenceIds.map((id: string) => db.ref(`presence-configs/${id}`).get())),
+		Promise.all(statusIds.map((id: string) => db.ref(`status-configs/${id}`).get())),
 	])
 
 	const avatarFromUser = userRaw?.avatar || userRaw?.image || '/logo.png'

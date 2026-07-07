@@ -9,19 +9,21 @@ type Params = {
 }
 
 interface UserRaw {
-	name?: string
-	avatar?: string
-	image?: string
-	tag?: string
-	authorTag?: string
-	provider?: string
-	createdAt?: number
-	lastSeen?: number
+	name?: string | null
+	avatar?: string | null
+	image?: string | null
+	tag?: string | null
+	authorTag?: string | null
+	provider?: string | null
+	createdAt?: number | null
+	lastSeen?: number | null
 	configs?: {
 		presence?: Record<string, boolean>
 		status?: Record<string, boolean>
-	}
+	} | null
 }
+
+const REDIS_TTL = 60
 
 function getClientIp(req: Request): string {
 	const forwardedFor = req.headers.get('x-forwarded-for')
@@ -46,7 +48,7 @@ async function checkRateLimit(ip: string) {
 		await redis.expire(freqKey, 1)
 	}
 
-	if (requests > 2) {
+	if (requests > 5) {
 		return { tooFrequent: true }
 	}
 
@@ -65,6 +67,139 @@ async function registerFail(ip: string) {
 	if (fails >= 10) {
 		await redis.set(blockKey, 1, { ex: 600 })
 		await redis.del(failKey)
+	}
+}
+
+async function loadAuthorConfigs(authorId: string) {
+	const redisKey = `cache:user:${authorId}`
+	const cachedUserJson = await redis.get<string>(redisKey)
+	let userRaw: UserRaw | null = null
+
+	if (cachedUserJson) {
+		try {
+			userRaw = typeof cachedUserJson === 'object' ? cachedUserJson : JSON.parse(cachedUserJson)
+		} catch {
+			userRaw = null
+		}
+	}
+
+	if (!userRaw) {
+		const userSnap = await db.ref(`users/${authorId}`).get()
+
+		if (!userSnap.exists()) {
+			return null
+		}
+
+		const rawData = userSnap.val() as UserRaw
+		userRaw = {
+			name: rawData.name ?? null,
+			avatar: rawData.avatar ?? rawData.image ?? null,
+			provider: rawData.provider ?? null,
+			tag: rawData.tag ?? null,
+			createdAt: rawData.createdAt ?? null,
+			lastSeen: rawData.lastSeen ?? null,
+			configs: rawData.configs ?? null,
+		}
+		await redis.set(redisKey, JSON.stringify(userRaw), { ex: REDIS_TTL })
+	}
+
+	if (!userRaw) return null
+
+	const presenceMap = userRaw.configs?.presence || {}
+	const statusMap = userRaw.configs?.status || {}
+
+	const presenceIds = Object.keys(presenceMap).filter(id => presenceMap[id])
+	const statusIds = Object.keys(statusMap).filter(id => statusMap[id])
+
+	const [presenceSnaps, statusSnaps] = await Promise.all([
+		Promise.all(presenceIds.map((id: string) => db.ref(`presence-configs/${id}`).get())),
+		Promise.all(statusIds.map((id: string) => db.ref(`status-configs/${id}`).get())),
+	])
+
+	const avatarFromUser = userRaw.avatar || userRaw.image || '/logo.png'
+	const tagFromUser = userRaw.tag || userRaw.authorTag || null
+	const authorName = userRaw.name || 'Unknown User'
+	const formattedTag = tagFromUser ? String(tagFromUser).padStart(4, '0') : undefined
+
+	const presenceConfigs = presenceSnaps
+		.map((snap, idx) => {
+			if (!snap.exists()) return null
+			const id = presenceIds[idx]
+			const raw = snap.val() as any
+
+			const averageColors: string[] =
+				Array.isArray(raw.averageColors) && raw.averageColors.length > 0
+					? raw.averageColors
+					: raw.averageColor
+						? [raw.averageColor]
+						: ['#5b5b5b']
+
+			return {
+				id,
+				title: raw.title || 'Unnamed',
+				author: authorName,
+				authorId,
+				authorAvatar: avatarFromUser,
+				authorTag: formattedTag,
+				downloads: typeof raw.downloads === 'number' ? raw.downloads : 0,
+				description: raw.description || '',
+				averageColors,
+				configData: raw.configData || {
+					cycles: [{ details: 'Idling in the void', state: 'Just vibing' }],
+					imageCycles: [],
+					buttonPairs: [],
+				},
+				uploadedAt: raw.uploadedAt || 0,
+			}
+		})
+		.filter((cfg): cfg is NonNullable<typeof cfg> => cfg !== null)
+
+	const statusConfigs = statusSnaps
+		.map((snap, idx) => {
+			if (!snap.exists()) return null
+			const id = statusIds[idx]
+			const raw = snap.val() as any
+			return {
+				id,
+				title: raw.title || 'Unnamed',
+				author: authorName,
+				authorId,
+				authorAvatar: avatarFromUser,
+				authorTag: formattedTag,
+				downloads: typeof raw.downloads === 'number' ? raw.downloads : 0,
+				description: raw.description || '',
+				configData: raw.configData || { statusCycles: [] },
+				uploadedAt: raw.uploadedAt || 0,
+			}
+		})
+		.filter((st): st is NonNullable<typeof st> => st !== null)
+
+	const syncedPresenceMap: Record<string, boolean> = {}
+	for (let i = 0; i < presenceConfigs.length; i++) {
+		syncedPresenceMap[presenceConfigs[i].id] = true
+	}
+
+	const syncedStatusMap: Record<string, boolean> = {}
+	for (let i = 0; i < statusConfigs.length; i++) {
+		syncedStatusMap[statusConfigs[i].id] = true
+	}
+
+	return {
+		user: {
+			id: authorId,
+			name: userRaw.name || null,
+			avatar: userRaw.avatar || userRaw.image || null,
+			tag: formattedTag || null,
+			provider: userRaw.provider || null,
+			createdAt: userRaw.createdAt || null,
+			lastSeen: userRaw.lastSeen || null,
+			configs: {
+				presence: syncedPresenceMap,
+				status: syncedStatusMap,
+			},
+		},
+		presenceConfigs,
+		statusConfigs,
 	}
 }
 
@@ -102,9 +237,8 @@ export async function GET(req: Request, ctx: { params: Promise<Params> | Params 
 	}
 
 	try {
-		const userSnap = await db.ref(`users/${authorId}`).get()
-
-		if (!userSnap.exists()) {
+		const initial = await loadAuthorConfigs(authorId)
+		if (!initial) {
 			await registerFail(ip)
 			return NextResponse.json({
 				user: null,
@@ -113,103 +247,7 @@ export async function GET(req: Request, ctx: { params: Promise<Params> | Params 
 			})
 		}
 
-		const userRaw = userSnap.val() as UserRaw
-		const presenceMap = userRaw.configs?.presence || {}
-		const statusMap = userRaw.configs?.status || {}
-
-		const presenceIds = Object.keys(presenceMap).filter(id => presenceMap[id])
-		const statusIds = Object.keys(statusMap).filter(id => statusMap[id])
-
-		const [presenceSnaps, statusSnaps] = await Promise.all([
-			Promise.all(presenceIds.map(id => db.ref(`presence-configs/${id}`).get())),
-			Promise.all(statusIds.map(id => db.ref(`status-configs/${id}`).get())),
-		])
-
-		const avatarFromUser = userRaw.avatar || userRaw.image || '/logo.png'
-		const tagFromUser = userRaw.tag || userRaw.authorTag || null
-		const authorName = userRaw.name || 'Unknown User'
-		const formattedTag = tagFromUser ? String(tagFromUser).padStart(4, '0') : undefined
-
-		const presenceConfigs = presenceSnaps
-			.map((snap, idx) => {
-				if (!snap.exists()) return null
-				const id = presenceIds[idx]
-				const raw = snap.val() as any
-
-				const averageColors: string[] =
-					Array.isArray(raw.averageColors) && raw.averageColors.length > 0
-						? raw.averageColors
-						: raw.averageColor
-							? [raw.averageColor]
-							: ['#5b5b5b']
-
-				return {
-					id,
-					title: raw.title || 'Unnamed',
-					author: authorName,
-					authorId,
-					authorAvatar: avatarFromUser,
-					authorTag: formattedTag,
-					downloads: typeof raw.downloads === 'number' ? raw.downloads : 0,
-					description: raw.description || '',
-					averageColors,
-					configData: raw.configData || {
-						cycles: [{ details: 'Idling in the void', state: 'Just vibing' }],
-						imageCycles: [],
-						buttonPairs: [],
-					},
-					uploadedAt: raw.uploadedAt || 0,
-				}
-			})
-			.filter((cfg): cfg is NonNullable<typeof cfg> => cfg !== null)
-
-		const statusConfigs = statusSnaps
-			.map((snap, idx) => {
-				if (!snap.exists()) return null
-				const id = statusIds[idx]
-				const raw = snap.val() as any
-				return {
-					id,
-					title: raw.title || 'Unnamed',
-					author: authorName,
-					authorId,
-					authorAvatar: avatarFromUser,
-					authorTag: formattedTag,
-					downloads: typeof raw.downloads === 'number' ? raw.downloads : 0,
-					description: raw.description || '',
-					configData: raw.configData || { statusCycles: [] },
-					uploadedAt: raw.uploadedAt || 0,
-				}
-			})
-			.filter((st): st is NonNullable<typeof st> => st !== null)
-
-		const syncedPresenceMap: Record<string, boolean> = {}
-		for (let i = 0; i < presenceConfigs.length; i++) {
-			syncedPresenceMap[presenceConfigs[i].id] = true
-		}
-
-		const syncedStatusMap: Record<string, boolean> = {}
-		for (let i = 0; i < statusConfigs.length; i++) {
-			syncedStatusMap[statusConfigs[i].id] = true
-		}
-
-		return NextResponse.json({
-			user: {
-				id: authorId,
-				name: userRaw.name || null,
-				avatar: userRaw.avatar || userRaw.image || null,
-				tag: formattedTag || null,
-				provider: userRaw.provider || null,
-				createdAt: userRaw.createdAt || null,
-				lastSeen: userRaw.lastSeen || null,
-				configs: {
-					presence: syncedPresenceMap,
-					status: syncedStatusMap,
-				},
-			},
-			presenceConfigs,
-			statusConfigs,
-		})
+		return NextResponse.json(initial)
 	} catch (e: any) {
 		await registerFail(ip)
 		return NextResponse.json(

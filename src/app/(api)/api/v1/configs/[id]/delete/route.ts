@@ -1,6 +1,8 @@
 import { safePublish } from '@/lib/redis-pubsub'
+import { sseManager } from '@/lib/sse-manager'
 import { admin } from '@/service/firebase-admin'
 import { redis } from '@/service/redis'
+import { loadAuthorConfigsById } from '@lib/shared'
 import { NextResponse } from 'next/server'
 import type { ConfigKind } from '../../route'
 
@@ -90,6 +92,13 @@ export async function DELETE(req: Request, ctx: { params: Promise<Params> | Para
 				configId: id,
 			})
 		)
+
+		try {
+			const full = await loadAuthorConfigsById(authorId)
+			if (full) {
+				sseManager.notifyAuthorProfileUpdate(authorId, full)
+			}
+		} catch {}
 
 		return NextResponse.json({ ok: true }, { status: 200 })
 	} catch (err) {

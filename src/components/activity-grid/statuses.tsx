@@ -10,9 +10,10 @@ import { SkeletonCard } from './skeleton-card'
 type CustomStatusPreviewProps = {
 	config: Status
 	previewIndex: number
+	profileHref: string
 }
 
-function CustomStatusPreview({ config, previewIndex }: CustomStatusPreviewProps) {
+function CustomStatusPreview({ config, previewIndex, profileHref }: CustomStatusPreviewProps) {
 	const configData: any = config.configData || {}
 	const cycles = configData.statusCycles ?? []
 	const maxLen = cycles.length || 1
@@ -29,6 +30,7 @@ function CustomStatusPreview({ config, previewIndex }: CustomStatusPreviewProps)
 					currentIndex={localIndex}
 					config={configData}
 					avatarSrc={config.authorAvatar || '/logo.png'}
+					profileHref={profileHref}
 				/>
 			</div>
 		</div>
@@ -38,21 +40,30 @@ function CustomStatusPreview({ config, previewIndex }: CustomStatusPreviewProps)
 type StatusesGridProps = {
 	configs: Status[]
 	loading?: boolean
+	hasMore?: boolean
+	loadingMore?: boolean
 	allowDelete?: boolean
 	ownStatusIds?: Set<string>
 	forceOwnerMode?: boolean
+	onDeleteStart?: (title?: string) => void
+	onDeleteSuccess?: (title?: string) => void
+	onDeleteError?: (message?: string) => void
 }
 
 export function StatusesGrid({
 	configs,
 	loading,
+	hasMore,
+	loadingMore,
 	allowDelete,
 	ownStatusIds,
 	forceOwnerMode,
+	onDeleteStart,
+	onDeleteSuccess,
+	onDeleteError,
 }: StatusesGridProps) {
 	const [previewTick, setPreviewTick] = useState(0)
 	const [mounted, setMounted] = useState(false)
-	const [animateColors, setAnimateColors] = useState(false)
 	const [localStatuses, setLocalStatuses] = useState<Status[]>(configs)
 	const [deletingId, setDeletingId] = useState<string | null>(null)
 	const [showEmpty, setShowEmpty] = useState(false)
@@ -66,7 +77,7 @@ export function StatusesGrid({
 	}, [configs])
 
 	useEffect(() => {
-		const t = setTimeout(() => setAnimateColors(true), 100)
+		const t = setTimeout(() => {}, 0)
 		const i = setInterval(() => setPreviewTick(prev => prev + 1), 3000)
 		return () => {
 			clearTimeout(t)
@@ -87,7 +98,7 @@ export function StatusesGrid({
 		return () => clearTimeout(timer)
 	}, [loading, localStatuses.length])
 
-	const showSkeleton = loading && !localStatuses.length
+	const showSkeletonFirst = loading && !localStatuses.length
 
 	const handleOpenInApp = async (config: Status) => {
 		window.location.href = `voidpresence://import-status-config?title=${encodeURIComponent(
@@ -116,6 +127,8 @@ export function StatusesGrid({
 		if (!isOwn) return
 
 		setDeletingId(config.id)
+		onDeleteStart?.(config.title)
+
 		try {
 			const res = await fetch(
 				`/api/v1/configs/${encodeURIComponent(String(config.id))}/delete?kind=status`,
@@ -124,12 +137,14 @@ export function StatusesGrid({
 
 			if (!res.ok) {
 				const data = await res.json().catch(() => null)
-				throw new Error(data?.message || `Failed to delete status (${res.status})`)
+				const msg = data?.message || `Failed to delete status (${res.status})`
+				throw new Error(msg)
 			}
 
 			setLocalStatuses(prev => prev.filter(s => s.id !== config.id))
-		} catch (err) {
-			console.error('Failed to delete status', err)
+			onDeleteSuccess?.(config.title)
+		} catch (err: any) {
+			onDeleteError?.(err?.message)
 		} finally {
 			setDeletingId(null)
 		}
@@ -137,7 +152,7 @@ export function StatusesGrid({
 
 	return (
 		<section id='status-content' className={styles.page_section}>
-			{showSkeleton ? (
+			{showSkeletonFirst ? (
 				<div className={styles.theme_listings}>
 					<SkeletonCard height='status' />
 					<SkeletonCard height='status' />
@@ -156,6 +171,11 @@ export function StatusesGrid({
 							(forceOwnerMode ||
 								(config as any).isOwn === true ||
 								(!!ownStatusIds && ownStatusIds.has(String(config.id))))
+
+						const tagString = String(config.authorTag ?? '').padStart(4, '0')
+						const profileHref = `/profile/${encodeURIComponent(
+							config.author || 'User'
+						)}?tag=${encodeURIComponent(tagString)}`
 
 						return (
 							<div key={config.id} className={styles.card_wrap}>
@@ -184,7 +204,11 @@ export function StatusesGrid({
 										</div>
 									</div>
 
-									<CustomStatusPreview config={config} previewIndex={baseIndex} />
+									<CustomStatusPreview
+										config={config}
+										previewIndex={baseIndex}
+										profileHref={profileHref}
+									/>
 
 									<div className={styles.card_actions}>
 										<div className={styles.card_buttons}>
@@ -200,6 +224,20 @@ export function StatusesGrid({
 							</div>
 						)
 					})}
+
+					{hasMore && (
+						<>
+							<div className={`${styles.skeleton_card_wrap} ${styles.skeleton_card_wrap_status}`}>
+								<SkeletonCard height='status' />
+							</div>
+							<div className={`${styles.skeleton_card_wrap} ${styles.skeleton_card_wrap_status}`}>
+								<SkeletonCard height='status' />
+							</div>
+							<div className={`${styles.skeleton_card_wrap} ${styles.skeleton_card_wrap_status}`}>
+								<SkeletonCard height='status' />
+							</div>
+						</>
+					)}
 				</div>
 			)}
 		</section>

@@ -1,5 +1,6 @@
 import { mapRawToConfig, mapRawToStatus } from '@/service/firebase'
 import { admin } from '@/service/firebase-admin'
+import { redis } from '@/service/redis'
 import { NextResponse } from 'next/server'
 import { Config, ConfigKind, Status } from '../route'
 
@@ -8,8 +9,7 @@ const db = admin.database()
 type Params = { id: string }
 type GetByIdPayload = { kind: ConfigKind }
 
-const singleUserCache: Record<string, { data: any; updatedAt: number }> = {}
-const CACHE_TTL = 30000
+const USER_CACHE_TTL = 60
 
 export async function POST(req: Request, ctx: { params: Promise<Params> | Params }) {
 	try {
@@ -52,16 +52,30 @@ export async function POST(req: Request, ctx: { params: Promise<Params> | Params
 
 		let user: any = null
 		if (authorId) {
-			const now = Date.now()
-			const cached = singleUserCache[authorId]
+			const redisKey = `cache:user:${authorId}`
+			const cachedUserJson = await redis.get<string>(redisKey)
 
-			if (cached && now - cached.updatedAt < CACHE_TTL) {
-				user = cached.data
-			} else {
+			if (cachedUserJson) {
+				try {
+					user = typeof cachedUserJson === 'object' ? cachedUserJson : JSON.parse(cachedUserJson)
+				} catch {
+					user = null
+				}
+			}
+
+			if (!user) {
 				const userSnap = await db.ref(`users/${authorId}`).get()
 				if (userSnap.exists()) {
-					user = userSnap.val()
-					singleUserCache[authorId] = { data: user, updatedAt: now }
+					const raw = userSnap.val() as any
+					user = {
+						name: raw.name ?? null,
+						avatar: raw.avatar ?? null,
+						provider: raw.provider ?? null,
+						tag: raw.tag ?? null,
+						createdAt: raw.createdAt ?? null,
+						lastSeen: raw.lastSeen ?? null,
+					}
+					await redis.set(redisKey, JSON.stringify(user), { ex: USER_CACHE_TTL })
 				}
 			}
 		}

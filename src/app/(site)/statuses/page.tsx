@@ -1,4 +1,3 @@
-import { auth } from '@/lib/auth'
 import type { Status } from '@service/firebase'
 import type { Metadata } from 'next'
 import { StatusSection } from './statuses-section'
@@ -21,23 +20,41 @@ export const metadata: Metadata = {
 	},
 }
 
-async function fetchInitialStatuses(): Promise<Status[]> {
+type FetchResponse = {
+	items: Status[]
+	total: number
+	offset: number
+	limit: number
+}
+
+const INITIAL_LIMIT = 12
+
+async function fetchInitialStatuses(): Promise<FetchResponse> {
 	const res = await fetch(`${process.env.NEXTAUTH_URL}/api/v1/configs`, {
 		method: 'POST',
 		cache: 'no-store',
 		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify({ kind: 'status' }),
+		body: JSON.stringify({ kind: 'status', offset: 0, limit: INITIAL_LIMIT }),
 	})
 
-	if (!res.ok) return []
-	return (await res.json()) as Status[]
+	if (!res.ok) {
+		return { items: [], total: 0, offset: 0, limit: INITIAL_LIMIT }
+	}
+	return (await res.json()) as FetchResponse
 }
 
 export default async function StatusPage(props: PageProps) {
 	const { q = '' } = await props.searchParams
 	const searchTerm = q || ''
 
-	const [initialStatuses] = await Promise.all([fetchInitialStatuses(), auth()])
+	const initial = await fetchInitialStatuses()
 
-	return <StatusSection initialSearchTerm={searchTerm} initialStatuses={initialStatuses} />
+	return (
+		<StatusSection
+			initialSearchTerm={searchTerm}
+			initialStatuses={initial.items}
+			initialTotal={initial.total}
+			initialLimit={initial.limit}
+		/>
+	)
 }

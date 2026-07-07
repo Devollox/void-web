@@ -1,6 +1,8 @@
 import { safePublish } from '@/lib/redis-pubsub'
+import { sseManager } from '@/lib/sse-manager'
 import { admin } from '@/service/firebase-admin'
 import { redis } from '@/service/redis'
+import { loadAuthorConfigsById } from '@lib/shared'
 import { NextResponse } from 'next/server'
 
 const db = admin.database()
@@ -230,6 +232,13 @@ export async function POST(req: Request, ctx: { params: Promise<Params> | Params
 				})
 			)
 			await redis.zadd(zKey, { score: 0, member: createdId })
+		} catch {}
+
+		try {
+			const full = await loadAuthorConfigsById(authorId)
+			if (full) {
+				sseManager.notifyAuthorProfileUpdate(authorId, full)
+			}
 		} catch {}
 
 		return NextResponse.json({ id: createdId }, { status: 200 })

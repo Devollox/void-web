@@ -1,28 +1,40 @@
+import { sseManager } from '@/lib/sse-manager'
 import { admin } from '@/service/firebase-admin'
+import { redis } from '@/service/redis'
+import '@api/_bootstrap'
+import { loadAuthorConfigsById } from '@lib/shared'
+import { randomUUID } from 'crypto'
 
 const db = admin.database()
+const REDIS_TTL = 60
 
-type AuthorConfigs = {
-	user: {
-		name: string | null
-		avatar: string | null
-		tag: string | null
-		provider: string | null
-		createdAt: number | null
-		lastSeen: number | null
+interface UserRaw {
+	name?: string | null
+	avatar?: string | null
+	image?: string | null
+	tag?: string | null
+	authorTag?: string | null
+	provider?: string | null
+	createdAt?: number | null
+	lastSeen?: number | null
+	configs?: {
+		presence?: Record<string, boolean>
+		status?: Record<string, boolean>
 	} | null
-	presenceConfigs: any[]
-	statusConfigs: any[]
 }
 
-const userHandleCache: Record<string, { authorId: string; userRaw: any; updatedAt: number }> = {}
-const CACHE_TTL = 30000
-
 async function resolveUserByHandle(username: string, tag: string) {
-	const cacheKey = `${username}#${tag}`
-	const now = Date.now()
-	if (userHandleCache[cacheKey] && now - userHandleCache[cacheKey].updatedAt < CACHE_TTL) {
-		return userHandleCache[cacheKey]
+	if (!username || !tag) return null
+
+	const cacheKey = `cache:handle:${username.toLowerCase()}#${tag}`
+	const cached = await redis.get<string>(cacheKey)
+
+	if (cached) {
+		try {
+			return typeof cached === 'object' ? cached : JSON.parse(cached)
+		} catch {
+			return null
+		}
 	}
 
 	const usersSnap = await db.ref('users').get()
@@ -38,92 +50,10 @@ async function resolveUserByHandle(username: string, tag: string) {
 	if (!entry) return null
 
 	const [authorId, userRaw] = entry
-	userHandleCache[cacheKey] = { authorId, userRaw, updatedAt: now }
-	return { authorId, userRaw }
-}
+	const result = { authorId, userRaw }
 
-async function loadAuthorConfigsById(authorId: string): Promise<AuthorConfigs | null> {
-	const userSnap = await db.ref(`users/${authorId}`).get()
-	if (!userSnap.exists()) return null
-
-	const userRaw = userSnap.val() as any
-	const presenceMap = userRaw.configs?.presence || {}
-	const statusMap = userRaw.configs?.status || {}
-
-	const presenceIds = Object.keys(presenceMap).filter(id => presenceMap[id])
-	const statusIds = Object.keys(statusMap).filter(id => statusMap[id])
-
-	const [presenceSnaps, statusSnaps] = await Promise.all([
-		Promise.all(presenceIds.map(id => db.ref(`presence-configs/${id}`).get())),
-		Promise.all(statusIds.map(id => db.ref(`status-configs/${id}`).get())),
-	])
-
-	const avatarFromUser = userRaw.avatar || userRaw.image || '/logo.png'
-	const tagFromUser = String(userRaw.tag ?? '').padStart(4, '0')
-
-	const presenceConfigs = presenceSnaps
-		.map((snap, idx) => {
-			if (!snap.exists()) return null
-			const id = presenceIds[idx]
-			const raw = snap.val() as any
-
-			const averageColors: string[] =
-				Array.isArray(raw.averageColors) && raw.averageColors.length > 0
-					? raw.averageColors
-					: raw.averageColor
-						? [raw.averageColor]
-						: ['#5b5b5b']
-
-			return {
-				id,
-				title: raw.title || 'Unnamed',
-				author: userRaw.name || 'Unknown User',
-				authorAvatar: avatarFromUser,
-				authorTag: tagFromUser,
-				downloads: typeof raw.downloads === 'number' ? raw.downloads : 0,
-				description: raw.description || '',
-				averageColors,
-				configData: raw.configData || {
-					cycles: [{ details: 'Idling in the void', state: 'Just vibing' }],
-					imageCycles: [],
-					buttonPairs: [],
-				},
-				uploadedAt: raw.uploadedAt || 0,
-			}
-		})
-		.filter((cfg): cfg is NonNullable<typeof cfg> => cfg !== null)
-
-	const statusConfigs = statusSnaps
-		.map((snap, idx) => {
-			if (!snap.exists()) return null
-			const id = statusIds[idx]
-			const raw = snap.val() as any
-			return {
-				id,
-				title: raw.title || 'Unnamed',
-				author: userRaw.name || 'Unknown User',
-				authorAvatar: avatarFromUser,
-				authorTag: tagFromUser,
-				downloads: typeof raw.downloads === 'number' ? raw.downloads : 0,
-				description: raw.description || '',
-				configData: raw.configData || { statusCycles: [] },
-				uploadedAt: raw.uploadedAt || 0,
-			}
-		})
-		.filter((st): st is NonNullable<typeof st> => st !== null)
-
-	return {
-		user: {
-			name: userRaw.name || null,
-			avatar: avatarFromUser,
-			tag: tagFromUser,
-			provider: userRaw.provider || null,
-			createdAt: userRaw.createdAt || null,
-			lastSeen: userRaw.lastSeen || null,
-		},
-		presenceConfigs,
-		statusConfigs,
-	}
+	await redis.set(cacheKey, JSON.stringify(result), { ex: REDIS_TTL })
+	return result
 }
 
 export async function GET(req: Request) {
@@ -137,6 +67,8 @@ export async function GET(req: Request) {
 
 	const encoder = new TextEncoder()
 	let closed = false
+	const streamId = randomUUID()
+	let authorId: string | null = null
 
 	const stream = new ReadableStream({
 		async start(controller) {
@@ -144,16 +76,6 @@ export async function GET(req: Request) {
 				if (closed) return
 				try {
 					controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`))
-				} catch {}
-			}
-
-			const cleanup = () => {
-				if (closed) return
-				closed = true
-				clearInterval(ping)
-				userRef.off('value', onValueHandler)
-				try {
-					controller.close()
 				} catch {}
 			}
 
@@ -167,7 +89,7 @@ export async function GET(req: Request) {
 				return
 			}
 
-			const { authorId } = resolved
+			authorId = String(resolved.authorId)
 
 			const initial = await loadAuthorConfigsById(authorId)
 			if (!initial || !initial.user) {
@@ -181,32 +103,33 @@ export async function GET(req: Request) {
 
 			send('ready', initial)
 
-			const userRef = db.ref(`users/${authorId}`)
+			sseManager.addAuthorSub({
+				id: streamId,
+				authorId,
+				send,
+				close: () => {
+					if (closed) return
+					closed = true
+					sseManager.removeAuthorSub(streamId)
+					try {
+						controller.close()
+					} catch {}
+				},
+			})
 
-			const onValueHandler = async () => {
+			req.signal.addEventListener('abort', () => {
 				if (closed) return
-				const next = await loadAuthorConfigsById(authorId)
-				if (!next || !next.user) {
-					send('not-found', { username, tag })
-					cleanup()
-					return
-				}
-				send('update', next)
-			}
-
-			userRef.on('value', onValueHandler)
-
-			const ping = setInterval(() => {
-				if (closed) return
+				closed = true
+				sseManager.removeAuthorSub(streamId)
 				try {
-					controller.enqueue(encoder.encode(`event: ping\ndata: {}\n\n`))
+					controller.close()
 				} catch {}
-			}, 25000)
-
-			req.signal.addEventListener('abort', cleanup)
+			})
 		},
 		cancel() {
+			if (closed) return
 			closed = true
+			sseManager.removeAuthorSub(streamId)
 		},
 	})
 

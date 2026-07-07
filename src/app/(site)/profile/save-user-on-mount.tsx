@@ -27,7 +27,6 @@ export function SaveUserOnMount() {
 			}),
 		}).catch(err => {
 			sentRef.current = false
-			console.error(err)
 		})
 	}, [status, user?.id, user?.name, user?.image, user?.provider])
 

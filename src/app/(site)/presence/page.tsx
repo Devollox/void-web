@@ -1,4 +1,4 @@
-import { auth } from '@/lib/auth'
+import type { Config } from '@/app/(api)/api/v1/configs/route'
 import type { Metadata } from 'next'
 import { ConfigsSection } from './presence-section'
 
@@ -21,43 +21,43 @@ export const metadata: Metadata = {
 	},
 }
 
-type PresenceConfig = import('@/app/(api)/api/v1/configs/route').Config
+type PresenceConfig = Config
 
-type AuthorConfigsResponse = {
-	user: {
-		id: string
-		name: string | null
-		avatar: string | null
-		tag: string | null
-		provider: string | null
-		createdAt: number | null
-		lastSeen: number | null
-		configs?: {
-			presence?: Record<string, boolean>
-			status?: Record<string, boolean>
-		}
-	} | null
-	presenceConfigs: PresenceConfig[]
-	statusConfigs: any[]
+type FetchResponse = {
+	items: PresenceConfig[]
+	total: number
+	offset: number
+	limit: number
 }
 
-async function fetchInitialPresence(): Promise<PresenceConfig[]> {
+const INITIAL_LIMIT = 12
+
+async function fetchInitialPresence(): Promise<FetchResponse> {
 	const res = await fetch(`${process.env.NEXTAUTH_URL}/api/v1/configs`, {
 		method: 'POST',
 		cache: 'no-store',
 		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify({ kind: 'presence' }),
+		body: JSON.stringify({ kind: 'presence', offset: 0, limit: INITIAL_LIMIT }),
 	})
 
-	if (!res.ok) return []
-	return (await res.json()) as PresenceConfig[]
+	if (!res.ok) {
+		return { items: [], total: 0, offset: 0, limit: INITIAL_LIMIT }
+	}
+	return (await res.json()) as FetchResponse
 }
 
 export default async function ConfigsPage(props: PageProps) {
 	const { q = '' } = await props.searchParams
 	const searchTerm = q || ''
 
-	const [initialConfigs] = await Promise.all([fetchInitialPresence(), auth()])
+	const initial = await fetchInitialPresence()
 
-	return <ConfigsSection initialSearchTerm={searchTerm} initialConfigs={initialConfigs} />
+	return (
+		<ConfigsSection
+			initialSearchTerm={searchTerm}
+			initialConfigs={initial.items}
+			initialTotal={initial.total}
+			initialLimit={initial.limit}
+		/>
+	)
 }

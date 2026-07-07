@@ -3,12 +3,14 @@
 import { Config } from '@/app/(api)/api/v1/configs/route'
 import { PresenceGrid } from '@/components/activity-grid/presence'
 import { Search, X } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import styles from './presence.module.scss'
 
 export type Props = {
-	initialConfigs?: Config[]
+	initialConfigs: Config[]
 	initialSearchTerm: string
+	initialTotal: number
+	initialLimit: number
 }
 
 export function filterConfigs(configs: Config[], searchTerm: string) {
@@ -28,91 +30,152 @@ export function sortConfigs(configs: Config[]) {
 			typeof a.downloads === 'number' ? a.downloads : parseInt(String(a.downloads ?? '0')) || 0
 		const bDownloads =
 			typeof b.downloads === 'number' ? b.downloads : parseInt(String(b.downloads ?? '0')) || 0
-
 		return bDownloads - aDownloads
 	})
 }
 
-export function ConfigsClient({ initialConfigs = [], initialSearchTerm }: Props) {
+export function ConfigsClient({
+	initialConfigs,
+	initialSearchTerm,
+	initialTotal,
+	initialLimit,
+}: Props) {
 	const [configs, setConfigs] = useState<Config[]>(initialConfigs)
 	const [searchTerm, setSearchTerm] = useState(initialSearchTerm ?? '')
-	const [loading, setLoading] = useState(initialConfigs.length === 0)
+	const [total, setTotal] = useState(initialTotal)
+	const [limit] = useState(initialLimit)
+	const [offset, setOffset] = useState(initialConfigs.length)
+	const [loadingFirst, setLoadingFirst] = useState(initialConfigs.length === 0)
+	const [hasMore, setHasMore] = useState(initialConfigs.length < initialTotal)
+	const [loadingMore, setLoadingMore] = useState(false)
+
+	const sentinelRef = useRef<HTMLDivElement | null>(null)
+	const isFetchingRef = useRef(false)
+
+	const handleSearchChange = useCallback((value: string) => {
+		setSearchTerm(value)
+	}, [])
+
+	const handleClearSearch = useCallback(() => {
+		setSearchTerm('')
+	}, [])
+
+	const loadMore = useCallback(async () => {
+		if (!hasMore || isFetchingRef.current) return
+		isFetchingRef.current = true
+		setLoadingMore(true)
+
+		try {
+			const res = await fetch('/api/v1/configs', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					kind: 'presence',
+					offset,
+					limit,
+				}),
+			})
+
+			if (!res.ok) {
+				return
+			}
+
+			const data = (await res.json()) as {
+				items: Config[]
+				total: number
+				offset: number
+				limit: number
+			}
+
+			if (!data.items || data.items.length === 0) {
+				setHasMore(false)
+				return
+			}
+
+			setConfigs(prev => {
+				const byId = new Map(prev.map(c => [c.id, c]))
+				for (const item of data.items) {
+					byId.set(item.id, item)
+				}
+				const merged = Array.from(byId.values())
+				setHasMore(merged.length < data.total)
+				return merged
+			})
+
+			setTotal(data.total)
+			setOffset(prev => prev + data.items.length)
+		} finally {
+			setLoadingMore(false)
+			isFetchingRef.current = false
+			if (loadingFirst) setLoadingFirst(false)
+		}
+	}, [offset, limit, hasMore, loadingFirst])
 
 	useEffect(() => {
-		let cancelled = false
-		let eventSource: EventSource | null = null
-		let hideLoadingTimeout: NodeJS.Timeout | null = null
+		if (!sentinelRef.current) return
+		const elem = sentinelRef.current
 
-		function safeSetLoadingFalse() {
-			if (hideLoadingTimeout) clearTimeout(hideLoadingTimeout)
-			hideLoadingTimeout = setTimeout(() => {
-				if (!cancelled) setLoading(false)
-			}, 200)
-		}
-
-		async function loadInitialConfigs() {
-			if (initialConfigs.length > 0) {
-				setConfigs(initialConfigs)
-				safeSetLoadingFalse()
-				return true
-			}
-
-			try {
-				const res = await fetch('/api/v1/configs', {
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({ kind: 'presence' }),
-				})
-
-				if (!res.ok) {
-					if (!cancelled) setConfigs([])
-					safeSetLoadingFalse()
-					return false
+		const observer = new IntersectionObserver(
+			entries => {
+				const entry = entries[0]
+				if (entry.isIntersecting) {
+					loadMore()
 				}
-
-				const data = (await res.json()) as Config[]
-				if (!cancelled) setConfigs(data)
-				safeSetLoadingFalse()
-				return true
-			} catch {
-				if (!cancelled) setConfigs([])
-				safeSetLoadingFalse()
-				return false
+			},
+			{
+				root: null,
+				rootMargin: '300px',
+				threshold: 0,
 			}
-		}
+		)
 
-		async function startStream() {
-			const ok = await loadInitialConfigs()
-			if (!ok || cancelled) return
-
-			eventSource = new EventSource('/api/v1/configs/stream?kind=presence')
-
-			eventSource.addEventListener('ready', event => {
-				if (cancelled) return
-				const next = JSON.parse((event as MessageEvent).data) as Config[]
-				setConfigs(next)
-			})
-
-			eventSource.addEventListener('update', event => {
-				if (cancelled) return
-				const next = JSON.parse((event as MessageEvent).data) as Config[]
-				setConfigs(next)
-			})
-
-			eventSource.addEventListener('not-found', () => {
-				if (cancelled) return
-				setConfigs([])
-			})
-		}
-
-		startStream()
+		observer.observe(elem)
 
 		return () => {
-			cancelled = true
-			eventSource?.close()
-			if (hideLoadingTimeout) clearTimeout(hideLoadingTimeout)
+			observer.disconnect()
 		}
-	}, [initialConfigs])
+	}, [loadMore])
+
+	useEffect(() => {
+		const es = new EventSource('/api/v1/configs/stream?kind=presence')
+
+		es.addEventListener('ready', e => {
+			const data = JSON.parse((e as MessageEvent).data) as Config[]
+			setConfigs(data)
+			setTotal(data.length)
+			setOffset(data.length)
+			setHasMore(false)
+			if (loadingFirst) setLoadingFirst(false)
+		})
+
+		es.addEventListener('created', e => {
+			const cfg = JSON.parse((e as MessageEvent).data) as Config
+			setConfigs(prev => {
+				const byId = new Map(prev.map(c => [c.id, c]))
+				byId.set(cfg.id, cfg)
+				return Array.from(byId.values())
+			})
+			setTotal(prev => prev + 1)
+		})
+
+		es.addEventListener('deleted', e => {
+			const { id } = JSON.parse((e as MessageEvent).data) as { id: string }
+			setConfigs(prev => prev.filter(c => c.id !== id))
+			setTotal(prev => (prev > 0 ? prev - 1 : 0))
+		})
+
+		es.addEventListener('downloads', e => {
+			const { id, downloads } = JSON.parse((e as MessageEvent).data) as {
+				id: string
+				downloads: number
+			}
+			setConfigs(prev => prev.map(c => (c.id === id ? { ...c, downloads } : c)))
+		})
+
+		return () => {
+			es.close()
+		}
+	}, [loadingFirst])
 
 	const filteredConfigs = useMemo(() => filterConfigs(configs, searchTerm), [configs, searchTerm])
 	const sortedConfigs = useMemo(() => sortConfigs(filteredConfigs), [filteredConfigs])
@@ -128,14 +191,10 @@ export function ConfigsClient({ initialConfigs = [], initialSearchTerm }: Props)
 						placeholder='Search by title, author or description...'
 						name='q'
 						value={searchTerm}
-						onChange={e => setSearchTerm(e.target.value)}
+						onChange={e => handleSearchChange(e.target.value)}
 					/>
 					{searchTerm && (
-						<button
-							type='button'
-							className={styles.search_clear_btn}
-							onClick={() => setSearchTerm('')}
-						>
+						<button type='button' className={styles.search_clear_btn} onClick={handleClearSearch}>
 							<X size={16} />
 						</button>
 					)}
@@ -147,7 +206,13 @@ export function ConfigsClient({ initialConfigs = [], initialSearchTerm }: Props)
 			</div>
 
 			<div className={styles.themes_right_side}>
-				<PresenceGrid configs={sortedConfigs} loading={loading} />
+				<PresenceGrid
+					configs={sortedConfigs}
+					loading={loadingFirst && !configs.length}
+					hasMore={hasMore}
+					loadingMore={loadingMore}
+				/>
+				<div ref={sentinelRef} className={styles.infinite_scroll_sentinel} />
 			</div>
 		</>
 	)

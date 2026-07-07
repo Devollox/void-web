@@ -13,9 +13,7 @@ if (!admin.apps || admin.apps.length === 0) {
 			}),
 			databaseURL: process.env.FIREBASE_DATABASE_URL,
 		})
-	} catch (error) {
-		console.error('Failed to initialize firebase-admin', error)
-	}
+	} catch {}
 }
 
 export { admin }

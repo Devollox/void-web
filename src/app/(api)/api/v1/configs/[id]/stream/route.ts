@@ -1,5 +1,8 @@
+import { sseManager } from '@/lib/sse-manager'
 import { mapRawToConfig, mapRawToStatus } from '@/service/firebase'
 import { admin } from '@/service/firebase-admin'
+import '@api/_bootstrap'
+import { randomUUID } from 'crypto'
 import { NextResponse } from 'next/server'
 import { ConfigKind } from '../../route'
 
@@ -70,6 +73,7 @@ export async function GET(req: Request, ctx: { params: Promise<Params> | Params 
 
 	const encoder = new TextEncoder()
 	let closed = false
+	const streamId = randomUUID()
 
 	const stream = new ReadableStream({
 		async start(controller) {
@@ -78,35 +82,6 @@ export async function GET(req: Request, ctx: { params: Promise<Params> | Params 
 				try {
 					controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`))
 				} catch {}
-			}
-
-			const refPath = kind === 'presence' ? `presence-configs/${id}` : `status-configs/${id}`
-			const ref = db.ref(refPath)
-
-			const MAX_STREAM_MS = 5 * 60 * 1000
-			let ping: ReturnType<typeof setInterval> | undefined
-			let hardTimeout: ReturnType<typeof setTimeout> | undefined
-
-			const cleanup = () => {
-				if (closed) return
-				closed = true
-				if (ping) clearInterval(ping)
-				if (hardTimeout) clearTimeout(hardTimeout)
-				ref.off('value', onValueHandler)
-				try {
-					controller.close()
-				} catch {}
-			}
-
-			const onValueHandler = async () => {
-				if (closed) return
-				const next = await loadConfigSnapshot(id, kind)
-				if (!next) {
-					send('not-found', { id, kind })
-					cleanup()
-					return
-				}
-				send('update', next)
 			}
 
 			const initial = await loadConfigSnapshot(id, kind)
@@ -120,23 +95,34 @@ export async function GET(req: Request, ctx: { params: Promise<Params> | Params 
 
 			send('ready', initial)
 
-			ref.on('value', onValueHandler)
+			sseManager.addConfigDetailsSub({
+				id: streamId,
+				kind,
+				configId: id,
+				send,
+				close: () => {
+					if (closed) return
+					closed = true
+					sseManager.removeConfigDetailsSub(streamId)
+					try {
+						controller.close()
+					} catch {}
+				},
+			})
 
-			ping = setInterval(() => {
+			req.signal.addEventListener('abort', () => {
 				if (closed) return
+				closed = true
+				sseManager.removeConfigDetailsSub(streamId)
 				try {
-					controller.enqueue(encoder.encode(`event: ping\ndata: {}\n\n`))
+					controller.close()
 				} catch {}
-			}, 25000)
-
-			hardTimeout = setTimeout(() => {
-				cleanup()
-			}, MAX_STREAM_MS)
-
-			req.signal.addEventListener('abort', cleanup)
+			})
 		},
 		cancel() {
+			if (closed) return
 			closed = true
+			sseManager.removeConfigDetailsSub(streamId)
 		},
 	})
 

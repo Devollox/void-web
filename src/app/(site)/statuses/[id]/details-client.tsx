@@ -124,8 +124,7 @@ export function StatusDetailsClient({ statusId, initialPreviewTick }: Props) {
 
 			setDeleted(true)
 			setStatus(null)
-		} catch (err) {
-			console.error('Failed to delete status', err)
+		} catch {
 		} finally {
 			setDeleting(false)
 		}
@@ -218,9 +217,7 @@ export function StatusDetailsClient({ statusId, initialPreviewTick }: Props) {
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ type: 'status_download', id: status.id }),
 			})
-		} catch (err) {
-			console.error('Failed to track open in app', err)
-		}
+		} catch {}
 	}
 
 	return (

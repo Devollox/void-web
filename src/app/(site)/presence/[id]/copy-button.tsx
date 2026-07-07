@@ -33,9 +33,7 @@ export function CopyJsonButton({ configId }: Props) {
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ type: 'presence_download', id: configId }),
 			})
-		} catch (err) {
-			console.error('Failed to track open in app', err)
-		}
+		} catch {}
 	}
 
 	return (

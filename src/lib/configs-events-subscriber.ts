@@ -258,14 +258,18 @@ async function handleEvent(payload: ConfigEventPayload) {
 
 async function startListener() {
 	try {
+		if (process.env.NEXT_PHASE === 'phase-production-build') {
+			return
+		}
 		if (!redisSubscriber.isOpen) {
 			await redisSubscriber.connect()
 		}
-		await redisSubscriber.subscribe('events:configs', async (_channel, message) => {
+
+		await redisSubscriber.subscribe('events:configs', async (message, channel) => {
 			try {
 				const payload = JSON.parse(message) as ConfigEventPayload
 				await handleEvent(payload)
-			} catch {}
+			} catch (err) {}
 		})
 	} catch {}
 }

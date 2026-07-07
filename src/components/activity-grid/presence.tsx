@@ -11,12 +11,14 @@ type CustomRpcPreviewProps = {
 	config: Config
 	previewIndex: number
 	avatarSrc: string
+	profileHref: string
 }
 
 const CustomRpcPreview = memo(function CustomRpcPreview({
 	config,
 	previewIndex,
 	avatarSrc,
+	profileHref,
 }: CustomRpcPreviewProps) {
 	const configData: any = config.configData || {}
 	const authorTag: any = config.authorTag
@@ -45,6 +47,7 @@ const CustomRpcPreview = memo(function CustomRpcPreview({
 					currentButtons={buttons}
 					currentIndex={localIndex}
 					config={configData}
+					profileHref={profileHref}
 				/>
 			</div>
 		</div>
@@ -54,17 +57,27 @@ const CustomRpcPreview = memo(function CustomRpcPreview({
 type PresenceGridProps = {
 	configs: Config[]
 	loading?: boolean
+	hasMore?: boolean
+	loadingMore?: boolean
 	allowDelete?: boolean
 	ownConfigIds?: Set<string>
 	forceOwnerMode?: boolean
+	onDeleteStart?: (title?: string) => void
+	onDeleteSuccess?: (title?: string) => void
+	onDeleteError?: (message?: string) => void
 }
 
 export function PresenceGrid({
 	configs,
 	loading,
+	hasMore,
+	loadingMore,
 	allowDelete,
 	ownConfigIds,
 	forceOwnerMode,
+	onDeleteStart,
+	onDeleteSuccess,
+	onDeleteError,
 }: PresenceGridProps) {
 	const [previewTick, setPreviewTick] = useState(0)
 	const [mounted, setMounted] = useState(false)
@@ -103,7 +116,7 @@ export function PresenceGrid({
 		return () => clearTimeout(timer)
 	}, [loading, localConfigs.length])
 
-	const showSkeleton = loading && !localConfigs.length
+	const showSkeletonFirst = loading && !localConfigs.length
 
 	const handleOpenInApp = async (config: Config) => {
 		window.location.href = `voidpresence://import-config?title=${encodeURIComponent(
@@ -132,6 +145,8 @@ export function PresenceGrid({
 		if (!isOwn) return
 
 		setDeletingId(config.id)
+		onDeleteStart?.(config.title)
+
 		try {
 			const res = await fetch(
 				`/api/v1/configs/${encodeURIComponent(String(config.id))}/delete?kind=presence`,
@@ -140,20 +155,28 @@ export function PresenceGrid({
 
 			if (!res.ok) {
 				const data = await res.json().catch(() => null)
-				throw new Error(data?.message || `Failed to delete config (${res.status})`)
+				const msg = data?.message || `Failed to delete config (${res.status})`
+				throw new Error(msg)
 			}
 
 			setLocalConfigs(prev => prev.filter(c => c.id !== config.id))
-		} catch (err) {
-			console.error('Failed to delete config', err)
+			onDeleteSuccess?.(config.title)
+		} catch (err: any) {
+			onDeleteError?.(err?.message)
 		} finally {
 			setDeletingId(null)
 		}
 	}
 
+	const uniqueConfigsMap = new Map<string, Config>()
+	for (const c of localConfigs) {
+		uniqueConfigsMap.set(String(c.id), c)
+	}
+	const uniqueConfigs = Array.from(uniqueConfigsMap.values())
+
 	return (
 		<section id='configs-content' className={styles.page_section}>
-			{showSkeleton ? (
+			{showSkeletonFirst ? (
 				<div className={styles.theme_listings}>
 					<SkeletonCard height='presence' />
 					<SkeletonCard height='presence' />
@@ -165,7 +188,7 @@ export function PresenceGrid({
 				</div>
 			) : (
 				<div className={styles.cards_grid}>
-					{localConfigs.map((config, index) => {
+					{uniqueConfigs.map((config, index) => {
 						const configData: any = config.configData || {}
 						const perImageColors =
 							Array.isArray((config as any).averageColors) &&
@@ -189,11 +212,11 @@ export function PresenceGrid({
 								: undefined
 
 						const highlight = animateColors
-							? perImageHighlight || config.averageColor || '#5b5b5b'
+							? perImageHighlight || (config as any).averageColor || '#5b5b5b'
 							: '#5b5b5b'
 
 						const hasColor =
-							animateColors && (Boolean(perImageHighlight) || Boolean(config.averageColor))
+							animateColors && (Boolean(perImageHighlight) || Boolean((config as any).averageColor))
 
 						const borderColor = `${highlight}66`
 						const avatarSrc = config.authorAvatar || '/logo.png'
@@ -204,10 +227,17 @@ export function PresenceGrid({
 								(!!ownConfigIds && ownConfigIds.has(String(config.id))))
 						)
 
+						const tagString = String(config.authorTag ?? '').padStart(4, '0')
+						const profileHref = `/profile/${encodeURIComponent(
+							config.author || 'User'
+						)}?tag=${encodeURIComponent(tagString)}`
+
 						return (
 							<div
 								key={config.id}
-								className={`${styles.card_wrap} ${hasColor ? styles.card_wrap_hasColor : ''}`}
+								className={`${styles.card_wrap} ${
+									hasColor ? styles.card_wrap_hasColor : ''
+								} ${styles.card_wrap_loaded}`}
 								style={{
 									background: 'rgba(26, 26, 26, 0.96)',
 									borderColor,
@@ -243,6 +273,7 @@ export function PresenceGrid({
 										config={config}
 										previewIndex={baseIndex}
 										avatarSrc={avatarSrc}
+										profileHref={profileHref}
 									/>
 
 									<div className={styles.card_actions}>
@@ -264,6 +295,20 @@ export function PresenceGrid({
 							</div>
 						)
 					})}
+
+					{hasMore && (
+						<>
+							<div className={`${styles.skeleton_card_wrap} ${styles.skeleton_card_wrap_presence}`}>
+								<SkeletonCard height='presence' />
+							</div>
+							<div className={`${styles.skeleton_card_wrap} ${styles.skeleton_card_wrap_presence}`}>
+								<SkeletonCard height='presence' />
+							</div>
+							<div className={`${styles.skeleton_card_wrap} ${styles.skeleton_card_wrap_presence}`}>
+								<SkeletonCard height='presence' />
+							</div>
+						</>
+					)}
 				</div>
 			)}
 		</section>

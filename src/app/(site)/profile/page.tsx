@@ -102,7 +102,6 @@ export default async function ProfilePage() {
 
 	const user = session.user as any
 	const userId = String(user.id ?? '')
-
 	const configsData = await fetchSelfConfigs(userId)
 
 	return (

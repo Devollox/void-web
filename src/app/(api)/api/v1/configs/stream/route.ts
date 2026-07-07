@@ -1,6 +1,10 @@
 import { auth } from '@/lib/auth'
+import { sseManager } from '@/lib/sse-manager'
 import { mapRawToConfig, mapRawToStatus } from '@/service/firebase'
 import { admin } from '@/service/firebase-admin'
+import { redis } from '@/service/redis'
+import '@api/_bootstrap'
+import { randomUUID } from 'crypto'
 import { NextResponse } from 'next/server'
 import { Config as BaseConfig, Status as BaseStatus, ConfigKind } from '../route'
 
@@ -10,50 +14,98 @@ type QueryKind = ConfigKind
 type Config = BaseConfig & { isOwn?: boolean }
 type Status = BaseStatus & { isOwn?: boolean }
 
-const globalUsersCache: Record<string, { data: any; updatedAt: number }> = {}
-const CACHE_TTL = 30000
+const USER_CACHE_TTL = 60
+
+async function loadUser(authorId: string) {
+	const redisKey = `cache:user:${authorId}`
+	const cachedUserJson = await redis.get<string>(redisKey)
+	if (cachedUserJson) {
+		try {
+			return typeof cachedUserJson === 'object' ? cachedUserJson : JSON.parse(cachedUserJson)
+		} catch {}
+	}
+	const snap = await db.ref(`users/${authorId}`).get()
+	if (!snap.exists()) return null
+	const raw = snap.val() as any
+	const userData = {
+		name: raw.name ?? null,
+		avatar: raw.avatar ?? null,
+		provider: raw.provider ?? null,
+		tag: raw.tag ?? null,
+		createdAt: raw.createdAt ?? null,
+		lastSeen: raw.lastSeen ?? null,
+	}
+	await redis.set(redisKey, JSON.stringify(userData), { ex: USER_CACHE_TTL })
+	return userData
+}
 
 async function loadAllByKind(kind: QueryKind, currentUserId?: string | null) {
 	const targetRef = kind === 'presence' ? 'presence-configs' : 'status-configs'
 	const configsSnap = await db.ref(targetRef).get()
-
-	if (!configsSnap.exists()) return []
-
+	if (!configsSnap.exists()) {
+		return []
+	}
 	const configsData = configsSnap.val() as Record<string, any>
 	const configEntries = Object.entries(configsData)
-
-	const now = Date.now()
+	const localUsersMap: Record<string, any> = {}
 	const missingUserIds = new Set<string>()
 
 	for (const [, raw] of configEntries) {
 		if (raw?.authorId) {
-			const uid = String(raw.authorId)
-			if (!globalUsersCache[uid] || now - globalUsersCache[uid].updatedAt > CACHE_TTL) {
-				missingUserIds.add(uid)
-			}
+			missingUserIds.add(String(raw.authorId))
 		}
 	}
 
 	if (missingUserIds.size > 0) {
-		if (missingUserIds.size > 5) {
-			const allUsersSnap = await db.ref('users').get()
-			if (allUsersSnap.exists()) {
-				const allUsers = allUsersSnap.val() as Record<string, any>
-				for (const uid of missingUserIds) {
-					if (allUsers[uid]) {
-						globalUsersCache[uid] = { data: allUsers[uid], updatedAt: now }
+		const missingIdsArray = Array.from(missingUserIds)
+		const redisKeys = missingIdsArray.map(id => `cache:user:${id}`)
+		const cachedUsersRaw = await redis.mget<string[]>(redisKeys)
+		const idsToFetchFromDb: string[] = []
+
+		cachedUsersRaw.forEach((cachedJson, idx) => {
+			const currentId = missingIdsArray[idx]
+			if (cachedJson) {
+				try {
+					localUsersMap[currentId] =
+						typeof cachedJson === 'object' ? cachedJson : JSON.parse(cachedJson)
+				} catch {
+					idsToFetchFromDb.push(currentId)
+				}
+			} else {
+				idsToFetchFromDb.push(currentId)
+			}
+		})
+
+		if (idsToFetchFromDb.length > 0) {
+			if (idsToFetchFromDb.length > 5) {
+				const allUsersSnap = await db.ref('users').get()
+				if (allUsersSnap.exists()) {
+					const allUsers = allUsersSnap.val() as Record<string, any>
+					for (const uid of idsToFetchFromDb) {
+						if (allUsers[uid]) {
+							const userData = {
+								name: allUsers[uid].name ?? null,
+								avatar: allUsers[uid].avatar ?? null,
+								provider: allUsers[uid].provider ?? null,
+								tag: allUsers[uid].tag ?? null,
+								createdAt: allUsers[uid].createdAt ?? null,
+								lastSeen: allUsers[uid].lastSeen ?? null,
+							}
+							localUsersMap[uid] = userData
+							await redis.set(`cache:user:${uid}`, JSON.stringify(userData), {
+								ex: USER_CACHE_TTL,
+							})
+						}
 					}
 				}
+			} else {
+				await Promise.all(
+					idsToFetchFromDb.map(async uid => {
+						const u = await loadUser(uid)
+						if (u) localUsersMap[uid] = u
+					})
+				)
 			}
-		} else {
-			await Promise.all(
-				Array.from(missingUserIds).map(async uid => {
-					const userSnap = await db.ref(`users/${uid}`).get()
-					if (userSnap.exists()) {
-						globalUsersCache[uid] = { data: userSnap.val(), updatedAt: now }
-					}
-				})
-			)
 		}
 	}
 
@@ -61,12 +113,11 @@ async function loadAllByKind(kind: QueryKind, currentUserId?: string | null) {
 	const list = configEntries.map(([id, raw]) => {
 		const r = raw as any
 		const ownerId = r.authorId ? String(r.authorId) : null
-		const user = ownerId ? globalUsersCache[ownerId]?.data : null
-
+		const user = ownerId ? localUsersMap[ownerId] : null
 		const avatar = user?.avatar || user?.image || r?.authorAvatar || '/logo.png'
 		const name = user?.name || r?.author || 'Unknown User'
 		const tag =
-			typeof user?.tag !== 'undefined'
+			typeof user?.tag !== 'undefined' && user?.tag !== null
 				? String(user.tag).padStart(4, '0')
 				: r?.authorTag || undefined
 
@@ -103,57 +154,54 @@ export async function GET(req: Request) {
 
 	const encoder = new TextEncoder()
 	let closed = false
+	const streamId = randomUUID()
 
 	const stream = new ReadableStream({
 		async start(controller) {
 			const send = (event: string, data: any) => {
-				if (closed) return
+				if (closed) {
+					return
+				}
 				try {
-					controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`))
+					const payload = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`
+					controller.enqueue(encoder.encode(payload))
 				} catch {}
 			}
 
 			const initial = await loadAllByKind(kind, currentUserId)
+
 			send('ready', initial)
 
-			const refPath = kind === 'presence' ? 'presence-configs' : 'status-configs'
-			const ref = db.ref(refPath)
+			sseManager.addConfigListSub({
+				id: streamId,
+				kind,
+				send,
+				close: () => {
+					if (closed) return
 
-			const onValueHandler = async () => {
+					closed = true
+					sseManager.removeConfigListSub(streamId)
+					try {
+						controller.close()
+					} catch {}
+				},
+			})
+
+			req.signal.addEventListener('abort', () => {
 				if (closed) return
-				const next = await loadAllByKind(kind, currentUserId)
-				send('update', next)
-			}
 
-			ref.on('value', onValueHandler)
-
-			const ping = setInterval(() => {
-				if (closed) return
-				try {
-					controller.enqueue(encoder.encode(`event: ping\ndata: {}\n\n`))
-				} catch {}
-			}, 25000)
-
-			const MAX_STREAM_MS = 5 * 60 * 1000
-			const hardTimeout = setTimeout(() => {
-				cleanup()
-			}, MAX_STREAM_MS)
-
-			const cleanup = () => {
-				if (closed) return
 				closed = true
-				clearInterval(ping)
-				clearTimeout(hardTimeout)
-				ref.off('value', onValueHandler)
+				sseManager.removeConfigListSub(streamId)
 				try {
 					controller.close()
 				} catch {}
-			}
-
-			req.signal.addEventListener('abort', cleanup)
+			})
 		},
 		cancel() {
+			if (closed) return
+
 			closed = true
+			sseManager.removeConfigListSub(streamId)
 		},
 	})
 

@@ -90,9 +90,7 @@ function ApiCardItem({ endpoint }: { endpoint: ApiEndpoint }) {
 			await navigator.clipboard.writeText(fullUrl)
 			setCopied(true)
 			setTimeout(() => setCopied(false), 2000)
-		} catch (err) {
-			console.error('Failed to copy path', err)
-		}
+		} catch {}
 	}
 
 	const resultNotes =

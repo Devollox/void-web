@@ -1,4 +1,3 @@
-import '@/lib/configs-events-subscriber'
 import { auth } from '@api/auth/[...nextauth]/route'
 import '@styles/globals.scss'
 import { Analytics } from '@vercel/analytics/next'
