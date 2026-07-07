@@ -1,4 +1,6 @@
+import { safePublish } from '@/lib/redis-pubsub'
 import { admin } from '@/service/firebase-admin'
+import { redis } from '@/service/redis'
 import { NextResponse } from 'next/server'
 import type { ConfigKind } from '../../route'
 
@@ -57,6 +59,37 @@ export async function DELETE(req: Request, ctx: { params: Promise<Params> | Para
 		}
 
 		await db.ref().update(updates)
+
+		const zKey = kind === 'presence' ? 'stats:presence-downloads' : 'stats:status-downloads'
+		await redis.zrem(zKey, id)
+
+		const listKey = 'events:new-configs'
+
+		try {
+			const items = await redis.lrange(listKey, 0, -1)
+			if (items && items.length > 0) {
+				for (const item of items) {
+					try {
+						const parsed = typeof item === 'object' ? item : JSON.parse(item)
+						if (parsed && parsed.configId === id) {
+							await redis.lrem(listKey, 0, item)
+						}
+					} catch {}
+				}
+			}
+		} catch {}
+
+		await redis.del(`cache:user:${authorId}`)
+
+		await safePublish(
+			'events:configs',
+			JSON.stringify({
+				type: 'config_deleted',
+				kind,
+				authorId,
+				configId: id,
+			})
+		)
 
 		return NextResponse.json({ ok: true }, { status: 200 })
 	} catch (err) {
