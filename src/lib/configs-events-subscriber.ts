@@ -2,7 +2,6 @@ import { sseManager } from '@/lib/sse-manager'
 import { mapRawToConfig, mapRawToStatus } from '@/service/firebase'
 import { admin } from '@/service/firebase-admin'
 import { redis } from '@/service/redis'
-import { Redis } from '@upstash/redis'
 
 const db = admin.database()
 const USER_CACHE_TTL = 60
@@ -13,34 +12,6 @@ type ConfigEventPayload =
 	| { type: 'config_created'; kind: ConfigKind; authorId: string; configId: string }
 	| { type: 'config_deleted'; kind: ConfigKind; authorId: string; configId: string }
 	| { type: 'downloads_updated'; kind: ConfigKind; authorId: string; configId: string }
-
-const redisSub = new Redis({
-	url: process.env.UPSTASH_REDIS_REST_URL!,
-	token: process.env.UPSTASH_REDIS_REST_TOKEN!,
-})
-
-async function loadUser(authorId: string) {
-	const redisKey = `cache:user:${authorId}`
-	const cachedUserJson = await redis.get<string>(redisKey)
-	if (cachedUserJson) {
-		try {
-			return typeof cachedUserJson === 'object' ? cachedUserJson : JSON.parse(cachedUserJson)
-		} catch {}
-	}
-	const snap = await db.ref(`users/${authorId}`).get()
-	if (!snap.exists()) return null
-	const raw = snap.val() as any
-	const userData = {
-		name: raw.name ?? null,
-		avatar: raw.avatar ?? null,
-		provider: raw.provider ?? null,
-		tag: raw.tag ?? null,
-		createdAt: raw.createdAt ?? null,
-		lastSeen: raw.lastSeen ?? null,
-	}
-	await redis.set(redisKey, JSON.stringify(userData), { ex: USER_CACHE_TTL })
-	return userData
-}
 
 async function loadConfigSnapshot(configId: string, kind: ConfigKind) {
 	const refPath =
@@ -55,7 +26,6 @@ async function loadConfigSnapshot(configId: string, kind: ConfigKind) {
 	if (authorId) {
 		const redisKey = `cache:user:${authorId}`
 		const cachedUserJson = await redis.get<string>(redisKey)
-
 		if (cachedUserJson) {
 			try {
 				user = typeof cachedUserJson === 'object' ? cachedUserJson : JSON.parse(cachedUserJson)
@@ -63,7 +33,6 @@ async function loadConfigSnapshot(configId: string, kind: ConfigKind) {
 				user = null
 			}
 		}
-
 		if (!user) {
 			const userSnap = await db.ref(`users/${authorId}`).get()
 			if (userSnap.exists()) {
@@ -113,7 +82,6 @@ async function loadAuthorConfigs(authorId: string) {
 		const userSnap = await db.ref(`users/${authorId}`).get()
 		if (!userSnap.exists()) return null
 		userRaw = userSnap.val() as any
-
 		const cleanUser = {
 			name: userRaw.name ?? null,
 			avatar: userRaw.avatar ?? userRaw.image ?? null,
@@ -145,14 +113,12 @@ async function loadAuthorConfigs(authorId: string) {
 			if (!snap.exists()) return null
 			const id = presenceIds[idx]
 			const raw = snap.val() as any
-
 			const averageColors: string[] =
 				Array.isArray(raw.averageColors) && raw.averageColors.length > 0
 					? raw.averageColors
 					: raw.averageColor
 						? [raw.averageColor]
 						: ['#5b5b5b']
-
 			return {
 				id,
 				title: raw.title || 'Unnamed',
@@ -291,20 +257,44 @@ async function handleEvent(payload: ConfigEventPayload) {
 
 async function listenOnce() {
 	try {
-		const messages: any = await redisSub.subscribe('events:configs')
-		for (const message of messages) {
-			try {
-				const payload = JSON.parse(message) as ConfigEventPayload
-				await handleEvent(payload)
-			} catch {}
+		const response = await fetch(`${process.env.UPSTASH_REDIS_REST_URL}/xread`, {
+			method: 'POST',
+			headers: {
+				Authorization: `Bearer ${process.env.UPSTASH_REDIS_REST_TOKEN}`,
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify(['COUNT', '1', 'BLOCK', '5000', 'STREAMS', 'events:configs', '$']),
+			signal: AbortSignal.timeout(6000),
+		})
+		if (!response.ok) {
+			await new Promise(resolve => setTimeout(resolve, 2000))
+			return
 		}
-	} catch {}
+		const data = await response.json()
+		if (data && data.result) {
+			for (const streamResult of data.result) {
+				for (const message of streamResult[1]) {
+					try {
+						const payload = (
+							typeof message[1] === 'object' ? message[1] : JSON.parse(message[1])
+						) as ConfigEventPayload
+						await handleEvent(payload)
+					} catch {}
+				}
+			}
+		}
+	} catch {
+		await new Promise(resolve => setTimeout(resolve, 2000))
+	}
 }
 
 async function loop() {
+	if (process.env.NEXT_PHASE === 'phase-production-build') return
 	for (;;) {
 		await listenOnce()
 	}
 }
 
-loop().catch(() => {})
+if (process.env.NEXT_RUNTIME === 'nodejs') {
+	loop().catch(() => {})
+}
