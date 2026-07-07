@@ -2,19 +2,21 @@
 
 import { type Stats } from '@/service/firebase'
 import CountUp from '@lib/count-up'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import styles from './stats.module.scss'
 
+const DEFAULT_STATS: Stats = {
+	visitors: { count: 0, lastUpdated: 0 },
+	downloads: { count: 0, lastUpdated: 0 },
+}
+
 export default function StatsBlock() {
-	const [stats, setStats] = useState<Stats>({
-		visitors: { count: 0, lastUpdated: 0 },
-		downloads: { count: 0, lastUpdated: 0 },
-	})
+	const [stats, setStats] = useState<Stats>(DEFAULT_STATS)
 	const [loaded, setLoaded] = useState(false)
+	const pendingRef = useRef<Stats | null>(null)
+	const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
 	useEffect(() => {
-		let cancelled = false
-
 		async function trackVisitor() {
 			try {
 				await fetch('/api/v1/analytics/app', {
@@ -26,20 +28,29 @@ export default function StatsBlock() {
 		}
 
 		trackVisitor()
-
-		return () => {
-			cancelled = true
-		}
 	}, [])
 
 	useEffect(() => {
+		const flush = () => {
+			if (!pendingRef.current) return
+			setStats(pendingRef.current)
+			setLoaded(true)
+			pendingRef.current = null
+			timerRef.current = null
+		}
+
+		const scheduleFlush = (nextStats: Stats) => {
+			pendingRef.current = nextStats
+			if (timerRef.current) return
+			timerRef.current = setTimeout(flush, 180)
+		}
+
 		const es = new EventSource('/api/v1/analytics/stream')
 
 		const handleMessage = (ev: MessageEvent) => {
 			try {
 				const data = JSON.parse(ev.data) as Stats
-				setStats(data)
-				setLoaded(true)
+				scheduleFlush(data)
 			} catch {}
 		}
 
@@ -52,6 +63,7 @@ export default function StatsBlock() {
 			es.removeEventListener('ready', handleMessage)
 			es.removeEventListener('update', handleMessage)
 			es.close()
+			if (timerRef.current) clearTimeout(timerRef.current)
 		}
 	}, [])
 

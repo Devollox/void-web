@@ -1,7 +1,8 @@
-import { sseManager } from '@/lib/sse-manager'
-import { mapRawToStats, type Stats } from '@/service/firebase'
+import { safePublish } from '@/lib/redis-pubsub'
 import { admin } from '@/service/firebase-admin'
 import { NextRequest, NextResponse } from 'next/server'
+
+const db = admin.database()
 
 type AppAnalyticsEventType = 'app_download' | 'app_visitors'
 
@@ -10,8 +11,6 @@ interface AppAnalyticsPayload {
 	channel: string
 	meta?: Record<string, unknown>
 }
-
-const db = admin.database()
 
 type CounterValue = {
 	count: number
@@ -26,13 +25,9 @@ function normalizeCounterValue(value: unknown): CounterValue {
 	}
 }
 
-function normalizeStatsSnapshot(raw: any): Stats {
-	return mapRawToStats(raw || {})
-}
-
 async function incrementStats(path: 'stats/downloads' | 'stats/visitors') {
 	const ref = db.ref(path)
-	const result = await ref.transaction((current: number) => {
+	const result = await ref.transaction((current: unknown) => {
 		const now = Date.now()
 		const prev = normalizeCounterValue(current)
 		return {
@@ -41,15 +36,7 @@ async function incrementStats(path: 'stats/downloads' | 'stats/visitors') {
 		}
 	})
 
-	const updated = normalizeCounterValue(result.snapshot.val())
-	return updated
-}
-
-async function readStatsAndBroadcast() {
-	const snap = await db.ref('stats').get()
-	const stats = normalizeStatsSnapshot(snap.val())
-	sseManager.broadcastStats('update', stats)
-	return stats
+	return normalizeCounterValue(result.snapshot.val())
 }
 
 export async function POST(req: NextRequest) {
@@ -63,19 +50,20 @@ export async function POST(req: NextRequest) {
 			)
 		}
 
-		if (body.type === 'app_download') {
-			const downloads = await incrementStats('stats/downloads')
-			const stats = await readStatsAndBroadcast()
-			return NextResponse.json({ ok: true, type: body.type, stats, downloads })
-		}
+		const path = body.type === 'app_download' ? 'stats/downloads' : 'stats/visitors'
+		const updated = await incrementStats(path)
 
-		if (body.type === 'app_visitors') {
-			const visitors = await incrementStats('stats/visitors')
-			const stats = await readStatsAndBroadcast()
-			return NextResponse.json({ ok: true, type: body.type, stats, visitors })
-		}
+		await safePublish(
+			'events:analytics',
+			JSON.stringify({
+				type: 'analytics_updated',
+				channel: body.channel,
+				kind: body.type,
+				updated,
+			})
+		)
 
-		return NextResponse.json({ error: 'Unknown event type', type: body.type }, { status: 400 })
+		return NextResponse.json({ ok: true, type: body.type, updated })
 	} catch (err) {
 		const message = err instanceof Error ? err.message : JSON.stringify(err)
 		return NextResponse.json({ error: 'Internal error', message }, { status: 500 })

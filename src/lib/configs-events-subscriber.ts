@@ -1,6 +1,6 @@
 import { redisSubscriber } from '@/lib/redis-pubsub'
 import { sseManager } from '@/lib/sse-manager'
-import { mapRawToConfig, mapRawToStatus } from '@/service/firebase'
+import { mapRawToConfig, mapRawToStats, mapRawToStatus, Stats } from '@/service/firebase'
 import { admin } from '@/service/firebase-admin'
 import { redis } from '@/service/redis'
 
@@ -13,6 +13,22 @@ type ConfigEventPayload =
 	| { type: 'config_created'; kind: ConfigKind; authorId: string; configId: string }
 	| { type: 'config_deleted'; kind: ConfigKind; authorId: string; configId: string }
 	| { type: 'downloads_updated'; kind: ConfigKind; authorId: string; configId: string }
+
+type AnalyticsEventPayload = {
+	type: 'analytics_updated'
+	channel: string
+	kind: 'app_download' | 'app_visitors'
+}
+
+function toStats(raw: any): Stats {
+	return mapRawToStats(raw || {})
+}
+
+async function pushStatsToSubscribers() {
+	const snap = await db.ref('stats').get()
+	const stats = toStats(snap.val())
+	sseManager.broadcastStats('update', stats)
+}
 
 async function loadConfigSnapshot(configId: string, kind: ConfigKind) {
 	const refPath =
@@ -290,5 +306,44 @@ redisSubscriber.on('error', err => {
 if (process.env.NEXT_RUNTIME === 'nodejs') {
 	ensureListener().catch(err => {
 		started = false
+	})
+}
+
+let startedStats = false
+let startingStats = false
+
+async function ensureAnalyticsListener() {
+	if (startedStats || startingStats) return
+	startingStats = true
+
+	try {
+		if (!redisSubscriber.isOpen) {
+			await redisSubscriber.connect()
+		}
+
+		await redisSubscriber.subscribe('events:analytics', async message => {
+			try {
+				const payload = JSON.parse(message) as AnalyticsEventPayload
+				if (payload.type === 'analytics_updated') {
+					await pushStatsToSubscribers()
+				}
+			} catch {}
+		})
+
+		startedStats = true
+	} catch {
+		startedStats = false
+	} finally {
+		startingStats = false
+	}
+}
+
+redisSubscriber.on('error', () => {
+	startedStats = false
+})
+
+if (process.env.NEXT_RUNTIME === 'nodejs') {
+	ensureAnalyticsListener().catch(() => {
+		startedStats = false
 	})
 }

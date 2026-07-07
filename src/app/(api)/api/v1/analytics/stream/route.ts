@@ -15,6 +15,9 @@ export async function GET(req: Request) {
 	let closed = false
 	const streamId = randomUUID()
 
+	const initialSnap = await db.ref('stats').get()
+	const initial = toStats(initialSnap.val())
+
 	const stream = new ReadableStream({
 		async start(controller) {
 			const send = (event: string, data: any) => {
@@ -24,8 +27,6 @@ export async function GET(req: Request) {
 				} catch {}
 			}
 
-			const initialSnap = await db.ref('stats').get()
-			const initial = toStats(initialSnap.val())
 			send('ready', initial)
 
 			sseManager.addStatsSub({
