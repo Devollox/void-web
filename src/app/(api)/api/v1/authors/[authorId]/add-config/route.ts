@@ -87,7 +87,7 @@ export async function createPresenceConfig(
 	const id = ref.key || 'unknown'
 	await db.ref(`users/${authorId}/configs/presence/${id}`).set(true)
 
-	safePublish(
+	await safePublish(
 		'events:configs',
 		JSON.stringify({
 			type: 'config_created',
@@ -95,7 +95,7 @@ export async function createPresenceConfig(
 			authorId,
 			configId: id,
 		})
-	).catch(() => {})
+	)
 
 	return id
 }
@@ -114,7 +114,7 @@ export async function createStatusConfig(
 	const id = ref.key || 'unknown'
 	await db.ref(`users/${authorId}/configs/status/${id}`).set(true)
 
-	safePublish(
+	await safePublish(
 		'events:configs',
 		JSON.stringify({
 			type: 'config_created',
@@ -122,7 +122,7 @@ export async function createStatusConfig(
 			authorId,
 			configId: id,
 		})
-	).catch(() => {})
+	)
 
 	return id
 }
@@ -217,9 +217,9 @@ export async function POST(req: Request, ctx: { params: Promise<Params> | Params
 
 		const zKey = kind === 'presence' ? 'stats:presence-downloads' : 'stats:status-downloads'
 
-		Promise.all([
-			redis.del(`cache:user:${authorId}`),
-			redis.lpush(
+		try {
+			await redis.del(`cache:user:${authorId}`)
+			await redis.lpush(
 				'events:new-configs',
 				JSON.stringify({
 					authorId,
@@ -228,9 +228,9 @@ export async function POST(req: Request, ctx: { params: Promise<Params> | Params
 					title: body.title,
 					createdAt: Date.now(),
 				})
-			),
-			redis.zadd(zKey, { score: 0, member: createdId }),
-		]).catch(() => {})
+			)
+			await redis.zadd(zKey, { score: 0, member: createdId })
+		} catch {}
 
 		return NextResponse.json({ id: createdId }, { status: 200 })
 	} catch (err) {

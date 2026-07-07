@@ -5,29 +5,45 @@ const url = process.env.REDIS_URL || 'redis://localhost:6379'
 export const redisPublisher = createClient({
 	url,
 	socket: {
-		connectTimeout: 2000,
+		connectTimeout: 5000,
 		keepAlive: true,
+		reconnectStrategy: retries => Math.min(retries * 50, 500),
 	},
 })
 
-export const redisSubscriber = createClient({ url })
+export const redisSubscriber = createClient({
+	url,
+	socket: {
+		connectTimeout: 5000,
+		keepAlive: true,
+		reconnectStrategy: retries => Math.min(retries * 50, 500),
+	},
+})
 
 redisPublisher.on('error', () => {})
 redisSubscriber.on('error', () => {})
 
+let isPublisherConnecting = false
+
 async function ensurePublisherConnected() {
-	if (!redisPublisher.isOpen) {
+	if (redisPublisher.isOpen) return
+	if (isPublisherConnecting) {
+		await new Promise(resolve => setTimeout(resolve, 100))
+		return ensurePublisherConnected()
+	}
+	isPublisherConnecting = true
+	try {
 		await redisPublisher.connect()
+	} catch {
+	} finally {
+		isPublisherConnecting = false
 	}
 }
 
 export const safePublish = async (channel: string, message: string) => {
-	await ensurePublisherConnected()
-	if (!redisPublisher.isOpen) {
-		throw new Error('Publisher is not open')
-	}
-	await Promise.race([
-		redisPublisher.publish(channel, message),
-		new Promise((_, reject) => setTimeout(() => reject(new Error('publish timeout')), 1500)),
-	])
+	try {
+		await ensurePublisherConnected()
+		if (!redisPublisher.isOpen) return
+		await redisPublisher.publish(channel, message)
+	} catch {}
 }
