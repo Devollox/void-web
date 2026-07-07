@@ -22,10 +22,17 @@ type AuthorSub = {
 	close: () => void
 }
 
+type StatsSub = {
+	id: string
+	send: (event: string, data: any) => void
+	close: () => void
+}
+
 class SseManager {
 	private configListSubs = new Map<string, ConfigListSub>()
 	private configDetailsSubs = new Map<string, ConfigDetailsSub>()
 	private authorSubs = new Map<string, AuthorSub>()
+	private statsSubs = new Map<string, StatsSub>()
 
 	addConfigListSub(sub: ConfigListSub) {
 		this.configListSubs.set(sub.id, sub)
@@ -94,6 +101,20 @@ class SseManager {
 
 	notifyAuthorProfileUpdate(authorId: string, data: any) {
 		this.broadcastToAuthor(authorId, 'profile-update', data)
+	}
+
+	addStatsSub(sub: StatsSub) {
+		this.statsSubs.set(sub.id, sub)
+	}
+
+	removeStatsSub(id: string) {
+		this.statsSubs.delete(id)
+	}
+
+	broadcastStats(event: string, data: any) {
+		for (const sub of this.statsSubs.values()) {
+			sub.send(event, data)
+		}
 	}
 }
 

@@ -23,29 +23,28 @@ export default function Stats() {
 				})
 			} catch {}
 		}
-
 		trackVisitor()
+	}, [])
 
+	useEffect(() => {
 		const es = new EventSource('/api/v1/analytics/stream')
 
-		const handleReady = (ev: MessageEvent) => {
-			const data = JSON.parse(ev.data) as Stats
-			setStats(data)
-			setLoaded(true)
+		const handleMessage = (ev: MessageEvent) => {
+			try {
+				const data = JSON.parse(ev.data) as Stats
+				setStats(data)
+				setLoaded(true)
+			} catch {}
 		}
 
-		const handleUpdate = (ev: MessageEvent) => {
-			const data = JSON.parse(ev.data) as Stats
-			setStats(data)
-			setLoaded(true)
-		}
+		es.addEventListener('ready', handleMessage)
+		es.addEventListener('update', handleMessage)
 
-		es.addEventListener('ready', handleReady)
-		es.addEventListener('update', handleUpdate)
+		es.onerror = () => {}
 
 		return () => {
-			es.removeEventListener('ready', handleReady)
-			es.removeEventListener('update', handleUpdate)
+			es.removeEventListener('ready', handleMessage)
+			es.removeEventListener('update', handleMessage)
 			es.close()
 		}
 	}, [])

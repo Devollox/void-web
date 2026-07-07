@@ -1,11 +1,15 @@
+import { sseManager } from '@/lib/sse-manager'
 import { mapRawToStats } from '@/service/firebase'
 import { admin } from '@/service/firebase-admin'
+import '@api/_bootstrap'
+import { randomUUID } from 'crypto'
 
 const db = admin.database()
 
 export async function GET(req: Request) {
 	const encoder = new TextEncoder()
 	let closed = false
+	const streamId = randomUUID()
 
 	const stream = new ReadableStream({
 		async start(controller) {
@@ -20,37 +24,32 @@ export async function GET(req: Request) {
 			const initial = mapRawToStats(initialSnap.val() || {})
 			send('ready', initial)
 
-			const ref = db.ref('stats')
+			sseManager.addStatsSub({
+				id: streamId,
+				send,
+				close: () => {
+					if (closed) return
+					closed = true
+					sseManager.removeStatsSub(streamId)
+					try {
+						controller.close()
+					} catch {}
+				},
+			})
 
-			const onValueHandler = (snap: any) => {
-				if (closed) return
-				const next = mapRawToStats(snap.val() || {})
-				send('update', next)
-			}
-
-			ref.on('value', onValueHandler)
-
-			const ping = setInterval(() => {
-				if (closed) return
-				try {
-					controller.enqueue(encoder.encode(`event: ping\ndata: {}\n\n`))
-				} catch {}
-			}, 25000)
-
-			const cleanup = () => {
+			req.signal.addEventListener('abort', () => {
 				if (closed) return
 				closed = true
-				clearInterval(ping)
-				ref.off('value', onValueHandler)
+				sseManager.removeStatsSub(streamId)
 				try {
 					controller.close()
 				} catch {}
-			}
-
-			req.signal.addEventListener('abort', cleanup)
+			})
 		},
 		cancel() {
+			if (closed) return
 			closed = true
+			sseManager.removeStatsSub(streamId)
 		},
 	})
 

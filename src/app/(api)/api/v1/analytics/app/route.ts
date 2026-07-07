@@ -1,3 +1,5 @@
+import { sseManager } from '@/lib/sse-manager'
+import { mapRawToStats } from '@/service/firebase'
 import { admin } from '@/service/firebase-admin'
 import { NextRequest, NextResponse } from 'next/server'
 
@@ -48,6 +50,12 @@ async function incrementVisitorsStats(): Promise<{ visitors: CounterValue }> {
 	return { visitors: val }
 }
 
+async function broadcastStats() {
+	const snap = await db.ref('stats').get()
+	const stats = mapRawToStats(snap.val() || {})
+	sseManager.broadcastStats('update', stats)
+}
+
 export async function POST(req: NextRequest) {
 	try {
 		const body = (await req.json()) as AppAnalyticsPayload
@@ -62,10 +70,12 @@ export async function POST(req: NextRequest) {
 		switch (body.type) {
 			case 'app_download': {
 				const stats = await incrementDownloadsStats()
+				await broadcastStats()
 				return NextResponse.json({ ok: true, type: body.type, stats })
 			}
 			case 'app_visitors': {
 				const stats = await incrementVisitorsStats()
+				await broadcastStats()
 				return NextResponse.json({ ok: true, type: body.type, stats })
 			}
 			default:
