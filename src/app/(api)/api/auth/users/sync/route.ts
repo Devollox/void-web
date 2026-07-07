@@ -1,3 +1,4 @@
+import { encryptUserId } from '@/lib/crypto'
 import { admin } from '@/service/firebase-admin'
 import { redis } from '@/service/redis'
 import { NextResponse } from 'next/server'
@@ -16,6 +17,7 @@ type SyncUserBody = {
 type UserRecord = {
 	name: string | null
 	avatar: string | null
+	rawAvatar: string | null
 	provider: string | null
 	tag: string | null
 	createdAt: number | null
@@ -43,24 +45,8 @@ export async function POST(req: Request) {
 		const session = await auth()
 		const currentUserId = session?.user?.id ? String(session.user.id) : null
 
-		if (!currentUserId) {
-			return NextResponse.json(
-				{ ok: false, error: 'NoSessionUserId', message: 'Missing session.user.id' },
-				{ status: 401 }
-			)
-		}
-
-		if (currentUserId !== body.userId) {
-			return NextResponse.json(
-				{
-					ok: false,
-					error: 'Forbidden',
-					message: 'You can only sync your own profile',
-					currentUserId,
-					bodyUserId: body.userId,
-				},
-				{ status: 403 }
-			)
+		if (!currentUserId || currentUserId !== body.userId) {
+			return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 })
 		}
 
 		const { userId, name, avatar, tag, provider } = body
@@ -70,18 +56,14 @@ export async function POST(req: Request) {
 		const normalizedTag = normalizeTag(tag)
 		const now = Date.now()
 
-		const cachedUserJson = await redis.get<string>(rKey)
 		let existingUser: UserRecord | null = null
+		const cachedUserJson = await redis.get<string>(rKey)
 
 		if (cachedUserJson) {
 			try {
 				existingUser =
-					typeof cachedUserJson === 'object'
-						? cachedUserJson
-						: (JSON.parse(cachedUserJson) as UserRecord)
-			} catch {
-				existingUser = null
-			}
+					typeof cachedUserJson === 'object' ? cachedUserJson : JSON.parse(cachedUserJson)
+			} catch {}
 		}
 
 		if (!existingUser) {
@@ -91,6 +73,7 @@ export async function POST(req: Request) {
 				existingUser = {
 					name: raw.name ?? null,
 					avatar: raw.avatar ?? null,
+					rawAvatar: raw.rawAvatar ?? null,
 					provider: raw.provider ?? null,
 					tag: raw.tag ?? null,
 					createdAt: raw.createdAt ?? null,
@@ -99,9 +82,16 @@ export async function POST(req: Request) {
 			}
 		}
 
+		const cleanAvatarUrl = avatar && avatar.trim() ? avatar : (existingUser?.rawAvatar ?? '')
+		const encryptedToken = encryptUserId(userId)
+		const proxiedAvatarUrl = cleanAvatarUrl
+			? `/api/auth/avatars/${encodeURIComponent(encryptedToken)}`
+			: '/logo.png'
+
 		const updatedUser: UserRecord = {
 			name: name ?? existingUser?.name ?? 'Unknown',
-			avatar: avatar ?? existingUser?.avatar ?? '/logo.png',
+			avatar: proxiedAvatarUrl,
+			rawAvatar: cleanAvatarUrl || null,
 			provider: provider ?? existingUser?.provider ?? null,
 			tag: normalizedTag ?? existingUser?.tag ?? null,
 			createdAt: existingUser?.createdAt ?? now,
@@ -112,6 +102,7 @@ export async function POST(req: Request) {
 			await userRef.update({
 				name: updatedUser.name,
 				avatar: updatedUser.avatar,
+				rawAvatar: updatedUser.rawAvatar,
 				provider: updatedUser.provider,
 				tag: updatedUser.tag,
 				lastSeen: updatedUser.lastSeen,
@@ -124,7 +115,6 @@ export async function POST(req: Request) {
 
 		return NextResponse.json({ ok: true, created: !existingUser }, { status: 200 })
 	} catch (err) {
-		const message = err instanceof Error ? err.message : String(err)
-		return NextResponse.json({ ok: false, error: 'InternalError', message }, { status: 500 })
+		return NextResponse.json({ ok: false, error: 'InternalError' }, { status: 500 })
 	}
 }
