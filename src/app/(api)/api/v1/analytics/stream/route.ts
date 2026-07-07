@@ -1,10 +1,14 @@
 import { sseManager } from '@/lib/sse-manager'
-import { mapRawToStats } from '@/service/firebase'
+import { mapRawToStats, type Stats } from '@/service/firebase'
 import { admin } from '@/service/firebase-admin'
 import '@api/_bootstrap'
 import { randomUUID } from 'crypto'
 
 const db = admin.database()
+
+function toStats(raw: any): Stats {
+	return mapRawToStats(raw || {})
+}
 
 export async function GET(req: Request) {
 	const encoder = new TextEncoder()
@@ -21,7 +25,7 @@ export async function GET(req: Request) {
 			}
 
 			const initialSnap = await db.ref('stats').get()
-			const initial = mapRawToStats(initialSnap.val() || {})
+			const initial = toStats(initialSnap.val())
 			send('ready', initial)
 
 			sseManager.addStatsSub({
@@ -58,7 +62,6 @@ export async function GET(req: Request) {
 			'Content-Type': 'text/event-stream; charset=utf-8',
 			'Cache-Control': 'no-cache, no-transform',
 			Connection: 'keep-alive',
-			'Content-Encoding': 'none',
 			'X-Accel-Buffering': 'no',
 		},
 	})

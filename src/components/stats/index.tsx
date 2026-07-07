@@ -5,15 +5,16 @@ import CountUp from '@lib/count-up'
 import { useEffect, useState } from 'react'
 import styles from './stats.module.scss'
 
-export default function Stats() {
+export default function StatsBlock() {
 	const [stats, setStats] = useState<Stats>({
 		visitors: { count: 0, lastUpdated: 0 },
 		downloads: { count: 0, lastUpdated: 0 },
 	})
-
 	const [loaded, setLoaded] = useState(false)
 
 	useEffect(() => {
+		let cancelled = false
+
 		async function trackVisitor() {
 			try {
 				await fetch('/api/v1/analytics/app', {
@@ -23,7 +24,12 @@ export default function Stats() {
 				})
 			} catch {}
 		}
+
 		trackVisitor()
+
+		return () => {
+			cancelled = true
+		}
 	}, [])
 
 	useEffect(() => {

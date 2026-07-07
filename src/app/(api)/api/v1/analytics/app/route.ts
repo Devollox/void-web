@@ -1,5 +1,5 @@
 import { sseManager } from '@/lib/sse-manager'
-import { mapRawToStats } from '@/service/firebase'
+import { mapRawToStats, type Stats } from '@/service/firebase'
 import { admin } from '@/service/firebase-admin'
 import { NextRequest, NextResponse } from 'next/server'
 
@@ -18,42 +18,38 @@ type CounterValue = {
 	lastUpdated: number
 }
 
-async function incrementDownloadsStats(): Promise<{ downloads: CounterValue }> {
-	const ref = db.ref('stats/downloads')
-	const result = await ref.transaction((current: { count: number }) => {
-		const now = Date.now()
-		const count = current && typeof current.count === 'number' ? current.count + 1 : 1
-		return { count, lastUpdated: now }
-	})
-
-	const val = (result.snapshot.val() as CounterValue | null) ?? {
-		count: 0,
-		lastUpdated: Date.now(),
+function normalizeCounterValue(value: unknown): CounterValue {
+	const raw = value as Partial<CounterValue> | null
+	return {
+		count: typeof raw?.count === 'number' ? raw.count : 0,
+		lastUpdated: typeof raw?.lastUpdated === 'number' ? raw.lastUpdated : Date.now(),
 	}
-
-	return { downloads: val }
 }
 
-async function incrementVisitorsStats(): Promise<{ visitors: CounterValue }> {
-	const ref = db.ref('stats/visitors')
-	const result = await ref.transaction((current: { count: number }) => {
-		const now = Date.now()
-		const count = current && typeof current.count === 'number' ? current.count + 1 : 1
-		return { count, lastUpdated: now }
-	})
-
-	const val = (result.snapshot.val() as CounterValue | null) ?? {
-		count: 0,
-		lastUpdated: Date.now(),
-	}
-
-	return { visitors: val }
+function normalizeStatsSnapshot(raw: any): Stats {
+	return mapRawToStats(raw || {})
 }
 
-async function broadcastStats() {
+async function incrementStats(path: 'stats/downloads' | 'stats/visitors') {
+	const ref = db.ref(path)
+	const result = await ref.transaction((current: number) => {
+		const now = Date.now()
+		const prev = normalizeCounterValue(current)
+		return {
+			count: prev.count + 1,
+			lastUpdated: now,
+		}
+	})
+
+	const updated = normalizeCounterValue(result.snapshot.val())
+	return updated
+}
+
+async function readStatsAndBroadcast() {
 	const snap = await db.ref('stats').get()
-	const stats = mapRawToStats(snap.val() || {})
+	const stats = normalizeStatsSnapshot(snap.val())
 	sseManager.broadcastStats('update', stats)
+	return stats
 }
 
 export async function POST(req: NextRequest) {
@@ -67,20 +63,19 @@ export async function POST(req: NextRequest) {
 			)
 		}
 
-		switch (body.type) {
-			case 'app_download': {
-				const stats = await incrementDownloadsStats()
-				await broadcastStats()
-				return NextResponse.json({ ok: true, type: body.type, stats })
-			}
-			case 'app_visitors': {
-				const stats = await incrementVisitorsStats()
-				await broadcastStats()
-				return NextResponse.json({ ok: true, type: body.type, stats })
-			}
-			default:
-				return NextResponse.json({ error: 'Unknown event type', type: body.type }, { status: 400 })
+		if (body.type === 'app_download') {
+			const downloads = await incrementStats('stats/downloads')
+			const stats = await readStatsAndBroadcast()
+			return NextResponse.json({ ok: true, type: body.type, stats, downloads })
 		}
+
+		if (body.type === 'app_visitors') {
+			const visitors = await incrementStats('stats/visitors')
+			const stats = await readStatsAndBroadcast()
+			return NextResponse.json({ ok: true, type: body.type, stats, visitors })
+		}
+
+		return NextResponse.json({ error: 'Unknown event type', type: body.type }, { status: 400 })
 	} catch (err) {
 		const message = err instanceof Error ? err.message : JSON.stringify(err)
 		return NextResponse.json({ error: 'Internal error', message }, { status: 500 })
