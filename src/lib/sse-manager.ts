@@ -43,14 +43,6 @@ class SseManager {
 		return result
 	}
 
-	broadcastToConfigList(kind: ConfigKind, event: string, data: any) {
-		for (const sub of this.configListSubs.values()) {
-			if (sub.kind === kind) {
-				sub.send(event, data)
-			}
-		}
-	}
-
 	addConfigDetailsSub(sub: ConfigDetailsSub) {
 		this.configDetailsSubs.set(sub.id, sub)
 	}
@@ -65,14 +57,6 @@ class SseManager {
 			if (sub.kind === kind && sub.configId === configId) result.push(sub)
 		}
 		return result
-	}
-
-	broadcastToConfigDetails(kind: ConfigKind, configId: string, event: string, data: any) {
-		for (const sub of this.configDetailsSubs.values()) {
-			if (sub.kind === kind && sub.configId === configId) {
-				sub.send(event, data)
-			}
-		}
 	}
 
 	addAuthorSub(sub: AuthorSub) {
@@ -99,14 +83,6 @@ class SseManager {
 		}
 	}
 
-	notifyAuthorCreated(authorId: string, cfgOrStatus: any, kind: 'presence' | 'status') {
-		this.broadcastToAuthor(authorId, 'created', { ...cfgOrStatus, kind })
-	}
-
-	notifyAuthorDeleted(authorId: string, id: string, kind: 'presence' | 'status') {
-		this.broadcastToAuthor(authorId, 'deleted', { id, kind })
-	}
-
 	notifyAuthorDownloads(
 		authorId: string,
 		id: string,
@@ -114,10 +90,6 @@ class SseManager {
 		downloads: number
 	) {
 		this.broadcastToAuthor(authorId, 'downloads', { id, kind, downloads })
-	}
-
-	notifyAuthorUpdate(authorId: string, data: any) {
-		this.broadcastToAuthor(authorId, 'update', data)
 	}
 
 	notifyAuthorProfileUpdate(authorId: string, data: any) {
