@@ -1,3 +1,4 @@
+import { redisSubscriber } from '@/lib/redis-pubsub'
 import { sseManager } from '@/lib/sse-manager'
 import { mapRawToConfig, mapRawToStatus } from '@/service/firebase'
 import { admin } from '@/service/firebase-admin'
@@ -255,46 +256,20 @@ async function handleEvent(payload: ConfigEventPayload) {
 	}
 }
 
-async function listenOnce() {
+async function startListener() {
 	try {
-		const response = await fetch(`${process.env.UPSTASH_REDIS_REST_URL}/xread`, {
-			method: 'POST',
-			headers: {
-				Authorization: `Bearer ${process.env.UPSTASH_REDIS_REST_TOKEN}`,
-				'Content-Type': 'application/json',
-			},
-			body: JSON.stringify(['COUNT', '1', 'BLOCK', '5000', 'STREAMS', 'events:configs', '$']),
-			signal: AbortSignal.timeout(6000),
+		if (!redisSubscriber.isOpen) {
+			await redisSubscriber.connect()
+		}
+		await redisSubscriber.subscribe('events:configs', async (_channel, message) => {
+			try {
+				const payload = JSON.parse(message) as ConfigEventPayload
+				await handleEvent(payload)
+			} catch {}
 		})
-		if (!response.ok) {
-			await new Promise(resolve => setTimeout(resolve, 2000))
-			return
-		}
-		const data = await response.json()
-		if (data && data.result) {
-			for (const streamResult of data.result) {
-				for (const message of streamResult[1]) {
-					try {
-						const payload = (
-							typeof message[1] === 'object' ? message[1] : JSON.parse(message[1])
-						) as ConfigEventPayload
-						await handleEvent(payload)
-					} catch {}
-				}
-			}
-		}
-	} catch {
-		await new Promise(resolve => setTimeout(resolve, 2000))
-	}
-}
-
-async function loop() {
-	if (process.env.NEXT_PHASE === 'phase-production-build') return
-	for (;;) {
-		await listenOnce()
-	}
+	} catch {}
 }
 
 if (process.env.NEXT_RUNTIME === 'nodejs') {
-	loop().catch(() => {})
+	startListener().catch(() => {})
 }
