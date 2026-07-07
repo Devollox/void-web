@@ -1,5 +1,5 @@
 import { leftNotFound, rightNotFound } from '@/app/not-found'
-import { auth } from '@/lib/auth'
+import { auth } from '@api/auth/[...nextauth]/route'
 import Footer from '@components/footer'
 import Page from '@components/page'
 import PageHeader from '@components/page-header'
