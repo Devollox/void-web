@@ -1,3 +1,4 @@
+import { encryptUserId } from '@/lib/crypto'
 import { admin } from '@/service/firebase-admin'
 import { UpstashRedisAdapter } from '@auth/upstash-redis-adapter'
 import { redis } from '@service/redis'
@@ -24,6 +25,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth(req => {
 						prompt: 'select_account',
 					},
 				},
+				allowDangerousEmailAccountLinking: true,
 			}),
 			Google({
 				clientId: process.env.GOOGLE_ID!,
@@ -34,6 +36,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth(req => {
 						prompt: 'select_account',
 					},
 				},
+				allowDangerousEmailAccountLinking: true,
 			}),
 			DiscordProvider({
 				clientId: process.env.DISCORD_CLIENT_ID!,
@@ -42,6 +45,23 @@ export const { handlers, auth, signIn, signOut } = NextAuth(req => {
 					params: {
 						scope: 'identify email',
 					},
+				},
+				allowDangerousEmailAccountLinking: true,
+				profile(profile) {
+					const encryptedToken = encryptUserId(String(profile.id))
+					let avatarUrl = '/logo.png'
+
+					if (profile.avatar) {
+						avatarUrl = `/api/auth/avatars/${encodeURIComponent(encryptedToken)}`
+					}
+
+					return {
+						id: String(profile.id),
+						name: profile.username,
+						email: profile.email,
+						image: avatarUrl,
+						emailVerified: profile.verified ? new Date() : null,
+					}
 				},
 			}),
 			SteamProvider(steamReq, {
@@ -58,7 +78,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth(req => {
 		callbacks: {
 			async jwt({ token, account, user, profile }) {
 				if (account && (user || profile)) {
-					token.accessToken = account.access_token
+					token.accessToken = (account as any).access_token
 					token.provider = account.provider
 
 					let stableId = ''
@@ -85,13 +105,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth(req => {
 				return token
 			},
 			async session({ session, token }) {
-				session.accessToken = token.accessToken
-				session.firebaseToken = token.firebaseToken
-				session.provider = token.provider
+				session.accessToken = (token as any).accessToken
+				;(session as any).firebaseToken = (token as any).firebaseToken
+				;(session as any).provider = (token as any).provider
 
 				if (session.user) {
-					session.user.id = String(token.id || token.sub || '')
-					session.user.provider = session.provider
+					;(session.user as any).id = String(token.id || token.sub || '')
+					;(session.user as any).provider = (session as any).provider
 				}
 
 				return session
