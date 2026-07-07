@@ -1,3 +1,4 @@
+import { safePublish } from '@/lib/redis-pubsub'
 import { admin } from '@/service/firebase-admin'
 import { NextResponse } from 'next/server'
 
@@ -36,9 +37,27 @@ export async function POST(req: Request) {
 		switch (body.type) {
 			case 'status_download':
 				await incrementDownloadsStatuses(body.id)
+				await safePublish(
+					'events:configs',
+					JSON.stringify({
+						type: 'downloads_updated',
+						kind: 'status',
+						authorId: '',
+						configId: body.id,
+					})
+				)
 				break
 			case 'presence_download':
 				await incrementDownloadsConfigs(body.id)
+				await safePublish(
+					'events:configs',
+					JSON.stringify({
+						type: 'downloads_updated',
+						kind: 'presence',
+						authorId: '',
+						configId: body.id,
+					})
+				)
 				break
 			default:
 				return NextResponse.json({ error: 'Unknown event type', type: body.type }, { status: 400 })

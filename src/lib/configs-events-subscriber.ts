@@ -1,8 +1,8 @@
-import { redisSubscriber } from '@/lib/redis-pubsub'
 import { sseManager } from '@/lib/sse-manager'
 import { mapRawToConfig, mapRawToStatus } from '@/service/firebase'
 import { admin } from '@/service/firebase-admin'
 import { redis } from '@/service/redis'
+import { Redis } from '@upstash/redis'
 
 const db = admin.database()
 const USER_CACHE_TTL = 60
@@ -10,24 +10,14 @@ const USER_CACHE_TTL = 60
 type ConfigKind = 'presence' | 'status'
 
 type ConfigEventPayload =
-	| {
-			type: 'config_created'
-			kind: ConfigKind
-			authorId: string
-			configId: string
-	  }
-	| {
-			type: 'config_deleted'
-			kind: ConfigKind
-			authorId: string
-			configId: string
-	  }
-	| {
-			type: 'downloads_updated'
-			kind: ConfigKind
-			authorId: string
-			configId: string
-	  }
+	| { type: 'config_created'; kind: ConfigKind; authorId: string; configId: string }
+	| { type: 'config_deleted'; kind: ConfigKind; authorId: string; configId: string }
+	| { type: 'downloads_updated'; kind: ConfigKind; authorId: string; configId: string }
+
+const redisSub = new Redis({
+	url: process.env.UPSTASH_REDIS_REST_URL!,
+	token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+})
 
 async function loadUser(authorId: string) {
 	const redisKey = `cache:user:${authorId}`
@@ -299,12 +289,22 @@ async function handleEvent(payload: ConfigEventPayload) {
 	}
 }
 
-;(async () => {
-	await redisSubscriber.connect().catch(() => {})
-	await redisSubscriber.subscribe('events:configs', async message => {
-		try {
-			const payload = JSON.parse(message) as ConfigEventPayload
-			await handleEvent(payload)
-		} catch {}
-	})
-})()
+async function listenOnce() {
+	try {
+		const messages: any = await redisSub.subscribe('events:configs')
+		for (const message of messages) {
+			try {
+				const payload = JSON.parse(message) as ConfigEventPayload
+				await handleEvent(payload)
+			} catch {}
+		}
+	} catch {}
+}
+
+async function loop() {
+	for (;;) {
+		await listenOnce()
+	}
+}
+
+loop().catch(() => {})
