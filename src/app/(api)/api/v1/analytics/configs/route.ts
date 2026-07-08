@@ -1,6 +1,5 @@
-import { safePublish } from '@/lib/redis-pubsub'
-import { sseManager } from '@/lib/sse-manager'
 import { admin } from '@/service/firebase-admin'
+import { redis } from '@/service/redis'
 import { NextResponse } from 'next/server'
 
 type AnalyticsEventType = 'status_download' | 'presence_download' | 'status_open' | 'presence_open'
@@ -14,48 +13,24 @@ interface AnalyticsPayload {
 
 const db = admin.database()
 
-async function incrementDownloadsPresence(
-	configId: string
-): Promise<{ authorId: string | null; downloads: number }> {
-	const snap = await db.ref(`presence-configs/${configId}`).get()
-	let authorId: string | null = null
-	if (snap.exists()) {
-		const val = snap.val() as any
-		if (val && val.authorId) {
-			authorId = String(val.authorId)
-		}
-	}
-
+async function incrementDownloadsPresence(configId: string): Promise<{ downloads: number }> {
 	let newDownloads = 0
 	const downloadsRef = db.ref(`presence-configs/${configId}/downloads`)
 	await downloadsRef.transaction((current: any) => {
 		newDownloads = (Number(current) || 0) + 1
 		return newDownloads
 	})
-
-	return { authorId, downloads: newDownloads }
+	return { downloads: newDownloads }
 }
 
-async function incrementDownloadsStatus(
-	statusId: string
-): Promise<{ authorId: string | null; downloads: number }> {
-	const snap = await db.ref(`status-configs/${statusId}`).get()
-	let authorId: string | null = null
-	if (snap.exists()) {
-		const val = snap.val() as any
-		if (val && val.authorId) {
-			authorId = String(val.authorId)
-		}
-	}
-
+async function incrementDownloadsStatus(statusId: string): Promise<{ downloads: number }> {
 	let newDownloads = 0
 	const downloadsRef = db.ref(`status-configs/${statusId}/downloads`)
 	await downloadsRef.transaction((current: any) => {
 		newDownloads = (Number(current) || 0) + 1
 		return newDownloads
 	})
-
-	return { authorId, downloads: newDownloads }
+	return { downloads: newDownloads }
 }
 
 export async function POST(req: Request) {
@@ -71,42 +46,42 @@ export async function POST(req: Request) {
 
 		switch (body.type) {
 			case 'status_download': {
-				const { authorId, downloads } = await incrementDownloadsStatus(body.id)
+				const { downloads } = await incrementDownloadsStatus(body.id)
 
-				await safePublish(
-					'events:configs',
-					JSON.stringify({
-						type: 'downloads_updated',
-						kind: 'status',
-						authorId: authorId ?? '',
-						configId: body.id,
+				await db.ref('activity/downloads').set({
+					ts: Date.now(),
+					kind: 'status_download',
+					configId: body.id,
+					downloads,
+				})
+
+				try {
+					await redis.zadd('stats:status-downloads', {
+						score: downloads,
+						member: body.id,
 					})
-				)
+				} catch {}
 
-				if (authorId) {
-					sseManager.notifyAuthorDownloads(authorId, body.id, 'status', downloads)
-				}
-				sseManager.notifyConfigListDownloads(body.id, 'status', downloads)
 				break
 			}
 
 			case 'presence_download': {
-				const { authorId, downloads } = await incrementDownloadsPresence(body.id)
+				const { downloads } = await incrementDownloadsPresence(body.id)
 
-				await safePublish(
-					'events:configs',
-					JSON.stringify({
-						type: 'downloads_updated',
-						kind: 'presence',
-						authorId: authorId ?? '',
-						configId: body.id,
+				await db.ref('activity/downloads').set({
+					ts: Date.now(),
+					kind: 'presence_download',
+					configId: body.id,
+					downloads,
+				})
+
+				try {
+					await redis.zadd('stats:presence-downloads', {
+						score: downloads,
+						member: body.id,
 					})
-				)
+				} catch {}
 
-				if (authorId) {
-					sseManager.notifyAuthorDownloads(authorId, body.id, 'presence', downloads)
-				}
-				sseManager.notifyConfigListDownloads(body.id, 'presence', downloads)
 				break
 			}
 

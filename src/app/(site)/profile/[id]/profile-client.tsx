@@ -2,10 +2,11 @@
 
 import { PresenceGrid } from '@/components/activity-grid/presence'
 import { StatusesGrid } from '@/components/activity-grid/statuses'
-import type { Config, Status } from '@/service/firebase'
+import { db, type Config, type Status } from '@/service/firebase'
+import { onValue, ref } from 'firebase/database'
 import { Search, X } from 'lucide-react'
 import { useSession } from 'next-auth/react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import styles from './profile.module.scss'
 
 type UserInfo = {
@@ -89,60 +90,130 @@ export function ProfileClient({
 	const [liveConfigs, setLiveConfigs] = useState<Config[]>(presenceConfigs)
 	const [liveStatuses, setLiveStatuses] = useState<Status[]>(statusConfigs)
 
+	const liveConfigsRef = useRef<Config[]>(presenceConfigs)
+	const liveStatusesRef = useRef<Status[]>(statusConfigs)
+	const lastFetchTsRef = useRef<number>(0)
+
+	useEffect(() => {
+		liveConfigsRef.current = liveConfigs
+		liveStatusesRef.current = liveStatuses
+	}, [liveConfigs, liveStatuses])
+
 	useEffect(() => {
 		let cancelled = false
-		let es: EventSource | null = null
 
-		async function refetchAuthorConfigs() {
+		const refetchAuthorConfigs = async (
+			configId?: string,
+			type?: 'presence_download' | 'status_download'
+		) => {
+			const now = Date.now()
+			if (now - lastFetchTsRef.current < 250) {
+				return
+			}
+			lastFetchTsRef.current = now
+
 			try {
-				const res = await fetch(
-					`/api/v1/authors/resolve?username=${encodeURIComponent(
-						username
-					)}&tag=${encodeURIComponent(profileTag)}`
-				)
+				const params = new URLSearchParams({
+					username,
+					tag: profileTag,
+				})
+				if (configId) {
+					params.set('configId', configId)
+				}
+
+				const res = await fetch(`/api/v1/authors/resolve?${params.toString()}`, {
+					method: 'GET',
+					cache: 'no-store',
+					headers: { 'Content-Type': 'application/json' },
+				})
 				if (!res.ok) return
 				const next = (await res.json()) as AuthorConfigsResponse
 				if (cancelled) return
+
+				if (configId && type === 'presence_download') {
+					const nextPresence = next.presenceConfigs || []
+					if (nextPresence.length === 0) {
+						return
+					}
+					setLiveConfigs(prev => {
+						const without = prev.filter(c => c.id !== configId)
+						return [...without, ...nextPresence]
+					})
+					return
+				}
+
+				if (configId && type === 'status_download') {
+					const nextStatuses = next.statusConfigs || []
+					if (nextStatuses.length === 0) {
+						return
+					}
+					setLiveStatuses(prev => {
+						const without = prev.filter(s => s.id !== configId)
+						return [...without, ...nextStatuses]
+					})
+					return
+				}
+
 				setLiveConfigs(next.presenceConfigs || [])
 				setLiveStatuses(next.statusConfigs || [])
 			} catch {}
 		}
 
-		async function startStream() {
-			await refetchAuthorConfigs()
+		const activityRef = ref(db, 'activity')
+		const unsubscribe = onValue(activityRef, snapshot => {
 			if (cancelled) return
 
-			const url = `/api/v1/authors/stream?username=${encodeURIComponent(
-				username
-			)}&tag=${encodeURIComponent(profileTag)}`
+			const val = snapshot.val() as {
+				configs?: { ts: number; kind: string; configId: string; type: 'presence' | 'status' }
+				downloads?: {
+					ts: number
+					kind: string
+					configId: string
+					type: 'presence_download' | 'status_download'
+					downloads: number
+				}
+				profiles?: { ts: number; kind: string; configId?: string }
+			} | null
 
-			es = new EventSource(url)
+			if (!val) return
+			const now = Date.now()
 
-			const handleProfileUpdate = async () => {
-				if (cancelled) return
-				await refetchAuthorConfigs()
+			const configsPing = val.configs
+			const downloadsPing = val.downloads
+			const profilesPing = val.profiles
+
+			const isFresh = (ts?: number) => typeof ts === 'number' && now - ts <= 10_000
+
+			const configId =
+				configsPing?.configId || downloadsPing?.configId || profilesPing?.configId || undefined
+			const type = downloadsPing?.type || undefined
+
+			const belongsToUser =
+				!!configId &&
+				(liveConfigsRef.current.some(c => c.id === configId) ||
+					liveStatusesRef.current.some(s => s.id === configId))
+
+			const shouldHandleDownloads =
+				downloadsPing && isFresh(downloadsPing.ts) && !!configId && belongsToUser
+			const shouldHandleConfigs = configsPing && isFresh(configsPing.ts) && !!configId
+			const shouldHandleProfiles = profilesPing && isFresh(profilesPing.ts)
+
+			if (!shouldHandleDownloads && !shouldHandleConfigs && !shouldHandleProfiles) {
+				return
 			}
 
-			const handleNotFound = () => {
-				if (cancelled) return
-				setLiveConfigs([])
-				setLiveStatuses([])
+			if (configId && type === 'presence_download') {
+				refetchAuthorConfigs(configId, 'presence_download')
+			} else if (configId && type === 'status_download') {
+				refetchAuthorConfigs(configId, 'status_download')
+			} else {
+				refetchAuthorConfigs()
 			}
-
-			es.addEventListener('profile-update', handleProfileUpdate)
-			es.addEventListener('created', handleProfileUpdate)
-			es.addEventListener('deleted', handleProfileUpdate)
-			es.addEventListener('downloads', handleProfileUpdate)
-			es.addEventListener('not-found', handleNotFound)
-
-			es.onerror = () => {}
-		}
-
-		startStream()
+		})
 
 		return () => {
 			cancelled = true
-			es?.close()
+			unsubscribe()
 		}
 	}, [username, profileTag])
 

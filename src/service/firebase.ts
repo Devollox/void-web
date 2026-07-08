@@ -153,7 +153,7 @@ export function mapRawToStatus(
 	}
 }
 
-export function mapRawToStats(raw: any) {
+export function mapRawToStats(raw: any): Stats {
 	return {
 		visitors: raw?.visitors || { count: 0, lastUpdated: Date.now() },
 		downloads: raw?.downloads || { count: 0, lastUpdated: Date.now() },

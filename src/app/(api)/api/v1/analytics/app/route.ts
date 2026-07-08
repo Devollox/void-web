@@ -1,4 +1,3 @@
-import { safePublish } from '@/lib/redis-pubsub'
 import { admin } from '@/service/firebase-admin'
 import { NextRequest, NextResponse } from 'next/server'
 
@@ -39,8 +38,32 @@ async function incrementStats(path: 'stats/downloads' | 'stats/visitors') {
 	return normalizeCounterValue(result.snapshot.val())
 }
 
+const allowedOrigin = process.env.NEXTAUTH_URL
+
+function isAllowedRequest(req: NextRequest) {
+	const origin = req.headers.get('origin') || ''
+	const host = req.headers.get('host') || ''
+
+	if (allowedOrigin && origin === allowedOrigin) {
+		return true
+	}
+
+	if (allowedOrigin && host && allowedOrigin.includes(host)) {
+		return true
+	}
+
+	return false
+}
+
 export async function POST(req: NextRequest) {
 	try {
+		if (!isAllowedRequest(req)) {
+			return NextResponse.json(
+				{ error: 'Forbidden', message: 'Origin not allowed' },
+				{ status: 403 }
+			)
+		}
+
 		const body = (await req.json()) as AppAnalyticsPayload
 
 		if (!body || !body.type || !body.channel) {
@@ -52,16 +75,6 @@ export async function POST(req: NextRequest) {
 
 		const path = body.type === 'app_download' ? 'stats/downloads' : 'stats/visitors'
 		const updated = await incrementStats(path)
-
-		await safePublish(
-			'events:analytics',
-			JSON.stringify({
-				type: 'analytics_updated',
-				channel: body.channel,
-				kind: body.type,
-				updated,
-			})
-		)
 
 		return NextResponse.json({ ok: true, type: body.type, updated })
 	} catch (err) {

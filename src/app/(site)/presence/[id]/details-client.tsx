@@ -1,7 +1,9 @@
 'use client'
 
 import { Config } from '@/app/(api)/api/v1/configs/route'
+import { db } from '@/service/firebase'
 import RpcPreview from '@components/rpc-preview/rpc-user'
+import { onValue, ref } from 'firebase/database'
 import { useSession } from 'next-auth/react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import styles from './config-details.module.scss'
@@ -32,7 +34,6 @@ export function ConfigDetailsClient({ configId, initialPreviewTick }: Props) {
 
 	useEffect(() => {
 		let cancelled = false
-		let eventSource: EventSource | null = null
 
 		async function loadInitialConfig() {
 			try {
@@ -45,12 +46,11 @@ export function ConfigDetailsClient({ configId, initialPreviewTick }: Props) {
 						setConfig(null)
 						setDeleted(res.status === 404)
 					}
-					return false
+					return
 				}
 
 				const data = (await res.json()) as Config
 				if (!cancelled) setConfig(data)
-				return true
 			} finally {
 				if (!cancelled) setLoading(false)
 			}
@@ -73,34 +73,67 @@ export function ConfigDetailsClient({ configId, initialPreviewTick }: Props) {
 			} catch {}
 		}
 
-		async function startStream() {
-			const ok = await loadInitialConfig()
-			if (!ok || cancelled) return
+		loadInitialConfig()
 
-			eventSource = new EventSource(`/api/v1/configs/${configId}/stream?kind=presence`)
+		const activityRef = ref(db, 'activity')
+		const unsubscribe = onValue(activityRef, snapshot => {
+			if (cancelled) return
 
-			eventSource.addEventListener('update', () => {
-				if (cancelled) return
-				refetchConfig()
-			})
+			const val = snapshot.val() as {
+				configs?: { ts: number; kind: string; configId: string; type: string }
+				downloads?: { ts: number; kind: string; configId: string; downloads: number }
+				profiles?: { ts: number; kind: string; configId?: string }
+			} | null
 
-			eventSource.addEventListener('downloads', () => {
-				if (cancelled) return
-				refetchConfig()
-			})
+			if (!val) return
+			const now = Date.now()
 
-			eventSource.addEventListener('not-found', () => {
-				if (cancelled) return
+			const configsPing = val.configs
+			const downloadsPing = val.downloads
+
+			const isFresh = (ts?: number) => typeof ts === 'number' && now - ts <= 10_000
+
+			const pingId = downloadsPing?.configId || configsPing?.configId || undefined
+			const configsKind = configsPing?.kind
+			const configsType = configsPing?.type
+			const downloadsKind = downloadsPing?.kind
+
+			const sameId = !!pingId && pingId === configId
+
+			const isPresenceDeleted =
+				configsPing &&
+				isFresh(configsPing.ts) &&
+				configsKind === 'deleted' &&
+				configsType === 'presence' &&
+				sameId
+
+			const isPresenceDownload =
+				downloadsPing &&
+				isFresh(downloadsPing.ts) &&
+				downloadsKind === 'presence_download' &&
+				sameId
+
+			const isPresenceUpdate =
+				configsPing &&
+				isFresh(configsPing.ts) &&
+				configsKind === 'created' &&
+				configsType === 'presence' &&
+				sameId
+
+			if (!isPresenceDeleted && !isPresenceDownload && !isPresenceUpdate) {
+				return
+			}
+
+			if (isPresenceDeleted) {
 				setConfig(null)
 				setDeleted(true)
-			})
-
-			eventSource.onerror = () => {
-				if (cancelled) return
+				return
 			}
-		}
 
-		startStream()
+			if (isPresenceDownload || isPresenceUpdate) {
+				refetchConfig()
+			}
+		})
 
 		const interval = setInterval(() => {
 			setPreviewTick(prev => getNextTick(prev))
@@ -109,7 +142,7 @@ export function ConfigDetailsClient({ configId, initialPreviewTick }: Props) {
 		return () => {
 			cancelled = true
 			clearInterval(interval)
-			eventSource?.close()
+			unsubscribe()
 		}
 	}, [configId])
 

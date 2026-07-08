@@ -1,7 +1,9 @@
 'use client'
 
 import { StatusesGrid } from '@/components/activity-grid/statuses'
+import { db } from '@/service/firebase'
 import type { Status } from '@service/firebase'
+import { onValue, ref } from 'firebase/database'
 import { Search, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import styles from './statuses.module.scss'
@@ -51,6 +53,12 @@ export function StatusClient({
 
 	const sentinelRef = useRef<HTMLDivElement | null>(null)
 	const isFetchingRef = useRef(false)
+	const statusesRef = useRef<Status[]>(initialStatuses)
+	const lastFetchTsRef = useRef<number>(0)
+
+	useEffect(() => {
+		statusesRef.current = statuses
+	}, [statuses])
 
 	const handleSearchChange = useCallback((value: string) => {
 		setSearchTerm(value)
@@ -148,15 +156,44 @@ export function StatusClient({
 	}, [loadMore])
 
 	useEffect(() => {
-		const es = new EventSource('/api/v1/configs/stream?kind=status')
+		let cancelled = false
 
-		es.addEventListener('created', async e => {
-			const { kind } = JSON.parse((e as MessageEvent).data) as {
-				id: string
-				kind: 'status' | 'presence'
+		const refetchStatusById = async (statusId: string) => {
+			const now = Date.now()
+			if (now - lastFetchTsRef.current < 250) {
+				return
 			}
+			lastFetchTsRef.current = now
 
-			if (kind !== 'status') return
+			try {
+				const res = await fetch(`/api/v1/configs/${statusId}?kind=status`, {
+					method: 'GET',
+				})
+				if (!res.ok) return
+				const next = (await res.json()) as Status
+				if (cancelled) return
+
+				setStatuses(prev =>
+					prev.map(s =>
+						s.id === statusId
+							? {
+									...s,
+									downloads: next.downloads,
+									title: next.title,
+									description: next.description,
+								}
+							: s
+					)
+				)
+			} catch {}
+		}
+
+		const refetchTopStatuses = async () => {
+			const now = Date.now()
+			if (now - lastFetchTsRef.current < 250) {
+				return
+			}
+			lastFetchTsRef.current = now
 
 			try {
 				const res = await fetch('/api/v1/configs', {
@@ -168,18 +205,15 @@ export function StatusClient({
 						limit,
 					}),
 				})
-
 				if (!res.ok) return
-
 				const data = (await res.json()) as {
 					items: Status[]
 					total: number
 					offset: number
 					limit: number
 				}
-
+				if (cancelled) return
 				if (!data.items || data.items.length === 0) return
-
 				mergeStatuses(data.items, data.total)
 				setOffset(data.items.length)
 				if (data.items.length < limit) {
@@ -187,48 +221,77 @@ export function StatusClient({
 				}
 				setLoadingFirst(false)
 			} catch {}
-		})
+		}
 
-		es.addEventListener('deleted', e => {
-			const { id, kind } = JSON.parse((e as MessageEvent).data) as {
-				id: string
-				kind: 'status' | 'presence'
+		const activityRef = ref(db, 'activity')
+		const unsubscribe = onValue(activityRef, snapshot => {
+			if (cancelled) return
+
+			const val = snapshot.val() as {
+				configs?: { ts: number; kind: string; configId: string; type: string }
+				downloads?: { ts: number; kind: string; configId: string; downloads: number }
+				profiles?: { ts: number; kind: string; configId?: string }
+			} | null
+
+			if (!val) return
+			const now = Date.now()
+
+			const configsPing = val.configs
+			const downloadsPing = val.downloads
+
+			const isFresh = (ts?: number) => typeof ts === 'number' && now - ts <= 10_000
+
+			const configId = downloadsPing?.configId || configsPing?.configId || undefined
+			const configsKind = configsPing?.kind
+			const configsType = configsPing?.type
+			const downloadsKind = downloadsPing?.kind
+
+			const belongsToList = !!configId && statusesRef.current.some(s => s.id === configId)
+
+			const isStatusDownload =
+				downloadsPing &&
+				isFresh(downloadsPing.ts) &&
+				downloadsKind === 'status_download' &&
+				!!configId &&
+				belongsToList
+
+			const isStatusCreated =
+				configsPing &&
+				isFresh(configsPing.ts) &&
+				configsKind === 'created' &&
+				configsType === 'status'
+
+			const isStatusDeleted =
+				configsPing &&
+				isFresh(configsPing.ts) &&
+				configsKind === 'deleted' &&
+				configsType === 'status' &&
+				!!configId
+
+			if (!isStatusDownload && !isStatusCreated && !isStatusDeleted) {
+				return
 			}
 
-			if (kind !== 'status') return
-
-			setStatuses(prev => prev.filter(s => s.id !== id))
-			setTotal(prev => (prev > 0 ? prev - 1 : 0))
-		})
-
-		es.addEventListener('downloads', e => {
-			const raw = JSON.parse((e as MessageEvent).data) as {
-				id: string
-				kind: 'status' | 'presence'
-				downloads?: number
+			if (isStatusDownload && configId) {
+				refetchStatusById(configId)
+				return
 			}
 
-			if (raw.kind !== 'status') return
-			if (typeof raw.downloads !== 'number') return
+			if (isStatusCreated) {
+				refetchTopStatuses()
+				return
+			}
 
-			const downloads: number = raw.downloads
-
-			setStatuses(prev =>
-				prev.map(s =>
-					s.id === raw.id
-						? {
-								...s,
-								downloads,
-							}
-						: s
-				)
-			)
+			if (isStatusDeleted && configId) {
+				setStatuses(prev => prev.filter(s => s.id !== configId))
+				setTotal(prev => (prev > 0 ? prev - 1 : 0))
+				return
+			}
 		})
-
-		es.onerror = () => {}
 
 		return () => {
-			es.close()
+			cancelled = true
+			unsubscribe()
 		}
 	}, [limit, mergeStatuses])
 

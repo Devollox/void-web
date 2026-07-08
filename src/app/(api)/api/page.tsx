@@ -19,9 +19,6 @@ export const metadata: Metadata = {
 const API_BASE_V1 = 'https://api.voidpresence.site'
 
 const endpoints: ApiEndpoint[] = [
-	//
-	// GITHUB
-	//
 	{
 		id: 'github-releases',
 		method: 'POST',
@@ -52,9 +49,6 @@ const endpoints: ApiEndpoint[] = [
   .then(info => console.log(info))`,
 	},
 
-	//
-	// AUTHORS — RESOLVE BY HANDLE
-	//
 	{
 		id: 'authors-resolve-get',
 		method: 'GET',
@@ -175,83 +169,7 @@ const endpoints: ApiEndpoint[] = [
   .then(res => res.json())
   .then(data => console.log(data))`,
 	},
-	{
-		id: 'authors-stream-handle',
-		method: 'GET',
-		path: '/api/v1/authors/stream',
-		title: 'Stream author configs by handle',
-		description:
-			'Streams live updates for an author profile and their configs via SSE, resolved by username and tag. Query: username=User&tag=1234. Events: ready, update, not-found, ping.',
-		group: 'authors',
-		authRequired: false,
-		hasExample: true,
-		samplePayload: {
-			events: ['ready', 'update', 'not-found', 'ping'],
-			exampleReadyEvent: {
-				user: {
-					name: 'Author Name',
-					avatar: 'https://example.com/avatar.png',
-					tag: '1234',
-					provider: 'discord',
-					createdAt: 123456789,
-					lastSeen: 123456789,
-				},
-				presenceConfigs: [
-					{
-						id: 'cfg-1',
-						title: 'Presence config title',
-						author: 'Author Name',
-						authorAvatar: 'https://example.com/avatar.png',
-						authorTag: '1234',
-						downloads: 0,
-						description: 'Config description',
-						averageColors: ['#ffffff'],
-						configData: {
-							cycles: [{ details: 'Details line', state: 'State line' }],
-							imageCycles: [],
-							buttonPairs: [],
-						},
-						uploadedAt: 123456789,
-					},
-				],
-				statusConfigs: [
-					{
-						id: 'status-1',
-						title: 'Status config title',
-						author: 'Author Name',
-						authorAvatar: 'https://example.com/avatar.png',
-						authorTag: '1234',
-						downloads: 0,
-						description: 'Status description',
-						configData: { statusCycles: [{ text: 'Example status text' }] },
-						uploadedAt: 123456789,
-					},
-				],
-			},
-		},
-		fetchPayload: `const es = new EventSource('${API_BASE_V1.replace(
-			'https://api.voidpresence.site',
-			'https://voidpresence.site'
-		)}/api/v1/authors/stream?username=Author%20Name&tag=1234')
 
-es.addEventListener('ready', event => {
-  const data = JSON.parse(event.data)
-  console.log('initial configs', data)
-})
-
-es.addEventListener('update', event => {
-  const data = JSON.parse(event.data)
-  console.log('updated configs', data)
-})
-
-es.addEventListener('not-found', () => {
-  console.log('author not found')
-})`,
-	},
-
-	//
-	// AUTHORS BY ID
-	//
 	{
 		id: 'authors-create-config',
 		method: 'POST',
@@ -388,21 +306,7 @@ es.addEventListener('not-found', () => {
   .then(res => res.json())
   .then(data => console.log(data))`,
 	},
-	{
-		id: 'authors-stream-configs',
-		method: 'GET',
-		path: '/v1/authors/{authorId}/stream',
-		title: 'Stream author profile and configs',
-		description:
-			'Streams live updates for an author profile and their configs via Server-Sent Events. Events: ready, update, ping.',
-		group: 'authors',
-		authRequired: false,
-		hasExample: false,
-	},
 
-	//
-	// CONFIGS
-	//
 	{
 		id: 'configs-list',
 		method: 'POST',
@@ -447,16 +351,6 @@ es.addEventListener('not-found', () => {
   .then(list => console.log(list))`,
 	},
 	{
-		id: 'configs-stream',
-		method: 'GET',
-		path: '/api/v1/configs/stream',
-		title: 'Stream all configs',
-		description:
-			'Streams a live list of configs via SSE. Query: kind=presence|status. Events: ready, update, ping.',
-		group: 'configs',
-		hasExample: false,
-	},
-	{
 		id: 'config-get-by-id',
 		method: 'POST',
 		path: '/v1/configs/{id}',
@@ -491,16 +385,6 @@ es.addEventListener('not-found', () => {
 })
   .then(res => res.json())
   .then(config => console.log(config))`,
-	},
-	{
-		id: 'config-stream-by-id',
-		method: 'GET',
-		path: '/api/v1/configs/{id}/stream',
-		title: 'Stream config by id',
-		description:
-			'Streams live updates for a single presence or status config via SSE. Query: kind=presence|status. Events: ready, update, not-found, ping.',
-		group: 'configs',
-		hasExample: false,
 	},
 	{
 		id: 'config-download-json',
@@ -564,9 +448,6 @@ es.addEventListener('not-found', () => {
   .then(result => console.log(result))`,
 	},
 
-	//
-	// ANALYTICS
-	//
 	{
 		id: 'analytics-app',
 		method: 'POST',
@@ -638,19 +519,7 @@ es.addEventListener('not-found', () => {
   .then(res => res.json())
   .then(result => console.log(result))`,
 	},
-	{
-		id: 'analytics-stream',
-		method: 'GET',
-		path: '/api/v1/analytics/stream',
-		title: 'Stream analytics stats',
-		description: 'Streams live analytics stats via SSE. Events: ready, update, ping.',
-		group: 'analytics',
-		hasExample: false,
-	},
 
-	//
-	// AUTH
-	//
 	{
 		id: 'auth-session',
 		method: 'GET',
@@ -722,9 +591,6 @@ es.addEventListener('not-found', () => {
   .then(result => console.log(result.normalizedParams))`,
 	},
 
-	//
-	// USERS
-	//
 	{
 		id: 'users-get-profile',
 		method: 'GET',

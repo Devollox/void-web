@@ -23,8 +23,6 @@ interface UserRaw {
 	} | null
 }
 
-const REDIS_TTL = 60
-
 function getClientIp(req: Request): string {
 	const forwardedFor = req.headers.get('x-forwarded-for')
 	if (forwardedFor) {
@@ -189,6 +187,7 @@ export async function GET(req: Request, ctx: { params: Promise<Params> | Params 
 			{ status: 429 }
 		)
 	}
+
 	if (rl.tooFrequent) {
 		return NextResponse.json(
 			{

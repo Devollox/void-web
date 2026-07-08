@@ -1,5 +1,3 @@
-import { safePublish } from '@/lib/redis-pubsub'
-import { sseManager } from '@/lib/sse-manager'
 import { admin } from '@/service/firebase-admin'
 import { redis } from '@/service/redis'
 import { loadAuthorConfigsById } from '@lib/shared'
@@ -89,15 +87,18 @@ export async function createPresenceConfig(
 	const id = ref.key || 'unknown'
 	await db.ref(`users/${authorId}/configs/presence/${id}`).set(true)
 
-	await safePublish(
-		'events:configs',
-		JSON.stringify({
-			type: 'config_created',
-			kind: 'presence',
-			authorId,
-			configId: id,
-		})
-	)
+	await db.ref('activity/configs').set({
+		ts: Date.now(),
+		kind: 'created',
+		configId: id,
+		type: 'presence',
+	})
+
+	await db.ref('activity/profiles').set({
+		ts: Date.now(),
+		kind: 'profile_configs_updated',
+		configId: id,
+	})
 
 	return id
 }
@@ -116,15 +117,17 @@ export async function createStatusConfig(
 	const id = ref.key || 'unknown'
 	await db.ref(`users/${authorId}/configs/status/${id}`).set(true)
 
-	await safePublish(
-		'events:configs',
-		JSON.stringify({
-			type: 'config_created',
-			kind: 'status',
-			authorId,
-			configId: id,
-		})
-	)
+	await db.ref('activity/configs').set({
+		ts: Date.now(),
+		kind: 'created',
+		configId: id,
+		type: 'status',
+	})
+
+	await db.ref('activity/profiles').set({
+		ts: Date.now(),
+		kind: 'profile_configs_updated',
+	})
 
 	return id
 }
@@ -221,23 +224,16 @@ export async function POST(req: Request, ctx: { params: Promise<Params> | Params
 
 		try {
 			await redis.del(`cache:user:${authorId}`)
-			await redis.lpush(
-				'events:new-configs',
-				JSON.stringify({
-					authorId,
-					configId: createdId,
-					kind,
-					title: body.title,
-					createdAt: Date.now(),
-				})
-			)
 			await redis.zadd(zKey, { score: 0, member: createdId })
 		} catch {}
 
 		try {
 			const full = await loadAuthorConfigsById(authorId)
 			if (full) {
-				sseManager.notifyAuthorProfileUpdate(authorId, full)
+				await db.ref('activity/profiles').set({
+					ts: Date.now(),
+					kind: 'profile_configs_updated',
+				})
 			}
 		} catch {}
 

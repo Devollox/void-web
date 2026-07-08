@@ -1,7 +1,8 @@
 'use client'
 
-import { type Stats } from '@/service/firebase'
+import { type Stats, db, mapRawToStats } from '@/service/firebase'
 import CountUp from '@lib/count-up'
+import { onValue, ref } from 'firebase/database'
 import { useEffect, useState } from 'react'
 import styles from './stats.module.scss'
 
@@ -28,55 +29,47 @@ export default function StatsBlock() {
 	}, [])
 
 	useEffect(() => {
-		const es = new EventSource('/api/v1/analytics/stream')
+		const statsRef = ref(db, 'stats')
+		const unsubscribe = onValue(statsRef, snapshot => {
+			const raw = snapshot.val() || {}
+			const next = mapRawToStats(raw)
 
-		const handleUpdate = (ev: MessageEvent) => {
-			try {
-				const data = JSON.parse(ev.data) as Partial<Stats> | Stats
+			setStats(prev => {
+				const merged: Stats = {
+					downloads: {
+						count:
+							typeof next.downloads.count === 'number'
+								? next.downloads.count
+								: prev.downloads.count,
+						lastUpdated:
+							typeof next.downloads.lastUpdated === 'number'
+								? next.downloads.lastUpdated
+								: prev.downloads.lastUpdated,
+					},
+					visitors: {
+						count:
+							typeof next.visitors.count === 'number' ? next.visitors.count : prev.visitors.count,
+						lastUpdated:
+							typeof next.visitors.lastUpdated === 'number'
+								? next.visitors.lastUpdated
+								: prev.visitors.lastUpdated,
+					},
+				}
 
-				setStats(prev => {
-					const next: Stats = {
-						downloads: {
-							count:
-								typeof data.downloads?.count === 'number'
-									? data.downloads.count
-									: prev.downloads.count,
-							lastUpdated:
-								typeof data.downloads?.lastUpdated === 'number'
-									? data.downloads.lastUpdated
-									: prev.downloads.lastUpdated,
-						},
-						visitors: {
-							count:
-								typeof data.visitors?.count === 'number'
-									? data.visitors.count
-									: prev.visitors.count,
-							lastUpdated:
-								typeof data.visitors?.lastUpdated === 'number'
-									? data.visitors.lastUpdated
-									: prev.visitors.lastUpdated,
-						},
-					}
+				if (
+					!loaded &&
+					typeof merged.downloads.count === 'number' &&
+					typeof merged.visitors.count === 'number'
+				) {
+					setLoaded(true)
+				}
 
-					if (
-						typeof next.downloads.count === 'number' &&
-						typeof next.visitors.count === 'number' &&
-						!loaded
-					) {
-						setLoaded(true)
-					}
-
-					return next
-				})
-			} catch {}
-		}
-
-		es.addEventListener('update', handleUpdate)
-		es.onerror = () => {}
+				return merged
+			})
+		})
 
 		return () => {
-			es.removeEventListener('update', handleUpdate)
-			es.close()
+			unsubscribe()
 		}
 	}, [loaded])
 

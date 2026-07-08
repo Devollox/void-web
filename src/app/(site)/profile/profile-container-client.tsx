@@ -1,6 +1,7 @@
 'use client'
 
-import type { Config, Status } from '@/service/firebase'
+import { db, type Config, type Status } from '@/service/firebase'
+import { onValue, ref } from 'firebase/database'
 import type { Session } from 'next-auth'
 import { useEffect, useMemo, useState } from 'react'
 import { ProfileConfigsClient } from './profile-configs-client'
@@ -40,14 +41,15 @@ export function ProfileContainerClient({
 
 	useEffect(() => {
 		let cancelled = false
-		const eventSource = new EventSource(
-			`/api/v1/authors/${encodeURIComponent(String(userId))}/stream`
-		)
 
-		const handleUpdate = async () => {
+		const fetchConfigs = async () => {
 			if (cancelled) return
 			try {
-				const res = await fetch(`/api/v1/authors/${encodeURIComponent(String(userId))}/configs`)
+				const res = await fetch(`/api/v1/authors/${encodeURIComponent(String(userId))}/configs`, {
+					method: 'GET',
+					cache: 'no-store',
+					headers: { 'Content-Type': 'application/json' },
+				})
 				if (!res.ok) return
 				const next = (await res.json()) as AuthorConfigsResponse
 				if (cancelled) return
@@ -57,17 +59,39 @@ export function ProfileContainerClient({
 			} catch {}
 		}
 
-		eventSource.addEventListener('profile-update', handleUpdate)
-		eventSource.addEventListener('update', handleUpdate)
-		eventSource.addEventListener('created', handleUpdate)
-		eventSource.addEventListener('deleted', handleUpdate)
-		eventSource.addEventListener('downloads', handleUpdate)
+		const activityRef = ref(db, 'activity')
+		const unsubscribe = onValue(activityRef, snapshot => {
+			if (cancelled) return
+			const val = snapshot.val() as {
+				configs?: { ts: number; kind: string; configId: string; type: string }
+				downloads?: { ts: number; kind: string; configId: string; downloads: number }
+				profiles?: { ts: number; kind: string; configId?: string }
+			} | null
 
-		eventSource.onerror = () => {}
+			if (!val) return
+
+			const now = Date.now()
+
+			const configsPing = val.configs
+			const downloadsPing = val.downloads
+			const profilesPing = val.profiles
+
+			const shouldHandleConfigs =
+				configsPing && now - configsPing.ts <= 10_000 && !!configsPing.configId
+			const shouldHandleDownloads =
+				downloadsPing && now - downloadsPing.ts <= 10_000 && !!downloadsPing.configId
+			const shouldHandleProfiles = profilesPing && now - profilesPing.ts <= 10_000
+
+			if (!shouldHandleConfigs && !shouldHandleDownloads && !shouldHandleProfiles) {
+				return
+			}
+
+			fetchConfigs()
+		})
 
 		return () => {
 			cancelled = true
-			eventSource.close()
+			unsubscribe()
 		}
 	}, [userId])
 
@@ -81,7 +105,12 @@ export function ProfileContainerClient({
 				session={session}
 				lastConfig={lastConfig}
 			/>
-			<ProfileConfigsClient userId={userId} initialConfigs={configs} initialStatuses={statuses} />
+			<ProfileConfigsClient
+				userId={userId}
+				initialConfigs={configs}
+				initialStatuses={statuses}
+				loading={!loaded}
+			/>
 		</>
 	)
 }
