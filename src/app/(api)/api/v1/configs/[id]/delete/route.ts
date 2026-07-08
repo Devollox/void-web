@@ -1,6 +1,5 @@
 import { admin } from '@/service/firebase-admin'
 import { redis } from '@/service/redis'
-import { loadAuthorConfigsById } from '@lib/shared'
 import { NextResponse } from 'next/server'
 import type { ConfigKind } from '../../route'
 
@@ -71,16 +70,6 @@ export async function DELETE(req: Request, ctx: { params: Promise<Params> | Para
 			configId: id,
 			type: kind,
 		})
-
-		try {
-			const full = await loadAuthorConfigsById(authorId)
-			if (full) {
-				await db.ref('activity/profiles').set({
-					ts: Date.now(),
-					kind: 'profile_configs_updated',
-				})
-			}
-		} catch {}
 
 		return NextResponse.json({ ok: true }, { status: 200 })
 	} catch (err) {

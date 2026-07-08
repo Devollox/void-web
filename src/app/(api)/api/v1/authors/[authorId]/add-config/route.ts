@@ -1,6 +1,5 @@
 import { admin } from '@/service/firebase-admin'
 import { redis } from '@/service/redis'
-import { loadAuthorConfigsById } from '@lib/shared'
 import { NextResponse } from 'next/server'
 
 const db = admin.database()
@@ -94,12 +93,6 @@ export async function createPresenceConfig(
 		type: 'presence',
 	})
 
-	await db.ref('activity/profiles').set({
-		ts: Date.now(),
-		kind: 'profile_configs_updated',
-		configId: id,
-	})
-
 	return id
 }
 
@@ -122,11 +115,6 @@ export async function createStatusConfig(
 		kind: 'created',
 		configId: id,
 		type: 'status',
-	})
-
-	await db.ref('activity/profiles').set({
-		ts: Date.now(),
-		kind: 'profile_configs_updated',
 	})
 
 	return id
@@ -225,16 +213,6 @@ export async function POST(req: Request, ctx: { params: Promise<Params> | Params
 		try {
 			await redis.del(`cache:user:${authorId}`)
 			await redis.zadd(zKey, { score: 0, member: createdId })
-		} catch {}
-
-		try {
-			const full = await loadAuthorConfigsById(authorId)
-			if (full) {
-				await db.ref('activity/profiles').set({
-					ts: Date.now(),
-					kind: 'profile_configs_updated',
-				})
-			}
 		} catch {}
 
 		return NextResponse.json({ id: createdId }, { status: 200 })
