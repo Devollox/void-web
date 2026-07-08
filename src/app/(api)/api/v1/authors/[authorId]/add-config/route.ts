@@ -45,18 +45,6 @@ async function checkRateLimit(ip: string) {
 	return { ok: true }
 }
 
-async function checkUserCreateLimit(authorId: string) {
-	const key = `rl:create-config:user:${authorId}`
-	const count = await redis.incr(key)
-	if (count === 1) {
-		await redis.expire(key, 60)
-	}
-	if (count > 10) {
-		return { limited: true }
-	}
-	return { ok: true }
-}
-
 async function registerFail(ip: string) {
 	const failKey = `rl:fails:${ip}`
 	const blockKey = `rl:block:${ip}`
@@ -153,18 +141,6 @@ export async function POST(req: Request, ctx: { params: Promise<Params> | Params
 					ok: false,
 					error: 'TooFrequent',
 					message: 'Too many requests. Please wait before trying again.',
-				},
-				{ status: 429 }
-			)
-		}
-
-		const userLimit = await checkUserCreateLimit(authorId)
-		if (userLimit.limited) {
-			return NextResponse.json(
-				{
-					ok: false,
-					error: 'UserLimit',
-					message: 'Too many configs created in a short time. Please slow down.',
 				},
 				{ status: 429 }
 			)
