@@ -91,7 +91,7 @@ export function ConfigDetailsClient({ configId, initialPreviewTick }: Props) {
 			const configsPing = val.configs
 			const downloadsPing = val.downloads
 
-			const isFresh = (ts?: number) => typeof ts === 'number' && now - ts <= 10_000
+			const isFresh = (ts?: number) => typeof ts === 'number' && now - ts <= 10000
 
 			const pingId = downloadsPing?.configId || configsPing?.configId || undefined
 			const configsKind = configsPing?.kind

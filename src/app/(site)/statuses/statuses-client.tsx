@@ -68,6 +68,15 @@ export function StatusClient({
 		setSearchTerm('')
 	}, [])
 
+	const setTopStatuses = useCallback(
+		(items: Status[], totalFromServer: number) => {
+			setStatuses(items)
+			setTotal(totalFromServer)
+			setHasMore(items.length < totalFromServer && items.length > 0 && items.length >= limit)
+		},
+		[limit]
+	)
+
 	const mergeStatuses = useCallback(
 		(items: Status[], totalFromServer?: number) => {
 			setStatuses(prev => {
@@ -214,7 +223,8 @@ export function StatusClient({
 				}
 				if (cancelled) return
 				if (!data.items || data.items.length === 0) return
-				mergeStatuses(data.items, data.total)
+
+				setTopStatuses(data.items, data.total)
 				setOffset(data.items.length)
 				if (data.items.length < limit) {
 					setHasMore(false)
@@ -224,6 +234,7 @@ export function StatusClient({
 		}
 
 		const activityRef = ref(db, 'activity')
+
 		const unsubscribe = onValue(activityRef, snapshot => {
 			if (cancelled) return
 
@@ -239,7 +250,7 @@ export function StatusClient({
 			const configsPing = val.configs
 			const downloadsPing = val.downloads
 
-			const isFresh = (ts?: number) => typeof ts === 'number' && now - ts <= 10_000
+			const isFresh = (ts?: number) => typeof ts === 'number' && now - ts <= 10000
 
 			const configId = downloadsPing?.configId || configsPing?.configId || undefined
 			const configsKind = configsPing?.kind
@@ -265,8 +276,7 @@ export function StatusClient({
 				configsPing &&
 				isFresh(configsPing.ts) &&
 				configsKind === 'deleted' &&
-				configsType === 'status' &&
-				!!configId
+				configsType === 'status'
 
 			if (!isStatusDownload && !isStatusCreated && !isStatusDeleted) {
 				return
@@ -283,6 +293,10 @@ export function StatusClient({
 			}
 
 			if (isStatusDeleted && configId) {
+				if (!belongsToList) {
+					refetchTopStatuses()
+					return
+				}
 				setStatuses(prev => prev.filter(s => s.id !== configId))
 				setTotal(prev => (prev > 0 ? prev - 1 : 0))
 				return
@@ -293,7 +307,7 @@ export function StatusClient({
 			cancelled = true
 			unsubscribe()
 		}
-	}, [limit, mergeStatuses])
+	}, [limit, mergeStatuses, setTopStatuses])
 
 	const filteredStatuses = useMemo(
 		() => filterStatuses(statuses, searchTerm),

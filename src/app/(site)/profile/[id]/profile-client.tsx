@@ -182,7 +182,7 @@ export function ProfileClient({
 			const downloadsPing = val.downloads
 			const profilesPing = val.profiles
 
-			const isFresh = (ts?: number) => typeof ts === 'number' && now - ts <= 10_000
+			const isFresh = (ts?: number) => typeof ts === 'number' && now - ts <= 10000
 
 			const configId =
 				configsPing?.configId || downloadsPing?.configId || profilesPing?.configId || undefined

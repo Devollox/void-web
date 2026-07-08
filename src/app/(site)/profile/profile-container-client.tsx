@@ -77,10 +77,10 @@ export function ProfileContainerClient({
 			const profilesPing = val.profiles
 
 			const shouldHandleConfigs =
-				configsPing && now - configsPing.ts <= 10_000 && !!configsPing.configId
+				configsPing && now - configsPing.ts <= 10000 && !!configsPing.configId
 			const shouldHandleDownloads =
-				downloadsPing && now - downloadsPing.ts <= 10_000 && !!downloadsPing.configId
-			const shouldHandleProfiles = profilesPing && now - profilesPing.ts <= 10_000
+				downloadsPing && now - downloadsPing.ts <= 10000 && !!downloadsPing.configId
+			const shouldHandleProfiles = profilesPing && now - profilesPing.ts <= 10000
 
 			if (!shouldHandleConfigs && !shouldHandleDownloads && !shouldHandleProfiles) {
 				return

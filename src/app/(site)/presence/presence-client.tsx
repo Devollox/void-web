@@ -68,6 +68,15 @@ export function ConfigsClient({
 		setSearchTerm('')
 	}, [])
 
+	const setTopConfigs = useCallback(
+		(items: Config[], totalFromServer: number) => {
+			setConfigs(items)
+			setTotal(totalFromServer)
+			setHasMore(items.length < totalFromServer && items.length > 0 && items.length >= limit)
+		},
+		[limit]
+	)
+
 	const mergeConfigs = useCallback(
 		(items: Config[], totalFromServer?: number) => {
 			setConfigs(prev => {
@@ -214,7 +223,8 @@ export function ConfigsClient({
 				}
 				if (cancelled) return
 				if (!data.items || data.items.length === 0) return
-				mergeConfigs(data.items, data.total)
+
+				setTopConfigs(data.items, data.total)
 				setOffset(data.items.length)
 				if (data.items.length < limit) {
 					setHasMore(false)
@@ -224,6 +234,7 @@ export function ConfigsClient({
 		}
 
 		const activityRef = ref(db, 'activity')
+
 		const unsubscribe = onValue(activityRef, snapshot => {
 			if (cancelled) return
 
@@ -239,7 +250,7 @@ export function ConfigsClient({
 			const configsPing = val.configs
 			const downloadsPing = val.downloads
 
-			const isFresh = (ts?: number) => typeof ts === 'number' && now - ts <= 10_000
+			const isFresh = (ts?: number) => typeof ts === 'number' && now - ts <= 10000
 
 			const configId = downloadsPing?.configId || configsPing?.configId || undefined
 			const configsKind = configsPing?.kind
@@ -282,6 +293,10 @@ export function ConfigsClient({
 			}
 
 			if (isPresenceDeleted && configId) {
+				if (!belongsToList) {
+					refetchTopPresence()
+					return
+				}
 				setConfigs(prev => prev.filter(c => c.id !== configId))
 				setTotal(prev => (prev > 0 ? prev - 1 : 0))
 				return
@@ -292,7 +307,7 @@ export function ConfigsClient({
 			cancelled = true
 			unsubscribe()
 		}
-	}, [limit, mergeConfigs])
+	}, [limit, mergeConfigs, setTopConfigs])
 
 	const filteredConfigs = useMemo(() => filterConfigs(configs, searchTerm), [configs, searchTerm])
 	const sortedConfigs = useMemo(() => sortConfigs(filteredConfigs), [filteredConfigs])
