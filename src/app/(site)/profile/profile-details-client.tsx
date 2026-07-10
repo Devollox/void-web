@@ -92,12 +92,6 @@ export function ProfileDetailsClient({ user, lastConfig, authorID }: Props) {
 										</a>
 									</div>
 								</section>
-								<section className={styles.about_addon}>
-									<span className={styles.addon_metadata_row}>
-										<strong>Author ID: </strong>
-										{user.id ?? '—'}
-									</span>
-								</section>
 							</div>
 						</div>
 
