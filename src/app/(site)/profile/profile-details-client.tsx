@@ -6,6 +6,7 @@ import type { Session } from 'next-auth'
 import { signOut } from 'next-auth/react'
 import { useEffect, useState } from 'react'
 import styles from './profile-details.module.scss'
+import { normalizeTag } from './save-user-on-mount'
 
 type Props = {
 	user: any
@@ -99,7 +100,7 @@ export function ProfileDetailsClient({ user, lastConfig, authorID }: Props) {
 							<div className={styles.rpc_card_preview}>
 								{lastConfig && configData ? (
 									<RpcPreview
-										discriminator={`#${String(lastConfig.authorTag ?? '') || '0001'}`}
+										discriminator={`#${normalizeTag(user.id ?? '') || '0001'}`}
 										username={user.name || 'User'}
 										avatarSrc={avatarSrc}
 										currentCycle={firstCycle}
