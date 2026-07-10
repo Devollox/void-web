@@ -47,17 +47,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth(req => {
 					},
 				},
 				allowDangerousEmailAccountLinking: true,
-				profile(profile) {
-					return {
-						id: String(profile.id),
-						name: profile.username,
-						email: profile.email,
-						image: profile.avatar
-							? `https://cdn.discordapp.com/avatars/${profile.id}/${profile.avatar}.png`
-							: '/logo.png',
-						emailVerified: profile.verified ? new Date() : null,
-					}
-				},
 			}),
 			SteamProvider(steamReq, {
 				clientSecret: process.env.NEXTAUTH_STEAM_SECRET!,
