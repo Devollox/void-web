@@ -3,17 +3,17 @@
 import { useSession } from 'next-auth/react'
 import { useEffect, useRef } from 'react'
 
+export function normalizeTag(tag?: string): string | null {
+	if (!tag) return null
+	const digitsOnly = tag.replace(/\D/g, '')
+	const head = digitsOnly.slice(0, 4)
+	return head.padStart(4, '0')
+}
+
 export function SaveUserOnMount() {
 	const { data: session, status } = useSession()
 	const user = session?.user as any
 	const sentRef = useRef(false)
-
-	function normalizeTag(tag?: string): string | null {
-		if (!tag) return null
-		const digitsOnly = tag.replace(/\D/g, '')
-		const head = digitsOnly.slice(0, 4)
-		return head.padStart(4, '0')
-	}
 
 	useEffect(() => {
 		if (status !== 'authenticated') return
