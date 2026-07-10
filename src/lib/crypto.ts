@@ -35,3 +35,12 @@ export function decryptUserId(hash: string): string | null {
 		return null
 	}
 }
+
+const UID_SECRET = process.env.UID_SECRET!
+
+export function makeInternalUid(provider: string, providerUserId: string) {
+	return crypto
+		.createHmac('sha256', UID_SECRET)
+		.update(`${provider}:${providerUserId}`)
+		.digest('hex')
+}

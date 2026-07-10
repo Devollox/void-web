@@ -52,7 +52,6 @@ export async function POST(req: Request) {
 		const { userId, name, avatar, tag, provider } = body
 		const userRef = db.ref(`users/${userId}`)
 		const rKey = redisKeyForUserProfile(userId)
-
 		const normalizedTag = normalizeTag(tag)
 		const now = Date.now()
 

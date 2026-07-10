@@ -8,6 +8,13 @@ export function SaveUserOnMount() {
 	const user = session?.user as any
 	const sentRef = useRef(false)
 
+	function normalizeTag(tag?: string): string | null {
+		if (!tag) return null
+		const digitsOnly = tag.replace(/\D/g, '')
+		const head = digitsOnly.slice(0, 4)
+		return head.padStart(4, '0')
+	}
+
 	useEffect(() => {
 		if (status !== 'authenticated') return
 		if (!user?.id) return
@@ -21,11 +28,11 @@ export function SaveUserOnMount() {
 			body: JSON.stringify({
 				userId: String(user.id),
 				name: user.name,
-				tag: String(user.id).slice(0, 4),
+				tag: normalizeTag(user.id),
 				avatar: user.image,
 				provider: user.provider ?? null,
 			}),
-		}).catch(err => {
+		}).catch(() => {
 			sentRef.current = false
 		})
 	}, [status, user?.id, user?.name, user?.image, user?.provider])

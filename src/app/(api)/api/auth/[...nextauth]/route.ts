@@ -1,4 +1,4 @@
-import { encryptUserId } from '@/lib/crypto'
+import { makeInternalUid } from '@/lib/crypto'
 import { admin } from '@/service/firebase-admin'
 import { UpstashRedisAdapter } from '@auth/upstash-redis-adapter'
 import { redis } from '@service/redis'
@@ -48,18 +48,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth(req => {
 				},
 				allowDangerousEmailAccountLinking: true,
 				profile(profile) {
-					const encryptedToken = encryptUserId(String(profile.id))
-					let avatarUrl = '/logo.png'
-
-					if (profile.avatar) {
-						avatarUrl = `/api/auth/avatars/${encodeURIComponent(encryptedToken)}`
-					}
-
 					return {
 						id: String(profile.id),
 						name: profile.username,
 						email: profile.email,
-						image: avatarUrl,
+						image: profile.avatar
+							? `https://cdn.discordapp.com/avatars/${profile.id}/${profile.avatar}.png`
+							: '/logo.png',
 						emailVerified: profile.verified ? new Date() : null,
 					}
 				},
@@ -81,19 +76,21 @@ export const { handlers, auth, signIn, signOut } = NextAuth(req => {
 					token.accessToken = (account as any).access_token
 					token.provider = account.provider
 
-					let stableId = ''
+					let providerUserId = ''
 
 					if (account.provider === 'github') {
-						stableId = String((profile as any)?.id || user?.id || '')
+						providerUserId = String((profile as any)?.id || user?.id || '')
 					} else if (account.provider === 'google') {
-						stableId = String((profile as any)?.sub || user?.id || '')
+						providerUserId = String((profile as any)?.sub || user?.id || '')
 					} else if (account.provider === 'steam') {
-						stableId = String((profile as any)?.steamid || user?.id || '')
+						providerUserId = String((profile as any)?.steamid || user?.id || '')
 					} else if (account.provider === 'discord') {
-						stableId = String((profile as any)?.id || user?.id || '')
+						providerUserId = String((profile as any)?.id || user?.id || '')
 					}
 
-					token.id = stableId.trim() || String(user?.id || token.sub || '')
+					token.id = providerUserId
+						? makeInternalUid(account.provider, providerUserId.trim())
+						: String(user?.id || token.sub || '')
 				}
 
 				if (token.id) {
