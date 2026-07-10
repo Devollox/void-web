@@ -44,7 +44,9 @@ function filterConfigs(configs: Config[], searchTerm: string) {
 	if (!term) return configs
 	return configs.filter(
 		config =>
-			config.title.toLowerCase().includes(term) || config.description.toLowerCase().includes(term)
+			config.title.toLowerCase().includes(term) ||
+			config.author.toLowerCase().includes(term) ||
+			config.description.toLowerCase().includes(term)
 	)
 }
 
@@ -63,7 +65,9 @@ function filterStatuses(statuses: Status[], searchTerm: string) {
 	if (!term) return statuses
 	return statuses.filter(
 		status =>
-			status.title.toLowerCase().includes(term) || status.description.toLowerCase().includes(term)
+			status.title.toLowerCase().includes(term) ||
+			status.author.toLowerCase().includes(term) ||
+			status.description.toLowerCase().includes(term)
 	)
 }
 

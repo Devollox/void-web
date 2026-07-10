@@ -32,7 +32,9 @@ function filterStatuses(statuses: Status[], searchTerm: string) {
 	if (!term) return statuses
 	return statuses.filter(
 		status =>
-			status.title.toLowerCase().includes(term) || status.description.toLowerCase().includes(term)
+			status.title.toLowerCase().includes(term) ||
+			status.author.toLowerCase().includes(term) ||
+			status.description.toLowerCase().includes(term)
 	)
 }
 
