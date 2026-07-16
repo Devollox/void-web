@@ -1,7 +1,7 @@
 ﻿'use client'
 
 import type { Plugin } from '@service/firebase'
-import { Download, ExternalLink, Puzzle } from 'lucide-react'
+import { Download, ExternalLink } from 'lucide-react'
 import styles from './plugins.module.scss'
 
 type Props = {
@@ -24,7 +24,6 @@ function PluginCard({ plugin }: { plugin: Plugin }) {
 						</div>
 					</div>
 					<div className={styles.card_meta}>
-						<span className={styles.version_tag}>v{plugin.version}</span>
 						<div className={styles.download_tag}>
 							<Download size={14} className={styles.download_icon} />
 							<span className={styles.download_text}>{plugin.downloads.toLocaleString()}</span>
@@ -33,9 +32,6 @@ function PluginCard({ plugin }: { plugin: Plugin }) {
 				</div>
 
 				<div className={styles.plugin_preview}>
-					<div className={styles.plugin_icon_wrap}>
-						<Puzzle size={32} className={styles.plugin_icon} />
-					</div>
 					{plugin.preview && (
 						<div className={styles.plugin_preview_rpc}>
 							{plugin.preview.details && (
