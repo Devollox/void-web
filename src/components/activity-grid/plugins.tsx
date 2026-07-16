@@ -1,8 +1,8 @@
 ﻿'use client'
 
 import type { Plugin } from '@service/firebase'
-import { Download, ExternalLink } from 'lucide-react'
-import styles from './plugins.module.scss'
+import { Download } from 'lucide-react'
+import styles from '../../app/(site)/plugins/plugins.module.scss'
 
 type Props = {
 	plugins: Plugin[]
@@ -10,8 +10,19 @@ type Props = {
 
 function PluginCard({ plugin }: { plugin: Plugin }) {
 	const handleInstall = () => {
-		window.location.href = `voidpresence://install-plugin?url=${encodeURIComponent(plugin.sourceUrl)}`
+		window.location.href = `voidpresence://install-plugin?url=${encodeURIComponent(
+			plugin.sourceUrl
+		)}`
+		fetch('/api/v1/analytics/configs', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ type: 'plugin_download', id: plugin.id }),
+		}).catch(() => {})
 	}
+
+	const rawDownloads = (plugin as any).downloads
+	const downloads =
+		typeof rawDownloads === 'number' ? rawDownloads : parseInt(String(rawDownloads ?? '0')) || 0
 
 	return (
 		<div className={styles.card_wrap}>
@@ -26,7 +37,7 @@ function PluginCard({ plugin }: { plugin: Plugin }) {
 					<div className={styles.card_meta}>
 						<div className={styles.download_tag}>
 							<Download size={14} className={styles.download_icon} />
-							<span className={styles.download_text}>{plugin.downloads.toLocaleString()}</span>
+							<span className={styles.download_text}>{downloads.toLocaleString()}</span>
 						</div>
 					</div>
 				</div>
@@ -37,6 +48,7 @@ function PluginCard({ plugin }: { plugin: Plugin }) {
 							{plugin.preview.details && (
 								<div className={styles.preview_details}>{plugin.preview.details}</div>
 							)}
+
 							{plugin.preview.state && (
 								<div className={styles.preview_state}>{plugin.preview.state}</div>
 							)}
@@ -67,7 +79,6 @@ function PluginCard({ plugin }: { plugin: Plugin }) {
 							target='_blank'
 							rel='noopener noreferrer'
 						>
-							<ExternalLink size={14} />
 							Source
 						</a>
 					</div>

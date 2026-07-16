@@ -2,7 +2,12 @@ import { admin } from '@/service/firebase-admin'
 import { redis } from '@/service/redis'
 import { NextResponse } from 'next/server'
 
-type AnalyticsEventType = 'status_download' | 'presence_download' | 'status_open' | 'presence_open'
+type AnalyticsEventType =
+	| 'status_download'
+	| 'presence_download'
+	| 'status_open'
+	| 'presence_open'
+	| 'plugin_download'
 
 interface AnalyticsPayload {
 	type: AnalyticsEventType
@@ -26,6 +31,16 @@ async function incrementDownloadsPresence(configId: string): Promise<{ downloads
 async function incrementDownloadsStatus(statusId: string): Promise<{ downloads: number }> {
 	let newDownloads = 0
 	const downloadsRef = db.ref(`status-configs/${statusId}/downloads`)
+	await downloadsRef.transaction((current: any) => {
+		newDownloads = (Number(current) || 0) + 1
+		return newDownloads
+	})
+	return { downloads: newDownloads }
+}
+
+async function incrementDownloadsPlugin(pluginId: string): Promise<{ downloads: number }> {
+	let newDownloads = 0
+	const downloadsRef = db.ref(`plugin-configs/${pluginId}/downloads`)
 	await downloadsRef.transaction((current: any) => {
 		newDownloads = (Number(current) || 0) + 1
 		return newDownloads
@@ -77,6 +92,26 @@ export async function POST(req: Request) {
 
 				try {
 					await redis.zadd('stats:presence-downloads', {
+						score: downloads,
+						member: body.id,
+					})
+				} catch {}
+
+				break
+			}
+
+			case 'plugin_download': {
+				const { downloads } = await incrementDownloadsPlugin(body.id)
+
+				await db.ref('activity/downloads').set({
+					ts: Date.now(),
+					kind: 'plugin_download',
+					configId: body.id,
+					downloads,
+				})
+
+				try {
+					await redis.zadd('stats:plugin-downloads', {
 						score: downloads,
 						member: body.id,
 					})

@@ -70,6 +70,25 @@ export interface Status {
 	uploadedAt?: number
 }
 
+export interface Plugin {
+	id: string
+	title: string
+	description: string
+	author: string
+	authorAvatar?: string
+	authorTag?: string
+	version: string
+	downloads: number
+	sourceUrl: string
+	tags?: string[]
+	preview?: {
+		details?: string
+		state?: string
+		activityType?: string
+	}
+	uploadedAt?: number
+}
+
 export interface UserRecordWithId extends UserRecord {
 	id: string
 }
@@ -151,25 +170,6 @@ export function mapRawToStatus(
 		configData: data?.configData || { statusCycles: [] },
 		uploadedAt: data?.uploadedAt || 0,
 	}
-}
-
-export interface Plugin {
-	id: string
-	title: string
-	description: string
-	author: string
-	authorAvatar?: string
-	authorTag?: string
-	version: string
-	downloads: number
-	sourceUrl: string
-	tags?: string[]
-	preview?: {
-		details?: string
-		state?: string
-		activityType?: string
-	}
-	uploadedAt?: number
 }
 
 export function mapRawToPlugin(id: string, data: any): Plugin {

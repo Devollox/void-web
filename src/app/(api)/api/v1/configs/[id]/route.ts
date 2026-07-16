@@ -1,8 +1,8 @@
-import { mapRawToConfig, mapRawToStatus } from '@/service/firebase'
+import { mapRawToConfig, mapRawToPlugin, mapRawToStatus } from '@/service/firebase'
 import { admin } from '@/service/firebase-admin'
 import { redis } from '@/service/redis'
 import { NextResponse } from 'next/server'
-import { Config, ConfigKind, Status } from '../route'
+import type { Config, ConfigKind, Status } from '../route'
 
 const db = admin.database()
 const USER_CACHE_TTL = 60
@@ -20,16 +20,23 @@ export async function GET(req: Request, ctx: { params: Promise<Params> | Params 
 			)
 		}
 
-		const kind = new URL(req.url).searchParams.get('kind') as ConfigKind | null
+		const kindParam = new URL(req.url).searchParams.get('kind')
+		const kind = kindParam as ConfigKind | 'plugin' | null
 
-		if (kind !== 'presence' && kind !== 'status') {
+		if (kind !== 'presence' && kind !== 'status' && kind !== 'plugin') {
 			return NextResponse.json(
 				{ error: 'InvalidKind', message: 'kind query param is required' },
 				{ status: 400 }
 			)
 		}
 
-		const targetRef = kind === 'presence' ? `presence-configs/${id}` : `status-configs/${id}`
+		const targetRef =
+			kind === 'presence'
+				? `presence-configs/${id}`
+				: kind === 'status'
+					? `status-configs/${id}`
+					: `plugin-configs/${id}`
+
 		const snap = await db.ref(targetRef).get()
 
 		if (!snap.exists()) {
@@ -77,11 +84,21 @@ export async function GET(req: Request, ctx: { params: Promise<Params> | Params 
 			const config = mapRawToConfig(id, data, avatar, name) as Config
 			config.authorTag = tag
 			return NextResponse.json(config, { status: 200 })
-		} else {
+		}
+
+		if (kind === 'status') {
 			const status = mapRawToStatus(id, data, avatar, name) as Status
 			status.authorTag = tag
 			return NextResponse.json(status, { status: 200 })
 		}
+
+		const plugin = mapRawToPlugin(id, {
+			...data,
+			author: name,
+			authorAvatar: avatar,
+			authorTag: tag,
+		})
+		return NextResponse.json(plugin, { status: 200 })
 	} catch (err) {
 		const message = err instanceof Error ? err.message : JSON.stringify(err)
 		return NextResponse.json({ error: 'InternalError', message }, { status: 500 })
