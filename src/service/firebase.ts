@@ -153,6 +153,45 @@ export function mapRawToStatus(
 	}
 }
 
+export interface Plugin {
+	id: string
+	title: string
+	description: string
+	author: string
+	authorAvatar?: string
+	authorTag?: string
+	version: string
+	downloads: number
+	sourceUrl: string
+	tags?: string[]
+	preview?: {
+		details?: string
+		state?: string
+		activityType?: string
+	}
+	uploadedAt?: number
+}
+
+export function mapRawToPlugin(id: string, data: any): Plugin {
+	return {
+		id,
+		title: data?.title || 'Unnamed Plugin',
+		description: data?.description || '',
+		author: data?.author || 'Unknown',
+		authorAvatar: data?.authorAvatar || '',
+		authorTag: data?.authorTag || undefined,
+		version: data?.version || '1.0.0',
+		downloads:
+			typeof data?.downloads === 'number'
+				? data.downloads
+				: parseInt(String(data?.downloads ?? '0')) || 0,
+		sourceUrl: data?.sourceUrl || '',
+		tags: Array.isArray(data?.tags) ? data.tags : [],
+		preview: data?.preview || {},
+		uploadedAt: data?.uploadedAt || 0,
+	}
+}
+
 export function mapRawToStats(raw: any): Stats {
 	return {
 		visitors: raw?.visitors || { count: 0, lastUpdated: Date.now() },

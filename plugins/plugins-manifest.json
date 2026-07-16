@@ -1,0 +1,32 @@
+﻿[
+	{
+		"id": "github",
+		"title": "GitHub Activity",
+		"description": "Shows your latest GitHub activity in Discord RPC. Displays pushes, PRs, issues, releases and more. Slides through multiple info panels with timestamps.",
+		"author": "Devollox",
+		"version": "2.2.0",
+		"downloads": 0,
+		"sourceUrl": "https://raw.githubusercontent.com/Devollox/void-presence/main/plugins/github.js",
+		"tags": ["github", "activity", "code", "developer"],
+		"preview": {
+			"details": "Pushed to void-presence",
+			"state": "3 commit(s) on main",
+			"activityType": "competing"
+		}
+	},
+	{
+		"id": "steam",
+		"title": "Steam Activity",
+		"description": "Fetches your current Steam game from your public Steam profile page and shows it in Discord RPC. Updates every 60 seconds.",
+		"author": "Devollox",
+		"version": "1.0.0",
+		"downloads": 0,
+		"sourceUrl": "https://raw.githubusercontent.com/Devollox/void-presence/main/plugins/steam.js",
+		"tags": ["steam", "gaming", "game"],
+		"preview": {
+			"details": "Counter-Strike 2",
+			"state": "Playing on Steam",
+			"activityType": "playing"
+		}
+	}
+]

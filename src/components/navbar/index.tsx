@@ -46,6 +46,9 @@ export default function Navbar({ isApiHost }: { isApiHost?: boolean }) {
 								<a className={styles.nav_configs_item} href={`${MAIN_SITE_ORIGIN}/statuses`}>
 									Statuses
 								</a>
+								<a className={styles.nav_configs_item} href={`${MAIN_SITE_ORIGIN}/plugins`}>
+									Plugins
+								</a>
 							</div>
 						</div>
 					)}
