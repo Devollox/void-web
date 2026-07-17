@@ -35,6 +35,18 @@ export default function sitemap(): MetadataRoute.Sitemap {
 			priority: 0.7,
 		},
 		{
+			url: `${siteUrl}/plugins`,
+			lastModified: new Date(),
+			changeFrequency: 'monthly',
+			priority: 0.7,
+		},
+		{
+			url: `${siteUrl}/plugins/docs`,
+			lastModified: new Date(),
+			changeFrequency: 'monthly',
+			priority: 0.6,
+		},
+		{
 			url: `${siteUrl}/status`,
 			lastModified: new Date(),
 			changeFrequency: 'monthly',
