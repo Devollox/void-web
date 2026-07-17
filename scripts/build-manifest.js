@@ -6,7 +6,8 @@ const vm = require('vm')
 
 const PLUGINS_DIR = path.join(__dirname, '..', 'plugins')
 const MANIFEST_OUT = path.join(PLUGINS_DIR, 'plugins-manifest.json')
-const RAW_BASE = 'https://raw.githubusercontent.com/Devollox/void-web/main/plugins'
+const RAW_BASE  = 'https://raw.githubusercontent.com/Devollox/void-web/main/plugins'
+const TREE_BASE = 'https://github.com/Devollox/void-web/tree/main/plugins'
 const EXISTING_MANIFEST = fs.existsSync(MANIFEST_OUT)
 	? JSON.parse(fs.readFileSync(MANIFEST_OUT, 'utf-8').replace(/^\uFEFF/, ''))
 	: []
