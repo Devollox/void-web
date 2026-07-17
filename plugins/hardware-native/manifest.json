@@ -1,0 +1,15 @@
+{
+	"id": "hardware-native",
+	"title": "Hardware Monitor (native)",
+	"description": "Shows CPU, GPU and RAM stats in Discord RPC using systeminformation. Replaces the builtin hardware plugin with a native npm module approach.",
+	"author": "Devollox",
+	"version": "1.0.0",
+	"tags": ["hardware", "cpu", "gpu", "ram", "system"],
+	"preview": {
+		"slides": [
+			"▰▰▰▰▰▱▱▱▱▱ CPU | 52°C | 47%",
+			"▰▰▰▰▰▰▰▱▱▱ GPU | 68°C | 71%",
+			"▰▰▰▰▰▱▱▱▱▱ RAM | 14.2/32.0 GB"
+		]
+	}
+}

@@ -96,11 +96,22 @@ async function poll() {
 
 module.exports = {
 	id: 'steam',
-	nameKey: 'Steam',
+	nameKey: 'Steam Activity',
 	version: '1.0.0',
 	builtin: false,
 	priority: 75,
 	locked: false,
+	author: 'Devollox',
+	description: 'Fetches your current Steam game from your public Steam profile page and shows it in Discord RPC. Updates every 60 seconds.',
+	tags: ['steam', 'gaming', 'game'],
+	preview: {
+		activityType: 'playing',
+		slides: [
+			'Counter-Strike 2',
+			'Playing on Steam',
+			'steamcommunity.com/id/...',
+		],
+	},
 
 	controls: [
 		{

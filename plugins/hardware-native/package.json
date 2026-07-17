@@ -1,0 +1,9 @@
+{
+  "name": "void-plugin-hardware-native",
+  "version": "1.0.0",
+  "description": "Hardware monitor plugin using systeminformation instead of wmic/powershell",
+  "main": "index.js",
+  "dependencies": {
+    "systeminformation": "5.23.5"
+  }
+}

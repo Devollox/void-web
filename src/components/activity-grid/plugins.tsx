@@ -2,17 +2,43 @@
 
 import type { Plugin } from '@service/firebase'
 import { Download } from 'lucide-react'
-import styles from '../../app/(site)/plugins/plugins.module.scss'
+import { useEffect, useState } from 'react'
+import StatusPreview from '../statuses-preview/status-user'
+import gridStyles from './activity-grid.module.scss'
 
-type Props = {
-	plugins: Plugin[]
+const FALLBACK_AVATAR = '/logo.png'
+
+function PluginCardPreview({ plugin, previewIndex }: { plugin: Plugin; previewIndex: number }) {
+	const slides: string[] = plugin.preview?.slides?.length
+		? plugin.preview.slides
+		: ([plugin.preview?.details, plugin.preview?.state].filter(Boolean) as string[])
+
+	const statusCycles = slides.map(text => ({ text }))
+	const maxLen = statusCycles.length || 1
+	const localIndex = maxLen ? previewIndex % maxLen : 0
+	const currentStatus = statusCycles[localIndex] ?? { text: '' }
+
+	return (
+		<div className={`${gridStyles.statuses_card_preview} ${gridStyles.rpc_card_preview}`}>
+			<div className={gridStyles.rpc_card_preview_inner}>
+				<StatusPreview
+					username={plugin.author || 'Plugin'}
+					currentStatus={currentStatus}
+					currentIndex={localIndex}
+					config={{ statusCycles }}
+					avatarSrc={plugin.authorAvatar || FALLBACK_AVATAR}
+					activityType={plugin.preview?.activityType ?? 'playing'}
+				/>
+			</div>
+		</div>
+	)
 }
 
-function PluginCard({ plugin }: { plugin: Plugin }) {
+function PluginCard({ plugin, previewIndex }: { plugin: Plugin; previewIndex: number }) {
 	const handleInstall = () => {
-		window.location.href = `voidpresence://install-plugin?url=${encodeURIComponent(
-			plugin.sourceUrl
-		)}`
+		const isFolder = (plugin as any).folder === true
+		const param = isFolder ? 'zip' : 'url'
+		window.location.href = `voidpresence://install-plugin?${param}=${encodeURIComponent(plugin.sourceUrl)}`
 		fetch('/api/v1/analytics/configs', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
@@ -25,56 +51,30 @@ function PluginCard({ plugin }: { plugin: Plugin }) {
 		typeof rawDownloads === 'number' ? rawDownloads : parseInt(String(rawDownloads ?? '0')) || 0
 
 	return (
-		<div className={styles.card_wrap}>
-			<div className={styles.card}>
-				<div className={styles.card_header}>
+		<div className={gridStyles.card_wrap}>
+			<div className={gridStyles.card}>
+				<div className={gridStyles.card_header}>
 					<div>
-						<h3 className={styles.card_title}>{plugin.title}</h3>
-						<div className={styles.card_author}>
+						<h3 className={gridStyles.card_title}>{plugin.title}</h3>
+						<div className={gridStyles.card_author}>
 							by <span>{plugin.author}</span>
 						</div>
 					</div>
-					<div className={styles.card_meta}>
-						<div className={styles.download_tag}>
-							<Download size={14} className={styles.download_icon} />
-							<span className={styles.download_text}>{downloads.toLocaleString()}</span>
-						</div>
+					<div className={gridStyles.download_tag}>
+						<Download size={14} className={gridStyles.download_icon} />
+						<span className={gridStyles.download_text}>{downloads.toLocaleString()}</span>
 					</div>
 				</div>
 
-				<div className={styles.plugin_preview}>
-					{plugin.preview && (
-						<div className={styles.plugin_preview_rpc}>
-							{plugin.preview.details && (
-								<div className={styles.preview_details}>{plugin.preview.details}</div>
-							)}
+				<PluginCardPreview plugin={plugin} previewIndex={previewIndex} />
 
-							{plugin.preview.state && (
-								<div className={styles.preview_state}>{plugin.preview.state}</div>
-							)}
-						</div>
-					)}
-				</div>
-
-				<p className={styles.card_description}>{plugin.description}</p>
-
-				{plugin.tags && plugin.tags.length > 0 && (
-					<div className={styles.tags}>
-						{plugin.tags.map(tag => (
-							<span key={tag} className={styles.tag}>
-								{tag}
-							</span>
-						))}
-					</div>
-				)}
-
-				<div className={styles.card_actions}>
-					<div className={styles.card_buttons}>
-						<button className={styles.btn_primary} onClick={handleInstall}>
+				<div className={gridStyles.card_actions}>
+					<div className={gridStyles.card_buttons}>
+						<button className={gridStyles.btn_primary} onClick={handleInstall}>
 							Install in app
 						</button>
 						<a
-							className={styles.btn_secondary}
+							className={gridStyles.btn_secondary}
 							href={plugin.sourceUrl}
 							target='_blank'
 							rel='noopener noreferrer'
@@ -88,20 +88,36 @@ function PluginCard({ plugin }: { plugin: Plugin }) {
 	)
 }
 
-export function PluginsGrid({ plugins }: Props) {
+export function PluginsGrid({ plugins }: { plugins: Plugin[] }) {
+	const [previewTick, setPreviewTick] = useState(0)
+	const [mounted, setMounted] = useState(false)
+
+	useEffect(() => {
+		setMounted(true)
+	}, [])
+
+	useEffect(() => {
+		const i = setInterval(() => setPreviewTick(p => p + 1), 3000)
+		return () => clearInterval(i)
+	}, [])
+
 	if (!plugins.length) {
 		return (
-			<div className={styles.empty_state}>
+			<div className={gridStyles.empty_state}>
 				<p>No plugins found.</p>
 			</div>
 		)
 	}
 
 	return (
-		<section className={styles.page_section}>
-			<div className={styles.cards_grid}>
-				{plugins.map(plugin => (
-					<PluginCard key={plugin.id} plugin={plugin} />
+		<section className={gridStyles.page_section}>
+			<div className={gridStyles.cards_grid}>
+				{plugins.map((plugin, index) => (
+					<PluginCard
+						key={plugin.id}
+						plugin={plugin}
+						previewIndex={mounted ? previewTick + index : 0}
+					/>
 				))}
 			</div>
 		</section>

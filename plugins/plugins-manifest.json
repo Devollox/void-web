@@ -1,16 +1,26 @@
-﻿[
+[
 	{
 		"id": "github",
 		"title": "GitHub Activity",
 		"description": "Shows your latest GitHub activity in Discord RPC. Displays pushes, PRs, issues, releases and more. Slides through multiple info panels with timestamps.",
 		"author": "Devollox",
 		"version": "2.2.0",
+		"downloads": 0,
 		"sourceUrl": "https://raw.githubusercontent.com/Devollox/void-web/main/plugins/github.js",
-		"tags": ["github", "activity", "code", "developer"],
+		"tags": [
+			"github",
+			"activity",
+			"code",
+			"developer"
+		],
+		"folder": false,
 		"preview": {
-			"details": "Pushed to void-presence",
-			"state": "3 commit(s) on main",
-			"activityType": "competing"
+			"activityType": "competing",
+			"slides": [
+				"Pushed to void-presence",
+				"3 commit(s) on main",
+				"2 minutes ago"
+			]
 		}
 	},
 	{
@@ -19,12 +29,46 @@
 		"description": "Fetches your current Steam game from your public Steam profile page and shows it in Discord RPC. Updates every 60 seconds.",
 		"author": "Devollox",
 		"version": "1.0.0",
+		"downloads": 0,
 		"sourceUrl": "https://raw.githubusercontent.com/Devollox/void-web/main/plugins/steam.js",
-		"tags": ["steam", "gaming", "game"],
+		"tags": [
+			"steam",
+			"gaming",
+			"game"
+		],
+		"folder": false,
 		"preview": {
-			"details": "Counter-Strike 2",
-			"state": "Playing on Steam",
-			"activityType": "playing"
+			"activityType": "playing",
+			"slides": [
+				"Counter-Strike 2",
+				"Playing on Steam",
+				"steamcommunity.com/id/..."
+			]
+		}
+	},
+	{
+		"id": "hardware-native",
+		"title": "Hardware Monitor (native)",
+		"description": "Shows CPU, GPU and RAM stats in Discord RPC using systeminformation. Replaces the builtin hardware plugin with a native npm module approach.",
+		"author": "Devollox",
+		"version": "1.0.0",
+		"downloads": 0,
+		"sourceUrl": "https://raw.githubusercontent.com/Devollox/void-web/main/plugins/hardware-native/hardware-native.zip",
+		"tags": [
+			"hardware",
+			"cpu",
+			"gpu",
+			"ram",
+			"system"
+		],
+		"folder": true,
+		"preview": {
+			"activityType": "playing",
+			"slides": [
+				"▰▰▰▰▰▱▱▱▱▱ CPU | 52°C | 47%",
+				"▰▰▰▰▰▰▰▱▱▱ GPU | 68°C | 71%",
+				"▰▰▰▰▰▱▱▱▱▱ RAM | 14.2/32.0 GB"
+			]
 		}
 	}
 ]

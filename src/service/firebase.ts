@@ -75,7 +75,7 @@ export interface Plugin {
 	title: string
 	description: string
 	author: string
-	authorAvatar?: string
+	authorAvatar?: any
 	authorTag?: string
 	version: string
 	downloads: number
@@ -85,6 +85,7 @@ export interface Plugin {
 		details?: string
 		state?: string
 		activityType?: string
+		slides?: string[]
 	}
 	uploadedAt?: number
 }

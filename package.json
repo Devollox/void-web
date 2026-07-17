@@ -4,9 +4,10 @@
 	"private": true,
 	"scripts": {
 		"dev": "next dev",
-		"build": "next build",
+		"build": "node scripts/build-manifest.js && next build",
 		"start": "next start",
-		"lint": "eslint"
+		"lint": "eslint",
+		"build:manifest": "node scripts/build-manifest.js"
 	},
 	"dependencies": {
 		"@auth/upstash-redis-adapter": "^2.11.2",

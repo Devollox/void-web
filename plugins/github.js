@@ -307,6 +307,17 @@ module.exports = {
 	builtin: false,
 	priority: 60,
 	locked: false,
+	author: 'Devollox',
+	description: 'Shows your latest GitHub activity in Discord RPC. Displays pushes, PRs, issues, releases and more. Slides through multiple info panels with timestamps.',
+	tags: ['github', 'activity', 'code', 'developer'],
+	preview: {
+		activityType: 'competing',
+		slides: [
+			'Pushed to void-presence',
+			'3 commit(s) on main',
+			'2 minutes ago',
+		],
+	},
 	controls: [
 		{
 			type: 'input',
