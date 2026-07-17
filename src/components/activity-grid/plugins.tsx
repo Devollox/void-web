@@ -23,6 +23,7 @@ function PluginCardPreview({ plugin, previewIndex }: { plugin: Plugin; previewIn
 			<div className={gridStyles.rpc_card_preview_inner}>
 				<StatusPreview
 					username={plugin.author || 'Plugin'}
+					discriminator=''
 					currentStatus={currentStatus}
 					currentIndex={localIndex}
 					config={{ statusCycles }}
