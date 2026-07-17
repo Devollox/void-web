@@ -97,7 +97,7 @@ export default function Navbar({ isApiHost }: { isApiHost?: boolean }) {
 					<Link
 						className={`${styles.nav_link} ${styles.nav_link_github} ${styles.nav_link_blue}`}
 						target='_blank'
-						href='https://github.com/Devollox/void-web'
+						href='https://github.com/Devollox/void-presence'
 						rel='noreferrer'
 					>
 						GitHub
