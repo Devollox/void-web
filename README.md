@@ -1,56 +1,118 @@
-<img width="3844" height="793" alt="484064966-2c662772-bca231-4de4-988f-5304d7dfd87d" src="https://github.com/user-attachments/assets/eea692df-b300-45de-8acb-03ab75cfdf3c" />
+<img width="3844" height="793" alt="banner" src="https://github.com/user-attachments/assets/eea692df-b300-45de-8acb-03ab75cfdf3c" />
 
-##
+> **Void Presence Web** – The website for [Void Presence](https://github.com/Devollox/void-presence): browse community configs, install plugins, manage your profile, and access the public API.
 
-Void Presence Web is the web interface for **Void Presence** – a service for browsing, sharing, and using community-made Discord Rich Presence configs.
+---
+
+## Overview
+
+Void Presence Web is a Next.js application that serves as the hub for the Void Presence ecosystem. It lets users browse and share Discord Rich Presence configs and custom statuses, discover and install community plugins, view release history, and authenticate via Discord or Steam.
+
+---
+
+## Pages
+
+| Route | Description |
+|---|---|
+| `/` | Landing page |
+| `/presence` | Browse community Rich Presence configs |
+| `/presence/[id]` | Config details — preview, download JSON, copy to clipboard |
+| `/statuses` | Browse community custom Discord statuses |
+| `/statuses/[id]` | Status details — preview, download, copy |
+| `/plugins` | Community plugins — browse and install with one click |
+| `/plugins/docs` | Full plugin development documentation |
+| `/profile` | Your profile — uploaded configs, Author ID |
+| `/profile/[id]` | Public profile page |
+| `/download` | Download Void Presence app, changelog |
+| `/schedule` | Release history and download stats |
+| `/docs` | General documentation |
+| `/api` | Public API docs (v0, v1) |
+
+---
 
 ## Features
 
-- View detailed information about a config (cycles, buttons, images).
-- Rich preview of the Discord Rich Presence card.
-- Download config as a `JSON` file.
-- Copy JSON to clipboard with a single click.
-- Responsive UI for both desktop and mobile.
+- **Config browser** — search, filter, preview Discord presence cards, download or copy JSON
+- **Status browser** — browse and preview custom Discord status cycles
+- **Plugin registry** — one-click install via `voidpresence://install-plugin?url=…` deep link
+- **Plugin docs** — full plugin development guide at `/plugins/docs`
+- **Profile page** — view your uploaded configs, get your Author ID for cloud sync
+- **Auth** — Discord + Steam OAuth via `next-auth`
+- **Public REST API** — v0 and v1 endpoints for configs, authors, analytics
+- **Release schedule** — download stats charts per release
+- **Auto manifest** — `npm run build:manifest` generates `plugins/plugins-manifest.json` from source
 
-## Tech Stack
+---
 
-- **Next.js** (App Router)
+## Tech stack
+
+- **Next.js 16** (App Router, SSR + static)
 - **TypeScript**
-- **Firebase** (config storage) / **Redis** (auth storage)
-- **CSS / SCSS** for custom styling
+- **React 19**
+- **Firebase** — config and profile storage
+- **Upstash Redis** — auth session storage
+- **next-auth v5** — Discord + Steam OAuth
+- **SCSS** — custom styling, no UI framework
+- **Recharts** — download stats charts
+- **Vercel** — hosting and analytics
 
-##
+---
 
-<img width="3844" height="302" alt="Security   data" src="https://github.com/user-attachments/assets/f8ce7096-9d0a-4cd0-9ab5-e52b1e39204b" />
+## Development
 
-##
+```bash
+npm install
+npm run dev
+```
 
-Void Presence uploads only **Rich Presence configuration data** when you use cloud features or share configs on the website.
+Build with manifest generation:
 
-What can be stored in the cloud:
+```bash
+npm run build
+# runs scripts/build-manifest.js first, then next build
+```
 
-- **Config data** – button pairs, status cycles, image cycles and related settings (`configData`, `buttonPairs`, `cycles`, `imageCycles`)
-- **Metadata** – config title, description, upload timestamp, download counter (`title`, `description`, `uploadedAt`, `downloads`)
-- **Author name** – your display name or handle shown as the config author (`author`, for example `Devollox`)
+Regenerate `plugins/plugins-manifest.json` only:
 
-What is **not** stored:
+```bash
+npm run build:manifest
+```
 
-- No Discord tokens, passwords or OAuth keys
-- No personal messages or Discord account data
-- No system files or arbitrary local data
+Environment variables go in `.env.local` — see `.env.local` for required keys (Firebase, Redis, NextAuth, Steam).
 
-Configs are used only to render Rich Presence and to let you share presets between machines or with other users through the Void Presence website.
+---
 
-##
+## Plugin publishing
 
-<img width="3844" height="302" alt="Author" src="https://github.com/user-attachments/assets/40ce01ee-a7e0-439e-b376-ad1974fbb5bf" />
+1. Add your `.js` file or folder to `plugins/`
+2. Include `author`, `description`, `tags`, `preview.slides` in your export (or in `manifest.json` for folder plugins)
+3. Open a PR to this repository
+4. After merge, `npm run build:manifest` regenerates the manifest — your plugin appears on `/plugins` with a one-click install button
 
-##
+---
+
+<img width="3844" height="302" alt="security" src="https://github.com/user-attachments/assets/f8ce7096-9d0a-4cd0-9ab5-e52b1e39204b" />
+
+## Security & data
+
+**What is stored:**
+- Config data — button pairs, status cycles, image cycles (`buttonPairs`, `cycles`, `imageCycles`)
+- Metadata — title, description, upload timestamp, download counter
+- Author name — your display handle
+
+**What is never stored:**
+- Discord tokens, passwords, or OAuth keys
+- Personal messages or Discord account data
+- System files or arbitrary local data
+
+---
+
+<img width="3844" height="302" alt="author" src="https://github.com/user-attachments/assets/40ce01ee-a7e0-439e-b376-ad1974fbb5bf" />
 
 Made with ❤️ by [Devollox](https://github.com/Devollox)
 
 <p align="left">
-  <img width="128" height="128" alt="выфвфы" src="https://github.com/user-attachments/assets/32b65183-a39c-4871-bb37-5fbe01ecaade" />
+  <img width="128" height="128" alt="avatar" src="https://github.com/user-attachments/assets/32b65183-a39c-4871-bb37-5fbe01ecaade" />
 </p>
 
 > **Void Presence** – Control your Discord presence. Own your story.
