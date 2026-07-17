@@ -6,7 +6,7 @@ const vm = require('vm')
 
 const PLUGINS_DIR = path.join(__dirname, '..', 'plugins')
 const MANIFEST_OUT = path.join(PLUGINS_DIR, 'plugins-manifest.json')
-const RAW_BASE  = 'https://raw.githubusercontent.com/Devollox/void-web/main/plugins'
+const RAW_BASE = 'https://raw.githubusercontent.com/Devollox/void-web/main/plugins'
 const TREE_BASE = 'https://github.com/Devollox/void-web/tree/main/plugins'
 const EXISTING_MANIFEST = fs.existsSync(MANIFEST_OUT)
 	? JSON.parse(fs.readFileSync(MANIFEST_OUT, 'utf-8').replace(/^\uFEFF/, ''))
@@ -86,15 +86,14 @@ function buildEntry(id, meta, sourceUrl, isFolder) {
 
 	return {
 		id,
-		// existing manual values take priority over parsed meta
-		title:       existing.title       ?? meta.title       ?? meta.nameKey ?? id,
+		title: existing.title ?? meta.title ?? meta.nameKey ?? id,
 		description: existing.description ?? meta.description ?? '',
-		author:      existing.author      ?? meta.author      ?? 'Community',
-		version:     meta.version         ?? existing.version ?? '1.0.0',
-		downloads:   existing.downloads   ?? 0,
+		author: existing.author ?? meta.author ?? 'Community',
+		version: meta.version ?? existing.version ?? '1.0.0',
+		downloads: existing.downloads ?? 0,
 		sourceUrl,
-		tags:        existing.tags        ?? meta.tags        ?? [],
-		folder:      isFolder,
+		tags: existing.tags ?? meta.tags ?? [],
+		folder: isFolder,
 		preview: {
 			...(existing.preview ?? {}),
 			...(meta.preview ?? {}),

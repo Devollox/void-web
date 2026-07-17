@@ -40,7 +40,7 @@
 	margin: 0 0 6px 0;
 }
 
-.docs_code {
+.docs_code_text {
 	font-family:
 		ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
 		monospace;
@@ -884,4 +884,67 @@
 	border-radius: 4px;
 	font-weight: 500;
 	color: #22c55e;
+}
+
+.docs_code {
+	display: block;
+	background: hsla(0, 0%, 5%, 0.9);
+	border: 1px solid hsla(255, 255%, 255%, 0.08);
+	border-radius: 12px;
+	padding: 16px 20px;
+	font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Courier New', monospace;
+	font-size: 12px;
+	line-height: 1.7;
+	color: hsla(0, 0%, 100%, 0.85);
+	overflow-x: auto;
+	white-space: pre;
+	margin-top: 12px;
+}
+
+.docs_table {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: 13px;
+	margin-top: 12px;
+}
+
+.docs_table th {
+	text-align: left;
+	padding: 8px 12px;
+	font-size: 11px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.07em;
+	color: hsla(0, 0%, 100%, 0.4);
+	border-bottom: 1px solid hsla(255, 255%, 255%, 0.08);
+}
+
+.docs_table td {
+	padding: 10px 12px;
+	color: hsla(0, 0%, 100%, 0.75);
+	border-bottom: 1px solid hsla(255, 255%, 255%, 0.05);
+	vertical-align: top;
+	line-height: 1.5;
+}
+
+.docs_table td:first-child {
+	color: #e4e4e7;
+	white-space: nowrap;
+}
+
+.docs_table td code,
+.docs_table th code {
+	font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Courier New', monospace;
+	font-size: 12px;
+	background: hsla(0, 0%, 100%, 0.07);
+	padding: 1px 5px;
+	border-radius: 5px;
+}
+
+.docs_table tr:last-child td {
+	border-bottom: none;
+}
+
+.docs_table tr:hover td {
+	background: hsla(255, 255%, 255%, 0.02);
 }

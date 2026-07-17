@@ -165,51 +165,51 @@ export default function DocsPage() {
 						>
 							Discord Developer Portal
 						</a>
-						, <span className={styles.docs_code}>New Application</span>, give it a name and choose
-						an <span className={styles.docs_code}>App icon</span>. This icon will be used as the
-						avatar of your activity when you are in a Discord voice or text channel.
+						, <span className={styles.docs_code_text}>New Application</span>, give it a name and
+						choose an <span className={styles.docs_code_text}>App icon</span>. This icon will be
+						used as the avatar of your activity when you are in a Discord voice or text channel.
 					</li>
 					<li className={styles.docs_list_item}>
 						On the application page, copy the{' '}
-						<span className={styles.docs_code}>APPLICATION ID</span> and paste it into the rounded{' '}
-						<span className={styles.docs_code}>client id</span> field at the top of the main card in
-						Void Presence (see the first row in the preview). Then click the{' '}
-						<span className={styles.docs_code}>save</span> button on the right of this row.
+						<span className={styles.docs_code_text}>APPLICATION ID</span> and paste it into the
+						rounded <span className={styles.docs_code_text}>client id</span> field at the top of the
+						main card in Void Presence (see the first row in the preview). Then click the{' '}
+						<span className={styles.docs_code_text}>save</span> button on the right of this row.
 					</li>
 					<li className={styles.docs_list_item}>
-						In the row below, set <span className={styles.docs_code}>update(sec)</span> – this is
-						how often Void Presence will move to the next entry in your cycles (for example, 30
+						In the row below, set <span className={styles.docs_code_text}>update(sec)</span> – this
+						is how often Void Presence will move to the next entry in your cycles (for example, 30
 						seconds for a slow rotation).
 					</li>
 					<li className={styles.docs_list_item}>
-						In the <span className={styles.docs_code}>Details &amp; State</span> block on the left
-						side of the main card (first small block in the preview), click{' '}
-						<span className={styles.docs_code}>+ DETAILS &amp; STATE</span>. In each new row that
-						appears, type the top line into the first pill input (Details) and the second line into
-						the lower pill input (State).
+						In the <span className={styles.docs_code_text}>Details &amp; State</span> block on the
+						left side of the main card (first small block in the preview), click{' '}
+						<span className={styles.docs_code_text}>+ DETAILS &amp; STATE</span>. In each new row
+						that appears, type the top line into the first pill input (Details) and the second line
+						into the lower pill input (State).
 					</li>
 					<li className={styles.docs_list_item}>
-						In the <span className={styles.docs_code}>images</span> block (middle block in the
-						preview), click <span className={styles.docs_code}>+ image</span>. For each row, fill
-						the large image key, and optionally the small image key and hover texts – these fields
-						can be left empty if you only need one image without captions.
+						In the <span className={styles.docs_code_text}>images</span> block (middle block in the
+						preview), click <span className={styles.docs_code_text}>+ image</span>. For each row,
+						fill the large image key, and optionally the small image key and hover texts – these
+						fields can be left empty if you only need one image without captions.
 					</li>
 					<li className={styles.docs_list_item}>
-						In the <span className={styles.docs_code}>button pairs</span> block (bottom block in the
-						preview), click <span className={styles.docs_code}>+ pair</span>. In each row, type the
-						label and HTTPS URL for Button 1 and optionally Button 2; if Button 2 is empty, only the
-						first button will appear in Discord.
+						In the <span className={styles.docs_code_text}>button pairs</span> block (bottom block
+						in the preview), click <span className={styles.docs_code_text}>+ pair</span>. In each
+						row, type the label and HTTPS URL for Button 1 and optionally Button 2; if Button 2 is
+						empty, only the first button will appear in Discord.
 					</li>
 					<li className={styles.docs_list_item}>
 						When all fields are filled, click the{' '}
-						<span className={styles.docs_code}>Save and Restart Presence</span> button under the
-						main card in the app to apply your configuration. The current payload panel at the
+						<span className={styles.docs_code_text}>Save and Restart Presence</span> button under
+						the main card in the app to apply your configuration. The current payload panel at the
 						bottom of the window will show exactly what is being sent to Discord.
 					</li>
 				</ol>
 
 				<p className={styles.docs_text}>
-					Click <span className={styles.docs_code}>Save and Restart Presence</span> after each
+					Click <span className={styles.docs_code_text}>Save and Restart Presence</span> after each
 					change – the app will automatically save your configuration and restart the active Rich
 					Presence session with the updated details, images and buttons.
 				</p>

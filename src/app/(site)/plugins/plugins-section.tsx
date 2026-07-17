@@ -2,6 +2,7 @@ import Footer from '@components/footer'
 import Page from '@components/page'
 import PageHeader from '@components/page-header'
 import type { Plugin } from '@service/firebase'
+import Link from 'next/link'
 import { PluginsClient } from './plugins-client'
 import styles from './plugins.module.scss'
 
@@ -16,6 +17,11 @@ export function PluginsSection({ initialPlugins, initialTotal }: Props) {
 			<PageHeader
 				title='Community Plugins'
 				subtitle='Extend Void Presence with community-made plugins. Install in one click.'
+				rightSlot={
+					<Link href='/plugins/docs' className={styles.docs_link}>
+						Build a plugin →
+					</Link>
+				}
 			/>
 
 			<section className={styles.section_themes_panel}>

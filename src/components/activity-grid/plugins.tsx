@@ -57,9 +57,6 @@ function PluginCard({ plugin, previewIndex }: { plugin: Plugin; previewIndex: nu
 				<div className={gridStyles.card_header}>
 					<div>
 						<h3 className={gridStyles.card_title}>{plugin.title}</h3>
-						<div className={gridStyles.card_author}>
-							by <span>{plugin.author}</span>
-						</div>
 					</div>
 					<div className={gridStyles.download_tag}>
 						<Download size={14} className={gridStyles.download_icon} />

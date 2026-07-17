@@ -29,9 +29,19 @@ export default function Navbar({ isApiHost }: { isApiHost?: boolean }) {
 							<a className={styles.nav_link} href={`${MAIN_SITE_ORIGIN}/download`}>
 								Download
 							</a>
-							<a className={styles.nav_link} href={`${MAIN_SITE_ORIGIN}/docs`}>
-								Docs
-							</a>
+							<div className={styles.nav_configs_group}>
+								<div className={`${styles.nav_button} ${styles.nav_link} ${styles.nav_link_configs}`}>
+									Docs
+								</div>
+								<div className={styles.nav_configs_dropdown}>
+									<a className={styles.nav_configs_item} href={`${MAIN_SITE_ORIGIN}/docs`}>
+										Application
+									</a>
+									<a className={styles.nav_configs_item} href={`${MAIN_SITE_ORIGIN}/plugins/docs`}>
+										Plugins
+									</a>
+								</div>
+							</div>
 						</>
 					)}
 					{!isApiHost && (
@@ -48,6 +58,9 @@ export default function Navbar({ isApiHost }: { isApiHost?: boolean }) {
 								</a>
 								<a className={styles.nav_configs_item} href={`${MAIN_SITE_ORIGIN}/plugins`}>
 									Plugins
+								</a>
+								<a className={styles.nav_configs_item} href={`${MAIN_SITE_ORIGIN}/plugins/docs`}>
+									Plugin Docs
 								</a>
 							</div>
 						</div>
@@ -83,9 +96,9 @@ export default function Navbar({ isApiHost }: { isApiHost?: boolean }) {
 					)}
 
 					<Link
-						className={`${styles.nav_link} ${styles.nav_link_github}`}
+						className={`${styles.nav_link} ${styles.nav_link_github} ${styles.nav_link_blue}`}
 						target='_blank'
-						href='https://github.com/Devollox/void-presence'
+						href='https://github.com/Devollox/void-web'
 						rel='noreferrer'
 					>
 						GitHub
