@@ -30,7 +30,9 @@ export default function Navbar({ isApiHost }: { isApiHost?: boolean }) {
 								Download
 							</a>
 							<div className={styles.nav_configs_group}>
-								<div className={`${styles.nav_button} ${styles.nav_link} ${styles.nav_link_configs}`}>
+								<div
+									className={`${styles.nav_button} ${styles.nav_link} ${styles.nav_link_configs}`}
+								>
 									Docs
 								</div>
 								<div className={styles.nav_configs_dropdown}>
@@ -58,9 +60,6 @@ export default function Navbar({ isApiHost }: { isApiHost?: boolean }) {
 								</a>
 								<a className={styles.nav_configs_item} href={`${MAIN_SITE_ORIGIN}/plugins`}>
 									Plugins
-								</a>
-								<a className={styles.nav_configs_item} href={`${MAIN_SITE_ORIGIN}/plugins/docs`}>
-									Plugin Docs
 								</a>
 							</div>
 						</div>
