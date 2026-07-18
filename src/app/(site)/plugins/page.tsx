@@ -1,3 +1,4 @@
+import { githubHeaders } from '@/lib/github-headers'
 import type { Plugin } from '@service/firebase'
 import type { Metadata } from 'next'
 import { PluginsSection } from './plugins-section'
@@ -18,7 +19,9 @@ const MANIFEST_URL =
 async function fetchManifestPlugins(): Promise<Plugin[]> {
 	try {
 		const res = await fetch(MANIFEST_URL, {
-			next: { revalidate: 3600 },
+			cache: 'force-cache',
+			next: { revalidate: 300 },
+			headers: githubHeaders(),
 		})
 		if (!res.ok) return []
 		const data = await res.json()
