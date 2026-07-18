@@ -7,20 +7,11 @@
 		"version": "2.2.0",
 		"downloads": 0,
 		"sourceUrl": "https://raw.githubusercontent.com/Devollox/void-web/main/plugins/github.js",
-		"tags": [
-			"github",
-			"activity",
-			"code",
-			"developer"
-		],
+		"tags": ["github", "activity", "code", "developer"],
 		"folder": false,
 		"preview": {
 			"activityType": "competing",
-			"slides": [
-				"Pushed to void-presence",
-				"3 commit(s) on main",
-				"2 minutes ago"
-			]
+			"slides": ["Pushed to void-presence", "3 commit(s) on main", "2 minutes ago"]
 		}
 	},
 	{
@@ -31,19 +22,11 @@
 		"version": "1.0.0",
 		"downloads": 0,
 		"sourceUrl": "https://raw.githubusercontent.com/Devollox/void-web/main/plugins/steam.js",
-		"tags": [
-			"steam",
-			"gaming",
-			"game"
-		],
+		"tags": ["steam", "gaming", "game"],
 		"folder": false,
 		"preview": {
 			"activityType": "playing",
-			"slides": [
-				"Counter-Strike 2",
-				"Playing on Steam",
-				"steamcommunity.com/id/..."
-			]
+			"slides": ["Counter-Strike 2", "Playing on Steam", "steamcommunity.com/id/..."]
 		}
 	},
 	{
@@ -53,14 +36,8 @@
 		"author": "Devollox",
 		"version": "1.0.0",
 		"downloads": 0,
-		"sourceUrl": "https://raw.githubusercontent.com/Devollox/void-web/main/plugins/hardware-native/hardware-native.zip",
-		"tags": [
-			"hardware",
-			"cpu",
-			"gpu",
-			"ram",
-			"system"
-		],
+		"sourceUrl": "https://raw.githubusercontent.com/Devollox/void-web/main/plugins/hardware-native",
+		"tags": ["hardware", "cpu", "gpu", "ram", "system"],
 		"folder": true,
 		"preview": {
 			"activityType": "playing",

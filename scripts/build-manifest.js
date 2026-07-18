@@ -142,7 +142,7 @@ for (const item of items) {
 				const m = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'))
 				id = m.id || item.name
 				isFolder = true
-				sourceUrl = m.sourceUrl || `${RAW_BASE}/${item.name}/${item.name}.zip`
+				sourceUrl = m.sourceUrl || `${RAW_BASE}/${item.name}`
 				const entry = buildEntry(id, m, sourceUrl, isFolder)
 				if (!seen.has(id)) {
 					entries.push(entry)
