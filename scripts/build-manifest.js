@@ -81,7 +81,6 @@ function extractMeta(filePath) {
 
 function buildEntry(id, meta, sourceUrl, isFolder) {
 	const existing = existingById[id] || {}
-
 	const slides = existing.preview?.slides ?? buildSlides(meta)
 
 	return {
@@ -142,7 +141,7 @@ for (const item of items) {
 				const m = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'))
 				id = m.id || item.name
 				isFolder = true
-				sourceUrl = m.sourceUrl || `${RAW_BASE}/${item.name}`
+				sourceUrl = m.sourceUrl || `${TREE_BASE}/${item.name}`
 				const entry = buildEntry(id, m, sourceUrl, isFolder)
 				if (!seen.has(id)) {
 					entries.push(entry)
@@ -156,7 +155,7 @@ for (const item of items) {
 		filePath = indexPath
 		isFolder = true
 		id = item.name
-		sourceUrl = `${RAW_BASE}/${item.name}/${item.name}.zip`
+		sourceUrl = `${TREE_BASE}/${item.name}`
 	} else {
 		continue
 	}
