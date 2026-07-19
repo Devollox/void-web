@@ -23,7 +23,7 @@ type ButtonPair = {
 	url2?: string
 }
 
-type ConfigData = {
+export type ConfigData = {
 	cycles: Array<{ details: string; state: string }>
 	imageCycles: Array<{ largeImage: string; largeText?: string }>
 	buttonPairs: Array<{ label1: string; url1: string; label2?: string; url2?: string }>

@@ -15,12 +15,6 @@ import DownloadSkeleton from './download-skeleton'
 import styles from './download.module.scss'
 import RpcPreviewClient from './rpc-preview-client'
 
-interface ReleaseAsset {
-	name: string
-	size: number
-	downloadUrl: string
-}
-
 export const metadata: Metadata = {
 	title: 'Download',
 	description:
