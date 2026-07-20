@@ -1,3 +1,4 @@
+import Footer from '@/components/footer'
 import Page from '@components/page'
 import PageHeader from '@components/page-header'
 import { PanelLayout } from '@components/panel-layout'
@@ -1098,6 +1099,7 @@ const url   = readState(ctx, 'steamUrl', 'https://steamcommunity.com/id/me')`}</
 				subtitle='Build and publish external plugins for Void Presence.'
 			/>
 			<PanelLayout left={left} right={right} />
+			<Footer />
 		</Page>
 	)
 }
