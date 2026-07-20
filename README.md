@@ -91,8 +91,6 @@ Environment variables go in `.env.local` — see `.env.local` for required keys 
 
 ---
 
-<img width="3844" height="302" alt="security" src="https://github.com/user-attachments/assets/f8ce7096-9d0a-4cd0-9ab5-e52b1e39204b" />
-
 ## Security & data
 
 **What is stored:**
@@ -106,8 +104,6 @@ Environment variables go in `.env.local` — see `.env.local` for required keys 
 - System files or arbitrary local data
 
 ---
-
-<img width="3844" height="302" alt="author" src="https://github.com/user-attachments/assets/40ce01ee-a7e0-439e-b376-ad1974fbb5bf" />
 
 Made with ❤️ by [Devollox](https://github.com/Devollox)
 
