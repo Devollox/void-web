@@ -25,45 +25,41 @@ function detectPlatform(): OsPlatform {
 	return 'windows'
 }
 
-function assetPriority(name: string, platform: OsPlatform): number {
-	const n = name.toLowerCase()
+function pickAssetsForPlatform(platform: OsPlatform, assets: ReleaseAsset[]) {
+	const n = (s: string) => s.toLowerCase()
 
-	switch (platform) {
-		case 'macos':
-			if (n.endsWith('.dmg')) return 0
-			if (n.includes('.macos.') && n.endsWith('.zip')) return 1
-			if (n.endsWith('.zip')) return 2
-			return 10
-		case 'linux':
-			if (n.endsWith('.deb')) return 0
-			if (n.endsWith('.rpm')) return 1
-			if (n.endsWith('.linux') || n.includes('.linux.')) return 2
-			if (n.endsWith('.zip')) return 3
-			return 10
-		default:
-			if (n.endsWith('.exe')) return 0
-			if (n.endsWith('.zip')) return 1
-			return 10
-	}
+	const setup =
+		platform === 'windows'
+			? assets.find(a => n(a.name).endsWith('.exe') && n(a.name).includes('.setup.'))
+			: platform === 'macos'
+				? assets.find(a => n(a.name).endsWith('.dmg'))
+				: assets.find(a => n(a.name).endsWith('.deb')) ||
+					assets.find(a => n(a.name).endsWith('.rpm'))
+
+	const portable =
+		platform === 'windows'
+			? assets.find(a => n(a.name).includes('.windows.') && n(a.name).endsWith('.zip')) ||
+				assets.find(a => n(a.name).endsWith('.zip'))
+			: platform === 'macos'
+				? assets.find(a => n(a.name).includes('.macos.') && n(a.name).endsWith('.zip')) ||
+					assets.find(a => n(a.name).endsWith('.zip'))
+				: assets.find(a => n(a.name).includes('.linux.') && n(a.name).endsWith('.zip')) ||
+					assets.find(a => n(a.name).endsWith('.zip'))
+
+	const result: ReleaseAsset[] = []
+	if (setup) result.push(setup)
+	if (portable && portable.name !== setup?.name) result.push(portable)
+	return result
 }
 
 function getDisplayName(filename: string): string {
-	const lastDot = filename.lastIndexOf('.')
-	if (lastDot === -1) return filename
-
-	const base = filename.slice(0, lastDot)
-	const ext = filename.slice(lastDot)
-
-	const stripped = base
-		.replace(/-win32-x64-[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?$/i, '')
-		.replace(/\.[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?$/i, '')
-		.replace(/\.(amd64|x86_64|arm64|universal)$/i, '')
-		.replace(/\.(macos|linux)$/i, '')
-
-	return stripped + ext
+	return filename
+		.replace(/\.[0-9]+\.[0-9]+\.[0-9]+(?=\.)/i, '')
+		.replace(/\.(windows|macos|linux)(?=\.)/i, '')
+		.replace(/-win32-x64-[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?/i, '')
 }
 
-function platformBadgeLabel(platform: OsPlatform): string {
+function platformBadgeLabel(platform: OsPlatform) {
 	switch (platform) {
 		case 'macos':
 			return 'macOS'
@@ -78,11 +74,9 @@ export default function DownloadButtons({ assets }: Props) {
 	const router = useRouter()
 	const platform = useMemo(detectPlatform, [])
 
-	const sorted = useMemo(() => {
+	const selectedAssets = useMemo(() => {
 		if (!assets) return []
-		return [...assets].sort(
-			(a, b) => assetPriority(a.name, platform) - assetPriority(b.name, platform)
-		)
+		return pickAssetsForPlatform(platform, assets)
 	}, [assets, platform])
 
 	const handleDownload = async (asset: ReleaseAsset) => {
@@ -107,37 +101,30 @@ export default function DownloadButtons({ assets }: Props) {
 		}
 	}
 
+	if (selectedAssets.length === 0) return null
+
 	return (
 		<div className={styles.assets_list}>
-			{sorted.map((asset, idx) => {
-				const isPrimary = idx === 0
-				return (
-					<button
-						key={asset.name}
-						className={
-							isPrimary
-								? `${styles.download_btn_primary} ${styles.download_btn_highlighted}`
-								: styles.download_btn_primary
-						}
-						onClick={() => handleDownload(asset)}
-						title={asset.name}
-					>
-						<div className={styles.asset_info}>
-							<span className={styles.asset_name}>
-								{getDisplayName(asset.name)}
-								{isPrimary && (
-									<span className={styles.platform_badge}>{platformBadgeLabel(platform)}</span>
-								)}
-							</span>
-							<span className={styles.asset_size}>{asset.size.toFixed(1)} MB</span>
-						</div>
-						<div className={styles.asset_action}>
-							<Download size={16} color='#f1f1f1' />
-							<span className={styles.asset_action_text}>Download</span>
-						</div>
-					</button>
-				)
-			})}
+			{selectedAssets.map((asset, idx) => (
+				<button
+					key={asset.name}
+					className={
+						idx === 0
+							? `${styles.download_btn_primary} ${styles.download_btn_highlighted}`
+							: styles.download_btn_primary
+					}
+					onClick={() => handleDownload(asset)}
+					title={asset.name}
+				>
+					<div className={styles.asset_info}>
+						<span className={styles.asset_name}>{getDisplayName(asset.name)}</span>
+						<span className={styles.asset_size}>{asset.size.toFixed(1)} MB</span>
+					</div>
+					<div className={styles.asset_action}>
+						<Download size={16} color='#f1f1f1' />
+					</div>
+				</button>
+			))}
 		</div>
 	)
 }

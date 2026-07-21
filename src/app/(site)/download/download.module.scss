@@ -195,14 +195,14 @@
 }
 
 .download_btn_highlighted {
-	border-color: hsla(220, 80%, 60%, 0.45);
-	background: hsla(220, 30%, 18%, 0.85);
+	border-color: hsla(0, 0%, 85%, 0.16);
+	background: hsla(0, 0%, 18%, 0.95);
 
 	&:hover {
-		border-color: hsla(220, 80%, 65%, 0.7);
+		border-color: hsla(0, 0%, 90%, 0.35);
 		box-shadow:
-			0 20px 40px hsla(0, 0%, 0%, 0.5),
-			0 0 0 1px hsla(220, 80%, 60%, 0.25);
+			0 20px 40px hsla(0, 0%, 0%, 0.6),
+			0 0 0 1px hsla(0, 0%, 85%, 0.18);
 	}
 }
 
