@@ -1,8 +1,13 @@
+'use client'
+
 import ChangelogClient from '@/app/(site)/download/changelog-client'
+import { InfoBox } from '@/components/status-info/info-box'
 import { PanelLayout } from '@components/panel-layout'
 import layoutStyles from '@components/panel-layout/layout-panels.module.scss'
-import { useState } from 'react'
-import styles from '../../(site)/schedule/release-schedule.module.scss'
+import { Search, X } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import styles from '../../(site)/presence/presence.module.scss'
+import releaseStyles from '../../(site)/schedule/release-schedule.module.scss'
 import apiStyles from './api.module.scss'
 
 export type ApiGroupType =
@@ -38,14 +43,117 @@ interface ApiSectionBaseProps {
 	title: string
 }
 
-function getVersionLabel(endpoints: ApiEndpoint[]): string {
-	if (endpoints.length === 0) return 'v0'
-	const path = endpoints[0].path
-	const match = path.match(/^\/v(\d+)\//)
-	if (match && match[1]) {
-		return `v${match[1]}`
-	}
-	return 'v0'
+type DocsClientProps = {
+	initialEndpoints: ApiEndpoint[]
+}
+
+function filterEndpoints(list: ApiEndpoint[], term: string) {
+	const q = term.toLowerCase()
+	if (!q) return list
+	return list.filter(endpoint => {
+		const path = endpoint.path.toLowerCase()
+		const title = endpoint.title.toLowerCase()
+		const desc = endpoint.description.toLowerCase()
+		const method = endpoint.method.toLowerCase()
+		return path.includes(q) || title.includes(q) || desc.includes(q) || method.includes(q)
+	})
+}
+
+export function ApiDocsClient({ initialEndpoints }: DocsClientProps) {
+	const [searchTerm, setSearchTerm] = useState('')
+
+	const filteredEndpoints = useMemo(
+		() => filterEndpoints(initialEndpoints, searchTerm),
+		[initialEndpoints, searchTerm]
+	)
+
+	const totalCount = initialEndpoints.length
+
+	const left = (
+		<>
+			<InfoBox
+				title='API overview'
+				lines={[
+					'Use these HTTP endpoints to fetch presence configs and status cycles directly from Void Presence.',
+					'All responses are JSON and designed to be copy-pastable into your own tools or scripts.',
+				]}
+			/>
+			<InfoBox
+				variant='secondary'
+				title='API resources'
+				lines={[
+					'Endpoints cover presence configs, status cycles and authentication helpers.',
+					'Use them from your own tools or backend services to integrate with Void Presence.',
+				]}
+			/>
+			<InfoBox
+				variant='secondary'
+				title='Authentication'
+				lines={[
+					'Most public endpoints do not require authentication.',
+					'You can inspect all HTTP API references directly in the web source.',
+				]}
+				linkHref='https://github.com/Devollox/void-web/tree/main/src/app/(api)/api'
+				linkLabel='View API references on GitHub'
+			/>
+			<InfoBox
+				variant='muted'
+				title='Rate limits & usage'
+				lines={[
+					'Avoid polling these endpoints aggressively from public clients.',
+					'Prefer calling them from your own backend or tools when possible.',
+				]}
+			/>
+		</>
+	)
+
+	const right = (
+		<>
+			<div className={styles.themes_left_side}>
+				<form className={styles.search_container} onSubmit={e => e.preventDefault()}>
+					<Search className={styles.search_icon} />
+					<input
+						className={styles.search}
+						type='text'
+						placeholder='Search by path, title or description...'
+						name='q'
+						value={searchTerm}
+						onChange={e => setSearchTerm(e.target.value)}
+					/>
+					{searchTerm && (
+						<button
+							type='button'
+							className={styles.search_clear_btn}
+							onClick={() => setSearchTerm('')}
+						>
+							<X size={16} />
+						</button>
+					)}
+				</form>
+
+				<div className={styles.stats_summary}>
+					<span>
+						{filteredEndpoints.length} endpoints found
+						{searchTerm && ` (of ${totalCount})`}
+					</span>
+				</div>
+			</div>
+		</>
+	)
+
+	return (
+		<>
+			<div className={styles.themes_right_side}>
+				<ApiSectionBase
+					left={left}
+					right={right}
+					title='API endpoints'
+					basePath='/api'
+					endpoints={filteredEndpoints}
+				/>
+			</div>
+		</>
+	)
 }
 
 function getDotClass(method: ApiEndpoint['method']): string {
@@ -161,7 +269,6 @@ function ApiCardItem({ endpoint }: { endpoint: ApiEndpoint }) {
 						<div className={apiStyles.release_card_changelog} onClick={e => e.stopPropagation()}>
 							{fetchNotes && (
 								<>
-									{' '}
 									<ChangelogClient
 										release={{
 											version: '',
@@ -229,46 +336,55 @@ function renderGroupedEndpoints(list: ApiEndpoint[]) {
 }
 
 export function ApiSectionBase({ left, right, endpoints, basePath, title }: ApiSectionBaseProps) {
-	const versionedEndpoints = endpoints.filter(ep => ep.path.match(/\/v(\d+)\//))
-	const legacyEndpoints = endpoints.filter(ep => !ep.path.match(/\/v(\d+)\//))
-
-	const versionLabel = getVersionLabel(versionedEndpoints)
+	const v2Endpoints = endpoints.filter(ep => ep.path.startsWith('/v2/'))
+	const v1Endpoints = endpoints.filter(ep => ep.path.startsWith('/v1/'))
+	const legacyEndpoints = endpoints.filter(ep => !ep.path.match(/^\/v\d+\//))
 
 	return (
 		<PanelLayout
 			left={left}
 			right={
-				<section className={styles.page_section}>
+				<section className={releaseStyles.page_section}>
 					{right}
 					<div className={layoutStyles.preview_card_wrap}>
 						<div className={layoutStyles.preview_card}>
-							{versionedEndpoints.length > 0 && (
+							{v2Endpoints.length > 0 && (
 								<>
 									<div className={layoutStyles.preview_header}>
-										<h3 className={styles.preview_title}>{title}</h3>
+										<h3 className={releaseStyles.preview_title}>{title}</h3>
 										<div className={layoutStyles.preview_badge}>
-											<span className={layoutStyles.preview_badge_text}>{versionLabel}</span>
+											<span className={layoutStyles.preview_badge_text}>v2</span>
 										</div>
 									</div>
+									{renderGroupedEndpoints(v2Endpoints)}
+								</>
+							)}
 
-									{renderGroupedEndpoints(versionedEndpoints)}
+							{v1Endpoints.length > 0 && (
+								<>
+									<div className={layoutStyles.preview_header}>
+										<h3 className={releaseStyles.preview_title}></h3>
+										<div className={layoutStyles.preview_badge}>
+											<span className={layoutStyles.preview_badge_text}>v1</span>
+										</div>
+									</div>
+									{renderGroupedEndpoints(v1Endpoints)}
 								</>
 							)}
 
 							{legacyEndpoints.length > 0 && (
 								<>
 									<div className={layoutStyles.preview_header}>
-										<h3 className={styles.preview_title}></h3>
+										<h3 className={releaseStyles.preview_title}></h3>
 										<div className={layoutStyles.preview_badge}>
 											<span className={layoutStyles.preview_badge_text}>v0</span>
 										</div>
 									</div>
-
 									{renderGroupedEndpoints(legacyEndpoints)}
 								</>
 							)}
 
-							<p className={styles.release_footer_note}>
+							<p className={releaseStyles.release_footer_note}>
 								All endpoints respond with JSON and follow the same structure as your presence and
 								status configs.
 							</p>

@@ -194,6 +194,33 @@
 		0 0 0 1px hsla(255, 255%, 255%, 0.1);
 }
 
+.download_btn_highlighted {
+	border-color: hsla(220, 80%, 60%, 0.45);
+	background: hsla(220, 30%, 18%, 0.85);
+
+	&:hover {
+		border-color: hsla(220, 80%, 65%, 0.7);
+		box-shadow:
+			0 20px 40px hsla(0, 0%, 0%, 0.5),
+			0 0 0 1px hsla(220, 80%, 60%, 0.25);
+	}
+}
+
+.platform_badge {
+	display: inline-block;
+	margin-left: 8px;
+	padding: 1px 7px;
+	border-radius: 6px;
+	font-size: 10px;
+	font-weight: 600;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	background: hsla(220, 80%, 55%, 0.2);
+	color: hsla(220, 90%, 75%, 1);
+	border: 1px solid hsla(220, 80%, 55%, 0.3);
+	vertical-align: middle;
+}
+
 .asset_info {
 	display: flex;
 	flex-direction: column;

@@ -48,7 +48,36 @@ const endpoints: ApiEndpoint[] = [
   .then(res => res.json())
   .then(info => console.log(info))`,
 	},
-
+	{
+		id: 'github-releases-v2',
+		method: 'POST',
+		path: '/v2/github/releases',
+		title: 'Get latest GitHub release',
+		description:
+			'Returns the latest GitHub release info for the selected Void Presence app (desktop app, installer, or auto-updater).',
+		group: 'github',
+		hasExample: true,
+		samplePayload: {
+			requestBody: {
+				app: 'void-presence',
+				platform: 'windows',
+			},
+			responseBody: {
+				tag: 'v2.13.13',
+				assetName: 'Void.Presence.Setup.2.13.13.exe',
+				downloadUrl:
+					'https://github.com/Devollox/void-presence/releases/download/v2.13.13/Void.Presence.Setup.2.13.13.exe',
+				body: 'Release notes for v2.13.13…',
+			},
+		},
+		fetchPayload: `fetch('https://api.voidpresence.site/v2/github/releases', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ app: 'void-presence', platform: 'windows' }),
+})
+  .then(res => res.json())
+  .then(info => console.log(info))`,
+	},
 	{
 		id: 'authors-resolve-get',
 		method: 'GET',

@@ -73,12 +73,14 @@ export function mapReleaseAssets(rawAssets: any[]): ReleaseAsset[] {
 			downloadUrl: asset.browser_download_url,
 		}))
 		.sort((a: ReleaseAsset, b: ReleaseAsset) => {
-			const aIsExe = a.name.toLowerCase().endsWith('.exe')
-			const bIsExe = b.name.toLowerCase().endsWith('.exe')
-
-			if (aIsExe && !bIsExe) return -1
-			if (bIsExe && !aIsExe) return 1
-
+			const isInstaller = (name: string) => {
+				const n = name.toLowerCase()
+				return n.endsWith('.exe') || n.endsWith('.dmg') || n.endsWith('.deb') || n.endsWith('.rpm')
+			}
+			const aInst = isInstaller(a.name)
+			const bInst = isInstaller(b.name)
+			if (aInst && !bInst) return -1
+			if (bInst && !aInst) return 1
 			return 0
 		})
 }
