@@ -285,7 +285,7 @@ const endpoints: ApiEndpoint[] = [
 		description:
 			'Returns an author profile and all of their presence/status configs by authorId (Discord snowflake). Used by internal profile pages.',
 		group: 'authors',
-		authRequired: false,
+		authRequired: true,
 		hasExample: true,
 		samplePayload: {
 			responseBody: {
@@ -339,7 +339,7 @@ const endpoints: ApiEndpoint[] = [
 	{
 		id: 'configs-list',
 		method: 'POST',
-		path: '/api/v1/configs',
+		path: '/v1/configs',
 		title: 'List configs (ranked)',
 		description:
 			'Returns a ranked slice of presence or status configs (sorted by downloads). Body: { kind, offset?, limit? }. If ranking is empty, falls back to scanning all configs.',
@@ -418,7 +418,7 @@ const endpoints: ApiEndpoint[] = [
 	{
 		id: 'config-download-json',
 		method: 'GET',
-		path: '/api/v1/configs/{id}/download',
+		path: '/v1/configs/{id}/download',
 		title: 'Download config JSON file',
 		description:
 			'Downloads only the configData of a presence or status config as a JSON file. Query: kind=presence|status.',
@@ -438,7 +438,7 @@ const endpoints: ApiEndpoint[] = [
 	{
 		id: 'config-copy',
 		method: 'GET',
-		path: '/api/v1/configs/{id}/copy',
+		path: '/v1/configs/{id}/copy',
 		title: 'Copy config JSON',
 		description:
 			'Returns only the configData JSON for a presence or status config, suitable for copying or exporting. Query: kind=presence|status.',
@@ -458,7 +458,7 @@ const endpoints: ApiEndpoint[] = [
 	{
 		id: 'config-delete',
 		method: 'DELETE',
-		path: '/api/v1/configs/{id}/delete',
+		path: '/v1/configs/{id}/delete',
 		title: 'Delete presence or status config',
 		description:
 			'Deletes a presence or status config and unlinks it from its owner. Query: kind=presence|status.',
