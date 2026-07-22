@@ -246,7 +246,6 @@ export function ConfigDetailsClient({ configId, initialPreviewTick }: Props) {
 									<div className={styles.skel_btn} />
 									<div className={styles.skel_btn} />
 									<div className={styles.skel_btn} />
-									<div className={styles.skel_btn} />
 								</div>
 							</div>
 						</div>
