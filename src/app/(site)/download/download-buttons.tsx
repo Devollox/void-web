@@ -59,17 +59,6 @@ function getDisplayName(filename: string): string {
 		.replace(/-win32-x64-[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?/i, '')
 }
 
-function platformBadgeLabel(platform: OsPlatform) {
-	switch (platform) {
-		case 'macos':
-			return 'macOS'
-		case 'linux':
-			return 'Linux'
-		default:
-			return 'Windows'
-	}
-}
-
 export default function DownloadButtons({ assets }: Props) {
 	const router = useRouter()
 	const platform = useMemo(detectPlatform, [])
