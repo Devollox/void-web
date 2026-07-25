@@ -1,4 +1,4 @@
-import { mapRawToConfig, mapRawToStatus } from '@/service/firebase'
+import { Config, mapRawToConfig, mapRawToStatus, Status } from '@/service/firebase'
 import { admin } from '@/service/firebase-admin'
 import { redis } from '@/service/redis'
 import { DataSnapshot } from 'firebase/database'
@@ -7,51 +7,6 @@ import { NextResponse } from 'next/server'
 const db = admin.database()
 
 export type ConfigKind = 'presence' | 'status'
-
-export interface ButtonPair {
-	label1: string
-	url1: string
-	label2?: string
-	url2?: string
-}
-
-export interface ConfigData {
-	cycles: Array<{ details: string; state: string }>
-	imageCycles: Array<{
-		largeImage: string
-		largeText?: string
-		smallImage?: string
-		smallText?: string
-	}>
-	buttonPairs: ButtonPair[]
-}
-
-export interface Config {
-	id: string
-	title: string
-	author: string
-	authorAvatar?: string
-	authorTag?: string
-	downloads: number
-	description: string
-	configData: ConfigData
-	averageColors?: string[]
-	uploadedAt?: number
-}
-
-export interface Status {
-	id: string
-	title: string
-	author: string
-	authorAvatar?: string
-	authorTag?: string
-	downloads: number
-	description: string
-	configData: {
-		statusCycles: Array<{ text: string }>
-	}
-	uploadedAt?: number
-}
 
 type GetAllPayload = {
 	kind: ConfigKind
@@ -183,11 +138,11 @@ export async function POST(req: Request) {
 						: r?.authorTag || undefined
 
 				if (kind === 'presence') {
-					const cfg = mapRawToConfig(id, r, avatar, name) as Config
+					const cfg = mapRawToConfig(id, r, avatar, name)
 					cfg.authorTag = tag
 					return cfg
 				} else {
-					const st = mapRawToStatus(id, r, avatar, name) as Status
+					const st = mapRawToStatus(id, r, avatar, name)
 					st.authorTag = tag
 					return st
 				}
@@ -284,11 +239,11 @@ export async function POST(req: Request) {
 					: r?.authorTag || undefined
 
 			if (kind === 'presence') {
-				const cfg = mapRawToConfig(id, r, avatar, name) as Config
+				const cfg = mapRawToConfig(id, r, avatar, name)
 				cfg.authorTag = tag
 				return cfg
 			} else {
-				const st = mapRawToStatus(id, r, avatar, name) as Status
+				const st = mapRawToStatus(id, r, avatar, name)
 				st.authorTag = tag
 				return st
 			}

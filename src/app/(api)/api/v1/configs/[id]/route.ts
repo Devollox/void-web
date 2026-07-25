@@ -1,8 +1,8 @@
-import { mapRawToConfig, mapRawToPlugin, mapRawToStatus } from '@/service/firebase'
+import { Config, mapRawToConfig, mapRawToPlugin, mapRawToStatus } from '@/service/firebase'
 import { admin } from '@/service/firebase-admin'
 import { redis } from '@/service/redis'
 import { NextResponse } from 'next/server'
-import type { Config, ConfigKind, Status } from '../route'
+import { ConfigKind } from '../route'
 
 const db = admin.database()
 const USER_CACHE_TTL = 60
@@ -87,7 +87,7 @@ export async function GET(req: Request, ctx: { params: Promise<Params> | Params 
 		}
 
 		if (kind === 'status') {
-			const status = mapRawToStatus(id, data, avatar, name) as Status
+			const status = mapRawToStatus(id, data, avatar, name)
 			status.authorTag = tag
 			return NextResponse.json(status, { status: 200 })
 		}

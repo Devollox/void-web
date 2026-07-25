@@ -79,28 +79,6 @@ function extractMeta(filePath) {
 	return null
 }
 
-function buildEntry(id, meta, sourceUrl, isFolder) {
-	const existing = existingById[id] || {}
-	const slides = existing.preview?.slides ?? buildSlides(meta)
-
-	return {
-		id,
-		title: existing.title ?? meta.title ?? meta.nameKey ?? id,
-		description: existing.description ?? meta.description ?? '',
-		author: existing.author ?? meta.author ?? 'Community',
-		version: meta.version ?? existing.version ?? '1.0.0',
-		downloads: existing.downloads ?? 0,
-		sourceUrl,
-		tags: existing.tags ?? meta.tags ?? [],
-		folder: isFolder,
-		preview: {
-			...(existing.preview ?? {}),
-			...(meta.preview ?? {}),
-			slides,
-		},
-	}
-}
-
 function buildSlides(meta) {
 	const slides = []
 
@@ -115,6 +93,36 @@ function buildSlides(meta) {
 
 	if (!slides.length) slides.push(meta.nameKey || meta.id || 'Plugin')
 	return slides
+}
+
+function buildEntry(id, meta, sourceUrl, isFolder) {
+	const existing = existingById[id] || {}
+
+	const resolvedPreview = {
+		...(meta.preview ?? {}),
+		...(existing.preview ?? {}),
+	}
+
+	const slides =
+		resolvedPreview.slides && resolvedPreview.slides.length
+			? resolvedPreview.slides
+			: buildSlides(meta)
+
+	return {
+		id,
+		title: existing.title ?? meta.title ?? meta.nameKey ?? id,
+		description: existing.description ?? meta.description ?? '',
+		author: existing.author ?? meta.author ?? 'Community',
+		version: meta.version ?? existing.version ?? '1.0.0',
+		downloads: existing.downloads ?? 0,
+		sourceUrl,
+		tags: existing.tags ?? meta.tags ?? [],
+		folder: isFolder,
+		preview: {
+			...resolvedPreview,
+			slides,
+		},
+	}
 }
 
 const entries = []

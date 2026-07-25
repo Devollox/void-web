@@ -15,13 +15,6 @@ const firebaseConfig = {
 export const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig)
 export const db = getDatabase(app, firebaseConfig.databaseURL)
 
-export interface ButtonPair {
-	label1: string
-	url1: string
-	label2?: string
-	url2?: string
-}
-
 export interface ConfigData {
 	cycles: Array<{ details: string; state: string }>
 	imageCycles: Array<{
@@ -30,7 +23,7 @@ export interface ConfigData {
 		smallImage?: string
 		smallText?: string
 	}>
-	buttonPairs: ButtonPair[]
+	buttonPairs: Array<{ label1: string; url1: string; label2?: string; url2?: string }>
 }
 
 export interface UserRecord {
@@ -42,43 +35,31 @@ export interface UserRecord {
 	lastSeen?: number
 }
 
-export interface Config {
+export interface BasicConfig {
 	id: string
 	title: string
 	author: string
-	authorAvatar?: string
+	authorAvatar?: string | null
 	authorTag?: string
 	downloads: number
 	description: string
+	uploadedAt?: number
+}
+
+export interface Config extends BasicConfig {
 	configData: ConfigData
 	averageColor?: string
 	averageColors?: string[]
-	uploadedAt?: number
 }
 
-export interface Status {
-	id: string
-	title: string
-	author: string
-	authorAvatar?: string
-	authorTag?: string
-	downloads: number
-	description: string
+export interface Status extends BasicConfig {
 	configData: {
-		statusCycles: Array<{ text: string }>
+		statusCycles: ConfigData['cycles']
 	}
-	uploadedAt?: number
 }
 
-export interface Plugin {
-	id: string
-	title: string
-	description: string
-	author: string
-	authorAvatar?: any
-	authorTag?: string
+export interface Plugin extends BasicConfig {
 	version: string
-	downloads: number
 	sourceUrl: string
 	tags?: string[]
 	preview?: {
@@ -87,11 +68,6 @@ export interface Plugin {
 		activityType?: string
 		slides?: string[]
 	}
-	uploadedAt?: number
-}
-
-export interface UserRecordWithId extends UserRecord {
-	id: string
 }
 
 export interface AuthorConfigsResponse {
@@ -119,33 +95,56 @@ export interface Stats {
 	downloads: { count: number; lastUpdated: number }
 }
 
+function asRecord(raw: unknown): Record<string, unknown> {
+	if (typeof raw === 'object' && raw !== null) {
+		return raw as Record<string, unknown>
+	}
+	return {}
+}
+
+function mapRawToBasicConfig(
+	id: string,
+	raw: unknown,
+	overriddenAvatar?: string,
+	overriddenAuthor?: string
+): BasicConfig {
+	const rawData = asRecord(raw)
+
+	return {
+		id,
+		title: typeof rawData.title === 'string' ? rawData.title.trim() : 'Unnamed',
+		author:
+			overriddenAuthor || (typeof rawData.author === 'string' ? rawData.author.trim() : 'Unknown'),
+		authorAvatar:
+			overriddenAvatar ??
+			(typeof rawData.authorAvatar === 'string' ? rawData.authorAvatar : undefined),
+		authorTag: typeof rawData.authorTag === 'string' ? rawData.authorTag : undefined,
+		downloads:
+			typeof rawData.downloads === 'number' ? rawData.downloads : Number(rawData.downloads) || 0,
+		description: typeof rawData.description === 'string' ? rawData.description.trim() : '',
+		uploadedAt: Number(rawData.uploadedAt) || 0,
+	}
+}
+
 export function mapRawToConfig(
 	id: string,
-	data: any,
+	raw: unknown,
 	overriddenAvatar?: string,
 	overriddenAuthor?: string
 ): Config {
+	const rawData = asRecord(raw)
+
 	const cfg: Config = {
-		id,
-		title: data?.title || 'Unnamed',
-		author: overriddenAuthor || data?.author || 'Unknown',
-		authorAvatar: overriddenAvatar || '',
-		authorTag: data?.authorTag || undefined,
-		downloads:
-			typeof data?.downloads === 'number'
-				? data.downloads
-				: parseInt(String(data?.downloads ?? '0')) || 0,
-		description: data?.description || '',
-		configData: data?.configData || {
+		...mapRawToBasicConfig(id, raw, overriddenAvatar, overriddenAuthor),
+		configData: (rawData.configData as ConfigData) ?? {
 			cycles: [{ details: 'Idling in the void', state: 'Just vibing' }],
 			imageCycles: [],
 			buttonPairs: [],
 		},
-		uploadedAt: data?.uploadedAt || 0,
 	}
 
-	if (Array.isArray(data?.averageColors)) {
-		cfg.averageColors = data.averageColors as string[]
+	if (Array.isArray(rawData.averageColors)) {
+		cfg.averageColors = rawData.averageColors as string[]
 	}
 
 	return cfg
@@ -153,49 +152,40 @@ export function mapRawToConfig(
 
 export function mapRawToStatus(
 	id: string,
-	data: any,
+	raw: unknown,
 	overriddenAvatar?: string,
 	overriddenAuthor?: string
 ): Status {
+	const rawData = asRecord(raw)
+	const configData = rawData.configData as { statusCycles?: unknown } | undefined
+
 	return {
-		id,
-		title: data?.title || 'Unnamed',
-		author: overriddenAuthor || data?.author || 'Unknown',
-		authorAvatar: overriddenAvatar || '',
-		authorTag: data?.authorTag || undefined,
-		downloads:
-			typeof data?.downloads === 'number'
-				? data.downloads
-				: parseInt(String(data?.downloads ?? '0')) || 0,
-		description: data?.description || '',
-		configData: data?.configData || { statusCycles: [] },
-		uploadedAt: data?.uploadedAt || 0,
+		...mapRawToBasicConfig(id, raw, overriddenAvatar, overriddenAuthor),
+		configData: {
+			statusCycles: Array.isArray(configData?.statusCycles)
+				? (configData.statusCycles as ConfigData['cycles'])
+				: [],
+		},
 	}
 }
 
-export function mapRawToPlugin(id: string, data: any): Plugin {
+export function mapRawToPlugin(id: string, raw: unknown): Plugin {
+	const rawData = asRecord(raw)
+
 	return {
-		id,
-		title: data?.title || 'Unnamed Plugin',
-		description: data?.description || '',
-		author: data?.author || 'Unknown',
-		authorAvatar: data?.authorAvatar || '',
-		authorTag: data?.authorTag || undefined,
-		version: data?.version || '1.0.0',
-		downloads:
-			typeof data?.downloads === 'number'
-				? data.downloads
-				: parseInt(String(data?.downloads ?? '0')) || 0,
-		sourceUrl: data?.sourceUrl || '',
-		tags: Array.isArray(data?.tags) ? data.tags : [],
-		preview: data?.preview || {},
-		uploadedAt: data?.uploadedAt || 0,
+		...mapRawToBasicConfig(id, raw),
+		version: typeof rawData.version === 'string' ? rawData.version : '1.0.0',
+		sourceUrl: typeof rawData.sourceUrl === 'string' ? rawData.sourceUrl : '',
+		tags: Array.isArray(rawData.tags) ? (rawData.tags as string[]) : [],
+		preview: (rawData.preview as Plugin['preview']) ?? {},
 	}
 }
 
-export function mapRawToStats(raw: any): Stats {
+export function mapRawToStats(raw: unknown): Stats {
+	const rawData = asRecord(raw)
+
 	return {
-		visitors: raw?.visitors || { count: 0, lastUpdated: Date.now() },
-		downloads: raw?.downloads || { count: 0, lastUpdated: Date.now() },
+		visitors: (rawData.visitors as Stats['visitors']) ?? { count: 0, lastUpdated: Date.now() },
+		downloads: (rawData.downloads as Stats['downloads']) ?? { count: 0, lastUpdated: Date.now() },
 	}
 }

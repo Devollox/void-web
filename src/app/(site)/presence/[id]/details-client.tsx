@@ -1,7 +1,6 @@
 'use client'
 
-import { Config } from '@/app/(api)/api/v1/configs/route'
-import { db } from '@/service/firebase'
+import { Config, db } from '@/service/firebase'
 import RpcPreview from '@components/rpc-preview/rpc-user'
 import { onValue, ref } from 'firebase/database'
 import { useSession } from 'next-auth/react'
@@ -49,7 +48,7 @@ export function ConfigDetailsClient({ configId, initialPreviewTick }: Props) {
 					return
 				}
 
-				const data = (await res.json()) as Config
+				const data = await res.json()
 				if (!cancelled) setConfig(data)
 			} finally {
 				if (!cancelled) setLoading(false)
@@ -68,7 +67,7 @@ export function ConfigDetailsClient({ configId, initialPreviewTick }: Props) {
 					}
 					return
 				}
-				const data = (await res.json()) as Config
+				const data = await res.json()
 				if (!cancelled) setConfig(data)
 			} catch {}
 		}

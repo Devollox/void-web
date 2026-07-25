@@ -1,4 +1,4 @@
-import type { Config } from '@/app/(api)/api/v1/configs/route'
+import { Config } from '@/service/firebase'
 import Footer from '@components/footer'
 import Page from '@components/page'
 import PageHeader from '@components/page-header'

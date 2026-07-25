@@ -5,9 +5,7 @@ import { useEffect, useRef, useState } from 'react'
 import { ProgressBar } from '../progress-bar'
 import styles from '../rpc-preview/rpc-preview.module.scss'
 
-interface StatusCycle {
-	text: string
-}
+type StatusCycle = { text?: string; state?: string }
 
 interface StatusConfigData {
 	statusCycles: StatusCycle[]

@@ -251,7 +251,7 @@ export function StatusDetailsClient({ statusId, initialPreviewTick }: Props) {
 	const maxLen = cycles.length || 1
 	const localIndex = maxLen ? previewTick % maxLen : 0
 	const cycleIndex = localIndex % maxLen
-	const currentCycle = cycles[cycleIndex] || { text: '' }
+	const currentCycle = { text: cycles[cycleIndex].details ?? '' }
 	const avatarSrc = status.authorAvatar || '/logo.png'
 
 	const handleOpenInApp = async () => {

@@ -42,7 +42,7 @@ export function StatusStructure({ status }: Props) {
 										{index + 1}/{cycles.length}
 									</div>
 									<div className={styles.cycle_details}>
-										<div className={styles.cycle_title}>{cycle.text || 'Empty status'}</div>
+										<div className={styles.cycle_title}>{cycle.details || 'Empty status'}</div>
 									</div>
 								</div>
 							))
