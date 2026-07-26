@@ -44,7 +44,6 @@ export function StatusClient({
 }: Props) {
 	const [statuses, setStatuses] = useState<Status[]>(initialStatuses)
 	const [searchTerm, setSearchTerm] = useState(initialSearchTerm ?? '')
-	const [total, setTotal] = useState(initialTotal)
 	const [limit] = useState(initialLimit)
 	const [offset, setOffset] = useState(initialStatuses.length)
 	const [loadingFirst, setLoadingFirst] = useState(initialStatuses.length === 0)
@@ -71,7 +70,7 @@ export function StatusClient({
 	const setTopStatuses = useCallback(
 		(items: Status[], totalFromServer: number) => {
 			setStatuses(items)
-			setTotal(totalFromServer)
+
 			setHasMore(items.length < totalFromServer && items.length > 0 && items.length >= limit)
 		},
 		[limit]
@@ -86,7 +85,6 @@ export function StatusClient({
 				}
 				const merged = Array.from(byId.values())
 				if (typeof totalFromServer === 'number') {
-					setTotal(totalFromServer)
 					setHasMore(merged.length < totalFromServer && items.length > 0 && items.length >= limit)
 				}
 				return merged
@@ -298,7 +296,6 @@ export function StatusClient({
 					return
 				}
 				setStatuses(prev => prev.filter(s => s.id !== configId))
-				setTotal(prev => (prev > 0 ? prev - 1 : 0))
 				return
 			}
 		})

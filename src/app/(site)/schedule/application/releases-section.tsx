@@ -111,7 +111,6 @@ export async function ReleasesSection() {
 			basePath='/schedule/application'
 			title='Release list'
 			counterLabel={count => `${count} total release`}
-			legendVariant='application'
 		/>
 	)
 }

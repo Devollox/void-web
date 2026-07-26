@@ -43,7 +43,6 @@ export function ConfigsClient({
 }: Props) {
 	const [configs, setConfigs] = useState<Config[]>(initialConfigs)
 	const [searchTerm, setSearchTerm] = useState(initialSearchTerm ?? '')
-	const [total, setTotal] = useState(initialTotal)
 	const [limit] = useState(initialLimit)
 	const [offset, setOffset] = useState(initialConfigs.length)
 	const [loadingFirst, setLoadingFirst] = useState(initialConfigs.length === 0)
@@ -70,7 +69,6 @@ export function ConfigsClient({
 	const setTopConfigs = useCallback(
 		(items: Config[], totalFromServer: number) => {
 			setConfigs(items)
-			setTotal(totalFromServer)
 			setHasMore(items.length < totalFromServer && items.length > 0 && items.length >= limit)
 		},
 		[limit]
@@ -85,7 +83,6 @@ export function ConfigsClient({
 				}
 				const merged = Array.from(byId.values())
 				if (typeof totalFromServer === 'number') {
-					setTotal(totalFromServer)
 					setHasMore(merged.length < totalFromServer && items.length > 0 && items.length >= limit)
 				}
 				return merged
@@ -297,7 +294,6 @@ export function ConfigsClient({
 					return
 				}
 				setConfigs(prev => prev.filter(c => c.id !== configId))
-				setTotal(prev => (prev > 0 ? prev - 1 : 0))
 				return
 			}
 		})

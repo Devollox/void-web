@@ -48,10 +48,7 @@ export default async function ProfilePage(props: Props) {
 	const username = decodeURIComponent(id)
 	const normalizedTag = String(tag ?? '').padStart(4, '0')
 
-	const [data, session] = await Promise.all([
-		fetchAuthorConfigsByHandle(username, normalizedTag),
-		auth(),
-	])
+	const [data] = await Promise.all([fetchAuthorConfigsByHandle(username, normalizedTag), auth()])
 
 	if (!data?.user) {
 		return (
@@ -76,9 +73,8 @@ export default async function ProfilePage(props: Props) {
 				subtitle={`User configs from ${user.name}#${user.tag ?? '0000'}`}
 			/>
 			<ProfileClient
-				user={user}
-				presenceConfigs={presenceConfigs as any}
-				statusConfigs={statusConfigs as any}
+				presenceConfigs={presenceConfigs}
+				statusConfigs={statusConfigs}
 				profileTag={normalizedTag}
 				username={username}
 			/>

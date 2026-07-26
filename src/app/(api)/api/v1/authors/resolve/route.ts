@@ -68,7 +68,7 @@ async function resolveAuthor(username: string, tag: string, configId?: string) {
 			.map((snap, idx) => {
 				if (!snap.exists()) return null
 				const id = presenceIds[idx]
-				const raw = snap.val() as any
+				const raw = snap.val()
 
 				const averageColors: string[] =
 					Array.isArray(raw.averageColors) && raw.averageColors.length > 0
@@ -100,7 +100,7 @@ async function resolveAuthor(username: string, tag: string, configId?: string) {
 			.map((snap, idx) => {
 				if (!snap.exists()) return null
 				const id = statusIds[idx]
-				const raw = snap.val() as any
+				const raw = snap.val()
 
 				return {
 					id,

@@ -334,7 +334,7 @@ function renderGroupedEndpoints(list: ApiEndpoint[]) {
 	})
 }
 
-export function ApiSectionBase({ left, right, endpoints, basePath, title }: ApiSectionBaseProps) {
+export function ApiSectionBase({ left, right, endpoints, title }: ApiSectionBaseProps) {
 	const v2Endpoints = endpoints.filter(ep => ep.path.startsWith('/v2/'))
 	const v1Endpoints = endpoints.filter(ep => ep.path.startsWith('/v1/'))
 	const legacyEndpoints = endpoints.filter(ep => !ep.path.match(/^\/v\d+\//))

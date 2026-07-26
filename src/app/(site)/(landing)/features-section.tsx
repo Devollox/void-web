@@ -8,12 +8,6 @@ import styles from './features-section.module.scss'
 export default function FeaturesSection() {
 	const [activeTab, setActiveTab] = useState<'overview' | 'profiles' | 'cycles'>('overview')
 
-	const tabs = [
-		{ id: 'overview' as const, label: 'OVERVIEW' },
-		{ id: 'profiles' as const, label: 'PROFILES' },
-		{ id: 'cycles' as const, label: 'CYCLES' },
-	] as const
-
 	const renderTabContent = () => {
 		switch (activeTab) {
 			case 'overview':

@@ -68,7 +68,7 @@ export async function POST(req: Request) {
 		if (!existingUser) {
 			const snap = await userRef.get()
 			if (snap.exists()) {
-				const raw = snap.val() as any
+				const raw = snap.val()
 				existingUser = {
 					name: raw.name ?? null,
 					avatar: raw.avatar ?? null,

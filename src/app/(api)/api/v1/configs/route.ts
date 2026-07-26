@@ -26,7 +26,7 @@ async function loadUser(authorId: string) {
 	}
 	const snap = await db.ref(`users/${authorId}`).get()
 	if (!snap.exists()) return null
-	const raw = snap.val() as any
+	const raw = snap.val()
 	const userData = {
 		name: raw.name ?? null,
 		avatar: raw.avatar ?? null,
@@ -128,7 +128,7 @@ export async function POST(req: Request) {
 			}
 
 			items = valid.map(({ id, raw }) => {
-				const r = raw as any
+				const r = raw
 				const authorId = r.authorId ? String(r.authorId) : null
 				const user = authorId ? localUsersMap[authorId] : null
 
@@ -231,7 +231,7 @@ export async function POST(req: Request) {
 		}
 
 		const allItems = configEntries.map(([id, raw]) => {
-			const r = raw as any
+			const r = raw
 			const authorId = r.authorId ? String(r.authorId) : null
 			const user = authorId ? localUsersMap[authorId] : null
 

@@ -22,7 +22,6 @@ interface AppShellProps {
 }
 
 export default function AppShell({
-	title,
 	subtitle,
 	tabs = [],
 	activeTabId,

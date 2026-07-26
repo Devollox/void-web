@@ -10,7 +10,6 @@ import styles from './plugins.module.scss'
 
 type Props = {
 	initialPlugins: Plugin[]
-	initialTotal: number
 }
 
 type ActivitySnapshot = {
@@ -19,7 +18,7 @@ type ActivitySnapshot = {
 	profiles?: { ts: number; kind: string; configId?: string }
 } | null
 
-export function PluginsClient({ initialPlugins, initialTotal }: Props) {
+export function PluginsClient({ initialPlugins }: Props) {
 	const [plugins, setPlugins] = useState<Plugin[]>(initialPlugins)
 	const [searchTerm, setSearchTerm] = useState('')
 

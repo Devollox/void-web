@@ -5,10 +5,9 @@ import { useEffect, useState } from 'react'
 
 interface RpcPreviewClientProps {
 	config: any
-	activityType?: string
 }
 
-export default function RpcPreviewClient({ config, activityType }: RpcPreviewClientProps) {
+export default function RpcPreviewClient({ config }: RpcPreviewClientProps) {
 	const [currentIndex, setCurrentIndex] = useState(0)
 
 	useEffect(() => {

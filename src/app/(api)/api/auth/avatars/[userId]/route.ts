@@ -34,7 +34,7 @@ export async function GET(req: Request, ctx: { params: Promise<Params> | Params 
 		if (!realDiscordAvatarUrl) {
 			const snap = await db.ref(`users/${userId}`).get()
 			if (snap.exists()) {
-				const user = snap.val() as any
+				const user = snap.val()
 				realDiscordAvatarUrl = user?.rawAvatar || user?.image || null
 			}
 		}

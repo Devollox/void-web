@@ -6,7 +6,7 @@
 		"dev": "next dev",
 		"build": "next build",
 		"start": "next start",
-		"lint": "eslint",
+		"lint": "eslint . --ext .ts,.tsx",
 		"build:manifest": "node scripts/build-manifest.js"
 	},
 	"dependencies": {
@@ -33,7 +33,9 @@
 		"@types/react-dom": "^19",
 		"babel-plugin-react-compiler": "1.0.0",
 		"eslint": "^9",
-		"eslint-config-next": "16.1.1",
-		"typescript": "^5"
+		"eslint-config-next": "^16.1.1",
+		"eslint-plugin-react-hooks": "^7.1.1",
+		"typescript": "6.0",
+		"typescript-eslint": "^8.65.0"
 	}
 }

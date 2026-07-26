@@ -216,7 +216,7 @@ export default function DocsPage() {
 
 				<div className={styles.rpc_preview_section}>
 					<div className={styles.rpc_card_preview}>
-						<RpcPreviewClient activityType='YOUR APP NAME' config={config} />
+						<RpcPreviewClient config={config} />
 					</div>
 					<div className={styles.preview_label}>
 						<span>YOUR APP NAME from Discord Developer Portal</span>

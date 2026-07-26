@@ -1,4 +1,4 @@
-import { Config, mapRawToConfig, mapRawToPlugin, mapRawToStatus } from '@/service/firebase'
+import { mapRawToConfig, mapRawToPlugin, mapRawToStatus } from '@/service/firebase'
 import { admin } from '@/service/firebase-admin'
 import { redis } from '@/service/redis'
 import { NextResponse } from 'next/server'
@@ -43,7 +43,7 @@ export async function GET(req: Request, ctx: { params: Promise<Params> | Params 
 			return NextResponse.json({ error: 'NotFound' }, { status: 404 })
 		}
 
-		const data = snap.val() as any
+		const data = snap.val()
 		const authorId = data?.authorId ? String(data.authorId) : null
 
 		let user: any = null
@@ -62,7 +62,7 @@ export async function GET(req: Request, ctx: { params: Promise<Params> | Params 
 			if (!user) {
 				const userSnap = await db.ref(`users/${authorId}`).get()
 				if (userSnap.exists()) {
-					const raw = userSnap.val() as any
+					const raw = userSnap.val()
 					user = {
 						name: raw.name ?? null,
 						avatar: raw.avatar ?? null,
@@ -81,7 +81,7 @@ export async function GET(req: Request, ctx: { params: Promise<Params> | Params 
 		const tag = user?.tag ? String(user.tag).padStart(4, '0') : data?.authorTag || undefined
 
 		if (kind === 'presence') {
-			const config = mapRawToConfig(id, data, avatar, name) as Config
+			const config = mapRawToConfig(id, data, avatar, name)
 			config.authorTag = tag
 			return NextResponse.json(config, { status: 200 })
 		}

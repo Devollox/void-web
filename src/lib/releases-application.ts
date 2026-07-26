@@ -97,7 +97,7 @@ export async function getReleases(): Promise<{
 					nodeJsCurrent: nodeJsVersion,
 					v8Current: v8Version,
 					buildTag: classification.buildTag,
-				} as ReleaseInfo
+				}
 			})
 
 		releases = releases.sort((a, b) => {

@@ -108,12 +108,7 @@ export function ProfileContainerClient({
 				session={session}
 				lastConfig={lastConfig}
 			/>
-			<ProfileConfigsClient
-				userId={userId}
-				initialConfigs={configs}
-				initialStatuses={statuses}
-				loading={!loaded}
-			/>
+			<ProfileConfigsClient initialConfigs={configs} initialStatuses={statuses} loading={!loaded} />
 		</>
 	)
 }

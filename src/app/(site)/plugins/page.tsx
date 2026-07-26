@@ -92,5 +92,5 @@ export default async function PluginsPage() {
 		})
 	}
 
-	return <PluginsSection initialPlugins={merged} initialTotal={merged.length} />
+	return <PluginsSection initialPlugins={merged} />
 }

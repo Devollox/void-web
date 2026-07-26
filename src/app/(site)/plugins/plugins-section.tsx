@@ -7,10 +7,9 @@ import styles from './plugins.module.scss'
 
 type Props = {
 	initialPlugins: Plugin[]
-	initialTotal: number
 }
 
-export function PluginsSection({ initialPlugins, initialTotal }: Props) {
+export function PluginsSection({ initialPlugins }: Props) {
 	return (
 		<Page>
 			<PageHeader
@@ -20,7 +19,7 @@ export function PluginsSection({ initialPlugins, initialTotal }: Props) {
 
 			<section className={styles.section_themes_panel}>
 				<div className={styles.themes_panel}>
-					<PluginsClient initialPlugins={initialPlugins} initialTotal={initialTotal} />
+					<PluginsClient initialPlugins={initialPlugins} />
 				</div>
 			</section>
 

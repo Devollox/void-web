@@ -82,11 +82,11 @@ export async function ReleaseDetailsContent({ type, id }: ReleaseDetailsContentP
 	const nodeJsMain = electronMeta?.node
 	const v8Main = electronMeta?.v8
 
-	const installerWails = isInstaller && (release as InstallerReleaseInfo | null)?.wailsVersion
-	const installerGo = isInstaller && (release as InstallerReleaseInfo | null)?.goVersion
+	const installerWails = isInstaller && (release as InstallerReleaseInfo)?.wailsVersion
+	const installerGo = isInstaller && (release as InstallerReleaseInfo)?.goVersion
 
-	const updatesWails = isUpdates && (release as InstallerReleaseInfo | null)?.wailsVersion
-	const updatesGo = isUpdates && (release as InstallerReleaseInfo | null)?.goVersion
+	const updatesWails = isUpdates && (release as UpdatesReleaseInfo)?.wailsVersion
+	const updatesGo = isUpdates && (release as UpdatesReleaseInfo)?.goVersion
 
 	const left = (
 		<>

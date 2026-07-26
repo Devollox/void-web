@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react'
 import Link from 'next/link'
 import styles from './navbar.module.scss'
 
-let MAIN_SITE_ORIGIN = 'https://voidpresence.site'
+const MAIN_SITE_ORIGIN = 'https://voidpresence.site'
 
 export default function Navbar({ isApiHost }: { isApiHost?: boolean }) {
 	const { data: session, status } = useSession()

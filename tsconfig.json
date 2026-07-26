@@ -1,8 +1,8 @@
 {
 	"compilerOptions": {
-		"target": "ES2017",
+		"target": "ES2022",
 		"lib": ["dom", "dom.iterable", "esnext"],
-		"allowJs": true,
+		"allowJs": false,
 		"skipLibCheck": true,
 		"strict": true,
 		"noEmit": true,
@@ -13,6 +13,13 @@
 		"isolatedModules": true,
 		"jsx": "react-jsx",
 		"incremental": true,
+		"noUncheckedIndexedAccess": true,
+		"noImplicitOverride": true,
+		"noFallthroughCasesInSwitch": true,
+		"noUnusedLocals": true,
+		"noUnusedParameters": true,
+		"noImplicitReturns": true,
+		"forceConsistentCasingInFileNames": true,
 		"plugins": [
 			{
 				"name": "next"
@@ -28,10 +35,7 @@
 			"@styles/*": ["./src/styles/*"],
 			"@public/*": ["./public/*"],
 			"@api/*": ["./src/app/(api)/api/*"]
-		},
-		"noUncheckedIndexedAccess": true,
-		"noImplicitOverride": true,
-		"noFallthroughCasesInSwitch": true
+		}
 	},
 	"include": [
 		"next-env.d.ts",

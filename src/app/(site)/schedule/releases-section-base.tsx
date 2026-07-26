@@ -29,7 +29,6 @@ interface ReleasesSectionBaseProps {
 	basePath: string
 	title: string
 	counterLabel: (count: number) => string
-	legendVariant?: 'application' | 'installer'
 }
 
 export function ReleasesSectionBase({
@@ -39,7 +38,6 @@ export function ReleasesSectionBase({
 	basePath,
 	title,
 	counterLabel,
-	legendVariant = 'application',
 }: ReleasesSectionBaseProps) {
 	const stableVersion = stableRelease?.version ?? null
 

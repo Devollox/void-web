@@ -37,7 +37,7 @@ export async function DELETE(req: Request, ctx: { params: Promise<Params> | Para
 			)
 		}
 
-		const configData = configSnap.val() as any
+		const configData = configSnap.val()
 		const authorId = configData?.authorId ? String(configData.authorId) : null
 
 		if (!authorId) {

@@ -93,7 +93,7 @@ export async function getInstallerReleases(): Promise<{
 						buildTag: classification.buildTag,
 						wailsVersion: wailsMeta?.wails,
 						goVersion: wailsMeta?.go,
-					} as ReleaseInfo
+					}
 				})
 		)
 

@@ -92,7 +92,7 @@ export async function getUpdatesReleases(): Promise<{
 						buildTag: classification.buildTag,
 						wailsVersion: wailsMeta?.wails,
 						goVersion: wailsMeta?.go,
-					} as ReleaseInfo
+					}
 				})
 		)
 

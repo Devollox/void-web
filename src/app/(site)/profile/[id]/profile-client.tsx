@@ -5,21 +5,10 @@ import { StatusesGrid } from '@/components/activity-grid/statuses'
 import { db, type Config, type Status } from '@/service/firebase'
 import { onValue, ref } from 'firebase/database'
 import { Search, X } from 'lucide-react'
-import { useSession } from 'next-auth/react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import styles from './profile.module.scss'
 
-type UserInfo = {
-	name: string | null
-	avatar: string | null
-	tag: string | null
-	provider: string | null
-	createdAt: number | null
-	lastSeen: number | null
-}
-
 type Props = {
-	user?: UserInfo | null
 	presenceConfigs: Config[]
 	statusConfigs: Status[]
 	profileTag: string
@@ -81,15 +70,8 @@ function sortStatuses(statuses: Status[]) {
 	})
 }
 
-export function ProfileClient({
-	user,
-	presenceConfigs,
-	statusConfigs,
-	profileTag,
-	username,
-}: Props) {
+export function ProfileClient({ presenceConfigs, statusConfigs, profileTag, username }: Props) {
 	const [searchTerm, setSearchTerm] = useState('')
-	const { data: session } = useSession()
 
 	const [liveConfigs, setLiveConfigs] = useState<Config[]>(presenceConfigs)
 	const [liveStatuses, setLiveStatuses] = useState<Status[]>(statusConfigs)

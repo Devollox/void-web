@@ -8,7 +8,6 @@ import { useMemo, useState } from 'react'
 import styles from './profile-configs.module.scss'
 
 type Props = {
-	userId: string
 	initialConfigs?: Config[]
 	initialStatuses?: Status[]
 	configs?: Config[]
@@ -39,7 +38,6 @@ function filterStatuses(statuses: Status[], searchTerm: string) {
 }
 
 export function ProfileConfigsClient({
-	userId,
 	initialConfigs = [],
 	initialStatuses = [],
 	configs,
