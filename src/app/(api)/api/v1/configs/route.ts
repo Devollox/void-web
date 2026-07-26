@@ -103,17 +103,17 @@ export async function POST(req: Request) {
 
 				cachedUsersRaw.forEach((cachedJson, idx) => {
 					const currentId = ids[idx]
-					if (typeof currentId === 'string') {
-						if (cachedJson) {
-							try {
-								localUsersMap[currentId] =
-									typeof cachedJson === 'object' ? cachedJson : JSON.parse(cachedJson)
-							} catch {
-								idsToFetchFromDb.push(currentId)
-							}
-						} else {
+					if (!currentId) return
+
+					if (cachedJson) {
+						try {
+							localUsersMap[currentId] =
+								typeof cachedJson === 'object' ? cachedJson : JSON.parse(cachedJson)
+						} catch {
 							idsToFetchFromDb.push(currentId)
 						}
+					} else {
+						idsToFetchFromDb.push(currentId)
 					}
 				})
 
@@ -183,18 +183,17 @@ export async function POST(req: Request) {
 
 			cachedUsersRaw.forEach((cachedJson, idx) => {
 				const currentId = ids[idx]
+				if (!currentId) return
 
-				if (typeof currentId === 'string') {
-					if (cachedJson) {
-						try {
-							localUsersMap[currentId] =
-								typeof cachedJson === 'object' ? cachedJson : JSON.parse(cachedJson)
-						} catch {
-							idsToFetchFromDb.push(currentId)
-						}
-					} else {
+				if (cachedJson) {
+					try {
+						localUsersMap[currentId] =
+							typeof cachedJson === 'object' ? cachedJson : JSON.parse(cachedJson)
+					} catch {
 						idsToFetchFromDb.push(currentId)
 					}
+				} else {
+					idsToFetchFromDb.push(currentId)
 				}
 			})
 
