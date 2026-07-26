@@ -40,7 +40,7 @@ function selectAsset(assets: GithubAsset[], platform: OsPlatform): GithubAsset |
 			if (dmg) return dmg
 			const zip = assets.find(a => ext(a.name).includes('.macos.') && ext(a.name).endsWith('.zip'))
 			if (zip) return zip
-			return assets.find(a => ext(a.name).endsWith('.zip')) ?? assets[0]
+			return assets.find(a => ext(a.name).endsWith('.zip')) ?? assets[0] ?? null
 		}
 
 		case 'linux': {
@@ -52,13 +52,13 @@ function selectAsset(assets: GithubAsset[], platform: OsPlatform): GithubAsset |
 				a => ext(a.name).endsWith('.linux') || ext(a.name).includes('.linux.')
 			)
 			if (bin) return bin
-			return assets.find(a => ext(a.name).endsWith('.zip')) ?? assets[0]
+			return assets.find(a => ext(a.name).endsWith('.zip')) ?? assets[0] ?? null
 		}
 
 		default:
 			const exe = assets.find(a => ext(a.name).endsWith('.exe'))
 			if (exe) return exe
-			return assets.find(a => ext(a.name).endsWith('.zip')) ?? assets[0]
+			return assets.find(a => ext(a.name).endsWith('.zip')) ?? assets[0] ?? null
 	}
 }
 
@@ -86,8 +86,8 @@ async function fetchLatestReleaseFromGithub(
 
 	if (Array.isArray(data.assets) && data.assets.length > 0) {
 		const selected = selectAsset(data.assets, platform) ?? data.assets[0]
-		assetName = selected.name
-		downloadUrl = selected.browser_download_url
+		assetName = selected?.name ?? ''
+		downloadUrl = selected?.browser_download_url ?? ''
 	}
 
 	return {

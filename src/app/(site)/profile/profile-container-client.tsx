@@ -95,7 +95,10 @@ export function ProfileContainerClient({
 		}
 	}, [userId])
 
-	const lastConfig = useMemo(() => (configs.length ? configs[configs.length - 1] : null), [configs])
+	const lastConfig = useMemo<Config | null>(() => {
+		const last = configs.at(-1)
+		return last ?? null
+	}, [configs])
 
 	return (
 		<>

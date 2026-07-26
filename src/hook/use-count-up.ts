@@ -39,7 +39,7 @@ export function useCountUp({
 		const getDecimalPlaces = (num: number) => {
 			const str = num.toString()
 			if (str.includes('.')) {
-				const decimals = str.split('.')[1]
+				const decimals = str.split('.')[1] ?? ''
 				if (parseInt(decimals, 10) !== 0) return decimals.length
 			}
 			return 0

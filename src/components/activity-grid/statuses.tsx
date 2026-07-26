@@ -14,7 +14,7 @@ type CustomStatusPreviewProps = {
 }
 
 function CustomStatusPreview({ config, previewIndex, profileHref }: CustomStatusPreviewProps) {
-	const configData: any = config.configData || {}
+	const configData = config.configData || {}
 	const cycles = configData.statusCycles ?? []
 	const maxLen = cycles.length || 1
 	const localIndex = maxLen ? previewIndex % maxLen : 0

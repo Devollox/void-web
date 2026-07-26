@@ -156,16 +156,15 @@ export function ApiDocsClient({ initialEndpoints }: DocsClientProps) {
 	)
 }
 
+const methodStyles: Record<ApiEndpoint['method'], string | undefined> = {
+	POST: apiStyles.dot_nightly,
+	GET: apiStyles.dot_stable,
+	DELETE: apiStyles.dot_broken,
+	PUT: apiStyles.dot_prerelease,
+}
+
 function getDotClass(method: ApiEndpoint['method']): string {
-	return method === 'POST'
-		? apiStyles.dot_nightly
-		: method === 'GET'
-			? apiStyles.dot_stable
-			: method === 'DELETE'
-				? apiStyles.dot_broken
-				: method === 'PUT'
-					? apiStyles.dot_prerelease
-					: apiStyles.dot_eol
+	return methodStyles[method] ?? apiStyles.dot_eol ?? ''
 }
 
 function ApiCardItem({ endpoint }: { endpoint: ApiEndpoint }) {

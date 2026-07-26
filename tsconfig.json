@@ -28,7 +28,10 @@
 			"@styles/*": ["./src/styles/*"],
 			"@public/*": ["./public/*"],
 			"@api/*": ["./src/app/(api)/api/*"]
-		}
+		},
+		"noUncheckedIndexedAccess": true,
+		"noImplicitOverride": true,
+		"noFallthroughCasesInSwitch": true
 	},
 	"include": [
 		"next-env.d.ts",

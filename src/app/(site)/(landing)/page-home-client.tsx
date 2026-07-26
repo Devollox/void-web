@@ -27,6 +27,8 @@ export default function PageHomeClient({ config }: Props) {
 	const currentImage = config.imageCycles[currentIndex]
 	const currentButtons = config.buttonPairs[currentIndex]
 
+	if (!currentCycle || !currentImage || !currentButtons) return
+
 	return (
 		<>
 			<HeroSection />

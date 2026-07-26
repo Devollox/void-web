@@ -39,7 +39,8 @@ export default async function ReleasesSection() {
 
 	const allAssets = stableRelease?.assets ?? []
 
-	const topAssets = allAssets.length > 0 ? [allAssets[allAssets.length - 1]] : []
+	const lastAsset = allAssets[allAssets.length - 1]
+	const topAssets = lastAsset ? [lastAsset] : []
 
 	const left = (
 		<>

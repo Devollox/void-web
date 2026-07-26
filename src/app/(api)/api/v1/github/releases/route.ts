@@ -53,8 +53,8 @@ async function fetchLatestReleaseFromGithub(app: GithubApp): Promise<LatestRelea
 				break
 			}
 		}
-		assetName = selected.name
-		downloadUrl = selected.browser_download_url
+		assetName = selected?.name ?? ''
+		downloadUrl = selected?.browser_download_url ?? ''
 	}
 
 	return {

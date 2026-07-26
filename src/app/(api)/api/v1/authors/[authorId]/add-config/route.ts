@@ -17,8 +17,9 @@ type AddConfigBody = {
 
 function getClientIp(req: Request): string {
 	const forwardedFor = req.headers.get('x-forwarded-for')
-	if (forwardedFor) {
-		return forwardedFor.split(',')[0].trim()
+
+	if (forwardedFor && forwardedFor.trim().length > 0) {
+		return forwardedFor.split(',')[0]?.trim() ?? '127.0.0.1'
 	}
 	return '127.0.0.1'
 }

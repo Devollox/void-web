@@ -66,8 +66,8 @@ export async function getElectronMetadata(
 	if (!chromiumMatch || !nodeMatch) return null
 
 	return {
-		chromium: chromiumMatch[1],
-		node: nodeMatch[1],
+		chromium: chromiumMatch[1] ?? '',
+		node: nodeMatch[1] ?? '',
 		v8: v8Match?.[1] ?? '',
 	}
 }
@@ -195,7 +195,8 @@ export function parseBuildTagFromNotes(notes: string): string | undefined {
 	}
 
 	if (lines.length > 0) {
-		const firstLine = lines[0].trim()
+		const firstLine = lines[0]?.trim()
+		if (!firstLine) return
 
 		if (/nightly/i.test(firstLine)) return 'nightly'
 		if (/stable/i.test(firstLine)) return 'stable'
