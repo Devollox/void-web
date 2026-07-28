@@ -2,7 +2,7 @@
 
 import { PresenceGrid } from '@/components/activity-grid/presence'
 import { StatusesGrid } from '@/components/activity-grid/statuses'
-import type { Config, Status } from '@/service/firebase'
+import type { Config, Status } from '@/services/firebase'
 import { Search, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import styles from './profile-configs.module.scss'

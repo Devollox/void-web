@@ -1,6 +1,6 @@
 'use client'
 
-import { UseFirebaseAuth } from '@hook/use-firebase-auth'
+import { UseFirebaseAuth } from '@/hooks/use-firebase-auth'
 import type { Session } from 'next-auth'
 import { SessionProvider } from 'next-auth/react'
 import type { ReactNode } from 'react'

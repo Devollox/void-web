@@ -1,4 +1,4 @@
-import { Config } from '@/service/firebase'
+import { Config } from '@/services/firebase'
 import type { Metadata } from 'next'
 import { ConfigsSection } from './presence-section'
 

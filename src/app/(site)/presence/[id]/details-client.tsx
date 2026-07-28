@@ -1,6 +1,6 @@
 'use client'
 
-import { Config, db } from '@/service/firebase'
+import { Config, db } from '@/services/firebase'
 import RpcPreview from '@components/rpc-preview/rpc-user'
 import { onValue, ref } from 'firebase/database'
 import { useSession } from 'next-auth/react'

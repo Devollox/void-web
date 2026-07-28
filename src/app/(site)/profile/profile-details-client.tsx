@@ -1,6 +1,6 @@
 'use client'
 
-import type { Config } from '@/service/firebase'
+import type { Config } from '@/services/firebase'
 import RpcPreview from '@components/rpc-preview/rpc-user'
 import type { Session } from 'next-auth'
 import { signOut } from 'next-auth/react'

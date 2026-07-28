@@ -31,7 +31,7 @@ export interface UserRecord {
 	createdAt?: number
 	avatar?: string
 	image?: string
-	provider?: string | null
+	provider?: string
 	lastSeen?: number
 }
 
@@ -71,23 +71,11 @@ export interface Plugin extends BasicConfig {
 }
 
 export interface AuthorConfigsResponse {
-	user: {
-		id: string
-		name: string | null
-		avatar: string | null
-		provider: string | null
-		createdAt: number | null
-		lastSeen: number | null
-	} | null
+	user: UserRecord & {
+		tag: string
+	}
 	presenceConfigs: Config[]
 	statusConfigs: Status[]
-}
-
-export interface UserData {
-	id: string
-	name?: string
-	avatar?: string
-	image?: string
 }
 
 export interface Stats {

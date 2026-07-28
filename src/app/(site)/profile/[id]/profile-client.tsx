@@ -2,7 +2,7 @@
 
 import { PresenceGrid } from '@/components/activity-grid/presence'
 import { StatusesGrid } from '@/components/activity-grid/statuses'
-import { db, type Config, type Status } from '@/service/firebase'
+import { AuthorConfigsResponse, db, type Config, type Status } from '@/services/firebase'
 import { onValue, ref } from 'firebase/database'
 import { Search, X } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -13,19 +13,6 @@ type Props = {
 	statusConfigs: Status[]
 	profileTag: string
 	username: string
-}
-
-type AuthorConfigsResponse = {
-	user: {
-		name: string | null
-		avatar: string | null
-		tag: string | null
-		provider: string | null
-		createdAt: number | null
-		lastSeen: number | null
-	} | null
-	presenceConfigs: Config[]
-	statusConfigs: Status[]
 }
 
 function filterConfigs(configs: Config[], searchTerm: string) {

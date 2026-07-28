@@ -1,6 +1,6 @@
-import { Config, mapRawToConfig, mapRawToStatus, Status } from '@/service/firebase'
-import { admin } from '@/service/firebase-admin'
-import { redis } from '@/service/redis'
+import { Config, mapRawToConfig, mapRawToStatus, Status } from '@/services/firebase'
+import { admin } from '@/services/firebase-admin'
+import { redis } from '@/services/redis'
 import { DataSnapshot } from 'firebase/database'
 import { NextResponse } from 'next/server'
 

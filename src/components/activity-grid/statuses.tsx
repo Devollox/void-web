@@ -1,6 +1,6 @@
 'use client'
 
-import type { Status } from '@/service/firebase'
+import type { Status } from '@/services/firebase'
 import { Download, Trash } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import StatusPreview from '../statuses-preview/status-user'

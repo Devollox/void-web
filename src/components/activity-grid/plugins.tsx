@@ -1,6 +1,6 @@
 ﻿'use client'
 
-import type { Plugin } from '@service/firebase'
+import type { Plugin } from '@/services/firebase'
 import { Download } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import StatusPreview from '../statuses-preview/status-user'

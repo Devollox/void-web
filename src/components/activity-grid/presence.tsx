@@ -1,6 +1,6 @@
 'use client'
 
-import type { Config } from '@service/firebase'
+import type { Config } from '@/services/firebase'
 import { Download, Trash } from 'lucide-react'
 import { memo, useEffect, useState } from 'react'
 import RpcPreview from '../rpc-preview/rpc-user'

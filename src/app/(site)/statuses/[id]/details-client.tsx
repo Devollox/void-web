@@ -1,8 +1,8 @@
 'use client'
 
 import StatusPreview from '@/components/statuses-preview/status-user'
-import type { Status } from '@/service/firebase'
-import { db } from '@/service/firebase'
+import type { Status } from '@/services/firebase'
+import { db } from '@/services/firebase'
 import { onValue, ref } from 'firebase/database'
 import { useSession } from 'next-auth/react'
 import { useEffect, useMemo, useState } from 'react'

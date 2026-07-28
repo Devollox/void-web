@@ -1,5 +1,5 @@
-import { mapRawToConfig, mapRawToStatus } from '@/service/firebase'
-import { admin } from '@/service/firebase-admin'
+import { mapRawToConfig, mapRawToStatus } from '@/services/firebase'
+import { admin } from '@/services/firebase-admin'
 import { NextResponse } from 'next/server'
 
 const db = admin.database()

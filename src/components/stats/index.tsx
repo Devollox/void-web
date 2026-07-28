@@ -1,6 +1,6 @@
 'use client'
 
-import { type Stats, db, mapRawToStats } from '@/service/firebase'
+import { type Stats, db, mapRawToStats } from '@/services/firebase'
 import CountUp from '@lib/count-up'
 import { onValue, ref } from 'firebase/database'
 import { useEffect, useState } from 'react'

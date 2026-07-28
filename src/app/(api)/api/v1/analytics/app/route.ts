@@ -1,4 +1,4 @@
-import { admin } from '@/service/firebase-admin'
+import { admin } from '@/services/firebase-admin'
 import { NextRequest, NextResponse } from 'next/server'
 
 const db = admin.database()

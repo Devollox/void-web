@@ -1,8 +1,8 @@
 'use client'
 
 import { StatusesGrid } from '@/components/activity-grid/statuses'
-import { db } from '@/service/firebase'
-import type { Status } from '@service/firebase'
+import type { Status } from '@/services/firebase'
+import { db } from '@/services/firebase'
 import { onValue, ref } from 'firebase/database'
 import { Search, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'

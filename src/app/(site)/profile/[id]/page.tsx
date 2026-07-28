@@ -1,4 +1,5 @@
 import { leftNotFound, rightNotFound } from '@/app/not-found'
+import { AuthorConfigsResponse } from '@/services/firebase'
 import { auth } from '@api/auth/[...nextauth]/route'
 import Footer from '@components/footer'
 import Page from '@components/page'
@@ -10,20 +11,6 @@ import { ProfileClient } from './profile-client'
 type Props = {
 	params: Promise<{ id: string }>
 	searchParams: Promise<{ tag?: string }>
-}
-
-type AuthorConfigsResponse = {
-	user: {
-		id?: string
-		name: string | null
-		avatar: string | null
-		tag: string | null
-		provider: string | null
-		createdAt: number | null
-		lastSeen: number | null
-	} | null
-	presenceConfigs: any[]
-	statusConfigs: any[]
 }
 
 async function fetchAuthorConfigsByHandle(

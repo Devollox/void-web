@@ -1,6 +1,6 @@
 'use client'
 
-import { app } from '@/service/firebase'
+import { app } from '@/services/firebase'
 import { getAuth, signInWithCustomToken } from 'firebase/auth'
 import { useSession } from 'next-auth/react'
 import { useEffect } from 'react'

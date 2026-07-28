@@ -1,7 +1,7 @@
 'use client'
 
 import { PresenceGrid } from '@/components/activity-grid/presence'
-import { Config, db } from '@/service/firebase'
+import { Config, db } from '@/services/firebase'
 import { onValue, ref } from 'firebase/database'
 import { Search, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'

@@ -1,6 +1,6 @@
 'use client'
 
-import type { ConfigData } from '@/service/firebase'
+import type { ConfigData } from '@/services/firebase'
 import { useState } from 'react'
 import styles from './config-details.module.scss'
 

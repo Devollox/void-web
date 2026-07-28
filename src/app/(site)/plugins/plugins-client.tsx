@@ -1,7 +1,7 @@
 ﻿'use client'
 
-import type { Plugin } from '@service/firebase'
-import { db } from '@service/firebase'
+import type { Plugin } from '@/services/firebase'
+import { db } from '@/services/firebase'
 import { onValue, ref } from 'firebase/database'
 import { Search, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'

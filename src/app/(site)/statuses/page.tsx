@@ -1,4 +1,4 @@
-import type { Status } from '@service/firebase'
+import type { Status } from '@/services/firebase'
 import type { Metadata } from 'next'
 import { StatusSection } from './statuses-section'
 

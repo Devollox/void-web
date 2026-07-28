@@ -29,9 +29,9 @@
 			"@/*": ["./src/*"],
 			"@components/*": ["./src/components/*"],
 			"@lib/*": ["./src/lib/*"],
-			"@hook/*": ["./src/hook/*"],
+			"@hooks/*": ["./src/hooks/*"],
 			"@data/*": ["./src/data/*"],
-			"@service/*": ["./src/service/*"],
+			"@services/*": ["./src/services/*"],
 			"@styles/*": ["./src/styles/*"],
 			"@public/*": ["./public/*"],
 			"@api/*": ["./src/app/(api)/api/*"]

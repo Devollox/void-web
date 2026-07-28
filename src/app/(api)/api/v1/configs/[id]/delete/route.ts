@@ -1,5 +1,5 @@
-import { admin } from '@/service/firebase-admin'
-import { redis } from '@/service/redis'
+import { admin } from '@/services/firebase-admin'
+import { redis } from '@/services/redis'
 import { NextResponse } from 'next/server'
 import type { ConfigKind } from '../../route'
 

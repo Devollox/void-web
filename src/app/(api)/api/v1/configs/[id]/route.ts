@@ -1,6 +1,6 @@
-import { mapRawToConfig, mapRawToPlugin, mapRawToStatus } from '@/service/firebase'
-import { admin } from '@/service/firebase-admin'
-import { redis } from '@/service/redis'
+import { mapRawToConfig, mapRawToPlugin, mapRawToStatus } from '@/services/firebase'
+import { admin } from '@/services/firebase-admin'
+import { redis } from '@/services/redis'
 import { NextResponse } from 'next/server'
 import { ConfigKind } from '../route'
 

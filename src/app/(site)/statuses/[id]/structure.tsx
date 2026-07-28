@@ -1,6 +1,6 @@
 'use client'
 
-import type { Status } from '@service/firebase'
+import type { Status } from '@/services/firebase'
 import { useState } from 'react'
 import styles from '../../presence/[id]/config-details.module.scss'
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { db, type Config, type Status } from '@/service/firebase'
+import { db, type Config, type Status } from '@/services/firebase'
 import { onValue, ref } from 'firebase/database'
 import type { Session } from 'next-auth'
 import { useEffect, useMemo, useState } from 'react'

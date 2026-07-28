@@ -1,7 +1,7 @@
+import type { Plugin } from '@/services/firebase'
 import Footer from '@components/footer'
 import Page from '@components/page'
 import PageHeader from '@components/page-header'
-import type { Plugin } from '@service/firebase'
 import { PluginsClient } from './plugins-client'
 import styles from './plugins.module.scss'
 

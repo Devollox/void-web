@@ -1,5 +1,5 @@
 import { githubHeaders } from '@/lib/github-headers'
-import type { Plugin } from '@service/firebase'
+import type { Plugin } from '@/services/firebase'
 import type { Metadata } from 'next'
 import { PluginsSection } from './plugins-section'
 
