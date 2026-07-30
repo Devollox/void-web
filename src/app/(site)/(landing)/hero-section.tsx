@@ -12,7 +12,7 @@ export function NotificationBanner() {
 			<div className={styles.notification_dot} />
 			<div className={styles.notification_content}>
 				<span className={styles.notification_title}>
-					Total downloads exceeded <strong>500</strong>!
+					Total downloads exceeded <strong>600</strong>!
 				</span>
 				<span className={styles.notification_subtitle}>
 					Thank you for your support! We appreciate every one of you. Wishing you an amazing
