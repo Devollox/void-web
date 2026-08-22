@@ -9,7 +9,7 @@ export function middleware(req: NextRequest) {
 
 	const isDev = hostname.includes('localhost')
 
-	const allowedOrigins = ['https://voidpresence.site', 'http://localhost:3000']
+	const allowedOrigins = ['https://voidpresence.com', 'http://localhost:3000']
 
 	const isAllowedOrigin = origin ? allowedOrigins.includes(origin) : true
 	const isApiSubdomain = hostname.startsWith('api.')
@@ -57,7 +57,7 @@ export function middleware(req: NextRequest) {
 		const cleanPath = url.pathname.replace(/^\/api/, '')
 		const searchParams = url.search
 
-		const targetHost = isDev ? 'api.localhost:3000' : 'api.voidpresence.site'
+		const targetHost = isDev ? 'api.localhost:3000' : 'api.voidpresence.com'
 		const protocol = isDev ? 'http' : 'https'
 
 		const apiSubdomainUrl = `${protocol}://${targetHost}${cleanPath}${searchParams}`

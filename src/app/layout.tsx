@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 	subsets: ['latin'],
 })
 
-const siteUrl = 'https://voidpresence.site'
+const siteUrl = 'https://voidpresence.com'
 
 export const metadata: Metadata = {
 	metadataBase: new URL(siteUrl),

@@ -172,8 +172,8 @@ function ApiCardItem({ endpoint }: { endpoint: ApiEndpoint }) {
 	const [copied, setCopied] = useState(false)
 	const dotClass = getDotClass(endpoint.method)
 
-	const API_ORIGIN_V0 = 'https://voidpresence.site'
-	const API_ORIGIN_VX = 'https://api.voidpresence.site'
+	const API_ORIGIN_V0 = 'https://voidpresence.com'
+	const API_ORIGIN_VX = 'https://api.voidpresence.com'
 
 	function getApiOrigin(path: string) {
 		const match = path.match(/^\/v(\d+)\//)

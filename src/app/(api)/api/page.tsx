@@ -16,7 +16,7 @@ export const metadata: Metadata = {
 	},
 }
 
-const API_BASE_V1 = 'https://api.voidpresence.site'
+const API_BASE_V1 = 'https://api.voidpresence.com'
 
 const endpoints: ApiEndpoint[] = [
 	{
@@ -70,7 +70,7 @@ const endpoints: ApiEndpoint[] = [
 				body: 'Release notes for v2.13.13…',
 			},
 		},
-		fetchPayload: `fetch('https://api.voidpresence.site/v2/github/releases', {
+		fetchPayload: `fetch('https://api.voidpresence.com/v2/github/releases', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({ app: 'void-presence', platform: 'windows' }),
@@ -371,7 +371,7 @@ const endpoints: ApiEndpoint[] = [
 				limit: 24,
 			},
 		},
-		fetchPayload: `fetch('https://voidpresence.site/api/v1/configs', {
+		fetchPayload: `fetch('https://voidpresence.com/api/v1/configs', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({ kind: 'presence' }),
@@ -431,7 +431,7 @@ const endpoints: ApiEndpoint[] = [
 				'Content-Disposition': 'attachment; filename="Config title.json"',
 			},
 		},
-		fetchPayload: `fetch('https://voidpresence.site/api/v1/configs/123456789/download?kind=presence')
+		fetchPayload: `fetch('https://voidpresence.com/api/v1/configs/123456789/download?kind=presence')
   .then(res => res.blob())
   .then(file => console.log(file))`,
 	},
@@ -451,7 +451,7 @@ const endpoints: ApiEndpoint[] = [
 				buttonPairs: [],
 			},
 		},
-		fetchPayload: `fetch('https://voidpresence.site/api/v1/configs/123456789/copy?kind=presence')
+		fetchPayload: `fetch('https://voidpresence.com/api/v1/configs/123456789/copy?kind=presence')
   .then(res => res.json())
   .then(json => console.log(json))`,
 	},
@@ -470,7 +470,7 @@ const endpoints: ApiEndpoint[] = [
 				ok: true,
 			},
 		},
-		fetchPayload: `fetch('https://voidpresence.site/api/v1/configs/123456789/delete?kind=presence', {
+		fetchPayload: `fetch('https://voidpresence.com/api/v1/configs/123456789/delete?kind=presence', {
   method: 'DELETE',
 })
   .then(res => res.json())
@@ -568,7 +568,7 @@ const endpoints: ApiEndpoint[] = [
 			expires: '2026-07-01T21:59:00.000Z',
 			provider: 'discord',
 		},
-		fetchPayload: `fetch('https://voidpresence.site/api/auth/session')
+		fetchPayload: `fetch('https://voidpresence.com/api/auth/session')
   .then(res => res.json())
   .then(session => console.log(session))`,
 	},
@@ -586,7 +586,7 @@ const endpoints: ApiEndpoint[] = [
 			provider: 'discord',
 			url: 'https://discord.com/oauth2/authorize?...',
 		},
-		fetchPayload: `window.location.href = 'https://voidpresence.site/api/auth/signin/discord'`,
+		fetchPayload: `window.location.href = 'https://voidpresence.com/api/auth/signin/discord'`,
 	},
 	{
 		id: 'auth-callback-provider',
@@ -615,7 +615,7 @@ const endpoints: ApiEndpoint[] = [
 				redirectUri: 'https://example.com/callback',
 			},
 		},
-		fetchPayload: `fetch('https://voidpresence.site/api/auth/fuckoffnextauth/steam?state=state-value&code=authorization-code&redirectUri=https://example.com/callback')
+		fetchPayload: `fetch('https://voidpresence.com/api/auth/fuckoffnextauth/steam?state=state-value&code=authorization-code&redirectUri=https://example.com/callback')
   .then(res => res.json())
   .then(result => console.log(result.normalizedParams))`,
 	},
@@ -637,7 +637,7 @@ const endpoints: ApiEndpoint[] = [
 			tag: '1234',
 			provider: 'discord',
 		},
-		fetchPayload: `fetch('https://voidpresence.site/api/auth/users/sync')
+		fetchPayload: `fetch('https://voidpresence.com/api/auth/users/sync')
   .then(res => res.json())
   .then(user => console.log(user))`,
 	},

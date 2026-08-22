@@ -25,7 +25,8 @@ async function fetchAuthorConfigsByHandle(
 	})
 
 	if (!res.ok) return null
-	return (await res.json()) as AuthorConfigsResponse
+
+	return await res.json()
 }
 
 export default async function ProfilePage(props: Props) {

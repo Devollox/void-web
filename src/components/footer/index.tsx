@@ -4,7 +4,7 @@ import styles from './footer.module.scss'
 
 type Link = { label: string; href: string }
 
-const MAIN_SITE_ORIGIN = 'https://voidpresence.site'
+const MAIN_SITE_ORIGIN = 'https://voidpresence.com'
 
 const SOCIAL: Link[] = [
 	{ label: 'Discord', href: 'https://discord.gg/xHJrCNA8y5' },
