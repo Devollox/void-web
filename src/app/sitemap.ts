@@ -1,86 +1,28 @@
-import { MetadataRoute } from 'next'
+import type { MetadataRoute } from 'next'
 
 const siteUrl = 'https://voidpresence.com'
 
+const createRoute = (path: string, priority: number): MetadataRoute.Sitemap[number] => ({
+	url: `${siteUrl}${path}`,
+	changeFrequency: 'monthly',
+	priority,
+})
+
 export default function sitemap(): MetadataRoute.Sitemap {
 	return [
-		{
-			url: siteUrl,
-			lastModified: new Date(),
-			changeFrequency: 'weekly',
-			priority: 1,
-		},
-		{
-			url: `${siteUrl}/download`,
-			lastModified: new Date(),
-			changeFrequency: 'monthly',
-			priority: 0.9,
-		},
-		{
-			url: `${siteUrl}/docs`,
-			lastModified: new Date(),
-			changeFrequency: 'monthly',
-			priority: 0.8,
-		},
-		{
-			url: `${siteUrl}/presence`,
-			lastModified: new Date(),
-			changeFrequency: 'monthly',
-			priority: 0.7,
-		},
-		{
-			url: `${siteUrl}/statuses`,
-			lastModified: new Date(),
-			changeFrequency: 'monthly',
-			priority: 0.7,
-		},
-		{
-			url: `${siteUrl}/plugins`,
-			lastModified: new Date(),
-			changeFrequency: 'monthly',
-			priority: 0.7,
-		},
-		{
-			url: `${siteUrl}/plugins/docs`,
-			lastModified: new Date(),
-			changeFrequency: 'monthly',
-			priority: 0.6,
-		},
-		{
-			url: `${siteUrl}/status`,
-			lastModified: new Date(),
-			changeFrequency: 'monthly',
-			priority: 0.6,
-		},
-		{
-			url: `${siteUrl}/signin`,
-			lastModified: new Date(),
-			changeFrequency: 'monthly',
-			priority: 0.5,
-		},
-		{
-			url: `${siteUrl}/profile`,
-			lastModified: new Date(),
-			changeFrequency: 'monthly',
-			priority: 0.5,
-		},
-		{
-			url: `${siteUrl}/schedule/application`,
-			lastModified: new Date(),
-			changeFrequency: 'monthly',
-			priority: 0.4,
-		},
-		{
-			url: `${siteUrl}/schedule/installer`,
-			lastModified: new Date(),
-			changeFrequency: 'monthly',
-			priority: 0.4,
-		},
-		{
-			url: `${siteUrl}/schedule/updates`,
-			lastModified: new Date(),
-			changeFrequency: 'monthly',
-			priority: 0.4,
-		},
+		createRoute('/', 1),
+		createRoute('/download', 0.9),
+		createRoute('/signin', 0.9),
+		createRoute('/docs', 0.8),
+		createRoute('/plugins/docs', 0.8),
+		createRoute('/presence', 0.7),
+		createRoute('/statuses', 0.7),
+		createRoute('/plugins', 0.7),
+		createRoute('/schedule/application', 0.6),
+		createRoute('/schedule/installer', 0.6),
+		createRoute('/schedule/updates', 0.6),
+		createRoute('/schedule/application/downloads', 0.6),
+		createRoute('/schedule/installer/downloads', 0.6),
+		createRoute('/schedule/updates/downloads', 0.6),
 	]
 }
