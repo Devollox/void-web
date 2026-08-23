@@ -17,6 +17,9 @@ export const metadata: Metadata = {
 			'Read the full Void Presence documentation including features, setup steps, and usage tips.',
 		url: '/docs',
 	},
+	alternates: {
+		canonical: '/docs',
+	},
 }
 
 const config = {

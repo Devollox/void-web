@@ -19,6 +19,9 @@ export const metadata: Metadata = {
 		description: 'Discover ready-to-use Void Presence profiles and import them into your setup.',
 		url: '/presence',
 	},
+	alternates: {
+		canonical: '/presence',
+	},
 }
 
 type PresenceConfig = Config

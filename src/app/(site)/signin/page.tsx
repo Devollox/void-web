@@ -11,6 +11,9 @@ export const metadata: Metadata = {
 			'Connect your account to manage Discord Rich Presence configs, profiles and status cycles.',
 		url: '/signin',
 	},
+	alternates: {
+		canonical: '/signin',
+	},
 }
 
 export default function Page() {

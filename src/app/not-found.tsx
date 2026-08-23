@@ -17,6 +17,9 @@ export const metadata: Metadata = {
 		description: 'The page you requested does not exist or is no longer available.',
 		url: '/not-found',
 	},
+	alternates: {
+		canonical: '/not-found',
+	},
 }
 
 export const leftNotFound = ({ text, url }: { text: string; url: string }) => (

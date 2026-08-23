@@ -16,6 +16,9 @@ export const metadata: Metadata = {
 			'View download counts for all Void Presence installer releases and compare their adoption.',
 		url: '/schedule/installer/downloads',
 	},
+	alternates: {
+		canonical: '/schedule/installer/downloads',
+	},
 }
 
 export default function DownloadsPage() {

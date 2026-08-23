@@ -1,21 +1,9 @@
 import { getElectronMetadata } from '@/lib/parse-version'
 import { getReleases } from '@/lib/releases-application'
 import { InfoBox } from '@components/status-info/info-box'
-import type { Metadata } from 'next'
 import DownloadButtons from '../../download/download-buttons'
 import styles from '../release-schedule.module.scss'
 import { ReleasesSectionBase } from '../releases-section-base'
-
-export const metadata: Metadata = {
-	title: 'Release Application',
-	description:
-		'Release Application and history for Void Presence with version timeline and GitHub release data.',
-	openGraph: {
-		title: 'Void Presence - Application Release',
-		description: 'Track Void Presence releases, prereleases, and changelog history in one place.',
-		url: '/schedule/application',
-	},
-}
 
 export async function ReleasesSection() {
 	const { releases, githubLatestRelease, error } = await getReleases()

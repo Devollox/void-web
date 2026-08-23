@@ -18,6 +18,9 @@ export const metadata: Metadata = {
 		description: 'Discover ready-to-use Void Presence statuses and import them into your setup.',
 		url: '/statuses',
 	},
+	alternates: {
+		canonical: '/statuses',
+	},
 }
 
 type FetchResponse = {

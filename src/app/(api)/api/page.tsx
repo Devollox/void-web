@@ -14,6 +14,9 @@ export const metadata: Metadata = {
 			'Browse the HTTP API endpoints for Void Presence, including presence configs, status cycles and session info.',
 		url: '/api',
 	},
+	alternates: {
+		canonical: '/api',
+	},
 }
 
 const API_BASE_V1 = 'https://api.voidpresence.com'

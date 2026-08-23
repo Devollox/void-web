@@ -2,21 +2,9 @@ import { extractPackageMeta, getInstallerPackageJsonByTag } from '@/lib/package-
 import { getWailsMetadata } from '@/lib/parse-version'
 import { getInstallerReleases } from '@/lib/releases-installer'
 import { InfoBox } from '@components/status-info/info-box'
-import type { Metadata } from 'next'
 import DownloadButtons from '../../download/download-buttons'
 import styles from '../release-schedule.module.scss'
 import { ReleasesSectionBase } from '../releases-section-base'
-
-export const metadata: Metadata = {
-	title: 'Release Installer',
-	description:
-		'Release history for the Void Presence installer with version timeline and GitHub release data.',
-	openGraph: {
-		title: 'Void Presence - Installer Releases',
-		description: 'Track Void Presence installer releases and changelog history in one place.',
-		url: '/schedule/installer',
-	},
-}
 
 export async function ReleasesSection() {
 	const { releases, githubLatestRelease, error } = await getInstallerReleases()

@@ -16,6 +16,9 @@ export const metadata: Metadata = {
 			'Manage your Discord Rich Presence configs, view your Author ID, and access your saved profiles.',
 		url: '/profile',
 	},
+	alternates: {
+		canonical: '/profile',
+	},
 }
 
 type AuthorConfigsResponse = {

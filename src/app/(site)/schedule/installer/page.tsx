@@ -15,6 +15,9 @@ export const metadata: Metadata = {
 		description: 'Track Void Presence installer releases and changelog history in one place.',
 		url: '/schedule/installer',
 	},
+	alternates: {
+		canonical: '/schedule/installer',
+	},
 }
 
 export default function InstallerPage() {

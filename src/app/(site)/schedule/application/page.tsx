@@ -15,6 +15,9 @@ export const metadata: Metadata = {
 		description: 'Track Void Presence releases, prereleases, and changelog history in one place.',
 		url: '/schedule/application',
 	},
+	alternates: {
+		canonical: '/schedule/application',
+	},
 }
 
 export default function ApplicationPage() {

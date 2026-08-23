@@ -15,6 +15,9 @@ export const metadata: Metadata = {
 			'Full guide on writing external plugins for Void Presence: API, controls, workers, native modules.',
 		url: '/plugins/docs',
 	},
+	alternates: {
+		canonical: '/plugins/docs',
+	},
 }
 
 export default function PluginDocsPage() {

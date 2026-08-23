@@ -15,6 +15,9 @@ export const metadata: Metadata = {
 		description: 'Track Void Presence updates and changelog history in one place.',
 		url: '/schedule/updates',
 	},
+	alternates: {
+		canonical: '/schedule/updates',
+	},
 }
 
 export default function UpdatesPage() {

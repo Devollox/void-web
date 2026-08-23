@@ -11,6 +11,9 @@ export const metadata: Metadata = {
 		description: 'Discover community plugins for Void Presence and install them in one click.',
 		url: '/plugins',
 	},
+	alternates: {
+		canonical: '/plugins',
+	},
 }
 
 const MANIFEST_URL =

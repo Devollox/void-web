@@ -19,6 +19,9 @@ export const metadata: Metadata = {
 			"Check current Void Presence status and learn about Discord's Rich Presence buttons visibility issue.",
 		url: '/status',
 	},
+	alternates: {
+		canonical: '/status',
+	},
 }
 
 export default function StatusPage() {

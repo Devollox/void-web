@@ -16,6 +16,9 @@ export const metadata: Metadata = {
 			'View download counts for all Void Presence update releases and compare their adoption.',
 		url: '/schedule/updates/downloads',
 	},
+	alternates: {
+		canonical: '/schedule/updates/downloads',
+	},
 }
 
 export default function PageComponent() {

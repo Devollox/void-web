@@ -25,6 +25,9 @@ export const metadata: Metadata = {
 			'Get the latest Void Presence build and customize your Discord Rich Presence with profiles, buttons, and cycles.',
 		url: '/download',
 	},
+	alternates: {
+		canonical: '/download',
+	},
 }
 
 async function DownloadContent() {
