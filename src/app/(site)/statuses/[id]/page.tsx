@@ -18,9 +18,12 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
 		title: 'Status details',
 		description: 'Inspect and use a community Void Presence Discord custom status preset.',
 		openGraph: {
-			title: 'Status details',
+			title: 'Void Presence - Status details',
 			description: 'Inspect and use a community Void Presence Discord custom status preset.',
 			url: `/status/${id}`,
+		},
+		alternates: {
+			canonical: '/status/${id}',
 		},
 	}
 }

@@ -6,7 +6,7 @@ export const metadata: Metadata = {
 	description:
 		'Sign in to Void Presence to manage profiles, status cycles and Discord Rich Presence.',
 	openGraph: {
-		title: 'Sign in to Void Presence',
+		title: 'Void Presence - Sign in',
 		description:
 			'Connect your account to manage Discord Rich Presence configs, profiles and status cycles.',
 		url: '/signin',
