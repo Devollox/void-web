@@ -1,6 +1,7 @@
 import { auth } from '@api/auth/[...nextauth]/route'
 import '@styles/globals.scss'
 import { Analytics } from '@vercel/analytics/next'
+import { SpeedInsights } from '@vercel/speed-insights/next'
 import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import { NextAuthProvider } from './(site)/providers/session-provider'
@@ -184,7 +185,9 @@ export const metadata: Metadata = {
 	},
 }
 
-export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+type Props = Readonly<{ children: React.ReactNode }>
+
+export default async function RootLayout({ children }: Props) {
 	const session = await auth()
 
 	return (
@@ -192,6 +195,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
 			<body className={`${geistSans.variable} ${geistMono.variable}`}>
 				<NextAuthProvider session={session}>{children}</NextAuthProvider>
 				<Analytics />
+				<SpeedInsights />
 			</body>
 		</html>
 	)
