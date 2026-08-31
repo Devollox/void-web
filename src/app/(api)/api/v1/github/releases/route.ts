@@ -1,28 +1,28 @@
 import { githubHeaders } from '@/lib/github-headers'
 import { NextResponse } from 'next/server'
 
-type LatestReleaseInfo = {
+export type LatestReleaseInfo = {
 	tag: string
 	assetName: string
 	downloadUrl: string
 	body: string
 }
 
-type GithubAsset = {
+export type GithubAsset = {
 	name: string
 	browser_download_url: string
 }
 
-type GithubRelease = {
+export type GithubRelease = {
 	tag_name?: string
 	name: string
 	body?: string
 	assets: GithubAsset[]
 }
 
-type GithubApp = 'void-presence' | 'void-installer' | 'void-updates'
+export type GithubApp = 'void-presence' | 'void-installer' | 'void-updates'
 
-interface GithubReleasePayload {
+export interface GithubReleasePayload {
 	app: GithubApp
 }
 

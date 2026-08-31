@@ -244,7 +244,7 @@ function ApiCardItem({ endpoint }: { endpoint: ApiEndpoint }) {
 					}
 				>
 					<div className={apiStyles.api_card_meta}>
-						<div className={apiStyles.api_row} style={{ justifyContent: 'space-between' }}>
+						<div className={apiStyles.api_row} style={{ justifyContent: 'v-between' }}>
 							<div style={{ minWidth: 0 }}>
 								<div
 									onClick={handleCopyUrl}
@@ -335,6 +335,7 @@ function renderGroupedEndpoints(list: ApiEndpoint[]) {
 }
 
 export function ApiSectionBase({ left, right, endpoints, title }: ApiSectionBaseProps) {
+	const v3Endpoints = endpoints.filter(ep => ep.path.startsWith('/v3/'))
 	const v2Endpoints = endpoints.filter(ep => ep.path.startsWith('/v2/'))
 	const v1Endpoints = endpoints.filter(ep => ep.path.startsWith('/v1/'))
 	const legacyEndpoints = endpoints.filter(ep => !ep.path.match(/^\/v\d+\//))
@@ -347,6 +348,18 @@ export function ApiSectionBase({ left, right, endpoints, title }: ApiSectionBase
 					{right}
 					<div className={layoutStyles.preview_card_wrap}>
 						<div className={layoutStyles.preview_card}>
+							{v3Endpoints.length > 0 && (
+								<>
+									<div className={layoutStyles.preview_header}>
+										<h3 className={releaseStyles.preview_title}>{title}</h3>
+										<div className={layoutStyles.preview_badge}>
+											<span className={layoutStyles.preview_badge_text}>v3</span>
+										</div>
+									</div>
+									{renderGroupedEndpoints(v3Endpoints)}
+								</>
+							)}
+
 							{v2Endpoints.length > 0 && (
 								<>
 									<div className={layoutStyles.preview_header}>

@@ -23,6 +23,35 @@ const API_BASE_V1 = 'https://api.voidpresence.com'
 
 const endpoints: ApiEndpoint[] = [
 	{
+		id: 'github-releases-v3',
+		method: 'POST',
+		path: '/v3/github/releases',
+		title: 'Get latest GitHub release',
+		description:
+			'Returns the latest GitHub release info for the selected Void Presence app (desktop app, installer, or auto-updater). Supports platform-aware asset selection (windows, macos, linux).',
+		group: 'github',
+		hasExample: true,
+		samplePayload: {
+			requestBody: {
+				platform: 'windows',
+			},
+			responseBody: {
+				tag: 'v4.4.3',
+				assetName: 'Void.Presence.Updates.4.4.3.exe',
+				downloadUrl:
+					'https://github.com/Devollox/void-updates/releases/download/v1.1.0/Void.Presence.Updates.4.4.3.exe',
+				body: 'Release notes for v4.4.3…',
+			},
+		},
+		fetchPayload: `fetch('https://api.voidpresence.com/v3/github/releases', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ app: 'void-presence', platform: 'windows' }),
+})
+  .then(res => res.json())
+  .then(info => console.log(info))`,
+	},
+	{
 		id: 'github-releases',
 		method: 'POST',
 		path: '/v1/github/releases',

@@ -1,35 +1,20 @@
 import { githubHeaders } from '@/lib/github-headers'
 import { NextResponse } from 'next/server'
+import {
+	GithubApp,
+	GithubAsset,
+	GithubRelease,
+	LatestReleaseInfo,
+} from '../../../v1/github/releases/route'
 
-type LatestReleaseInfo = {
-	tag: string
-	assetName: string
-	downloadUrl: string
-	body: string
-}
+export type OsPlatform = 'windows' | 'macos' | 'linux'
 
-type GithubAsset = {
-	name: string
-	browser_download_url: string
-}
-
-type GithubRelease = {
-	tag_name?: string
-	name: string
-	body?: string
-	assets: GithubAsset[]
-}
-
-type GithubApp = 'void-presence' | 'void-installer' | 'void-updates'
-
-type OsPlatform = 'windows' | 'macos' | 'linux'
-
-interface GithubReleasePayload {
+export interface GithubReleasePayload {
 	app: GithubApp
 	platform?: OsPlatform
 }
 
-function selectAsset(assets: GithubAsset[], platform: OsPlatform): GithubAsset | null {
+export function selectAsset(assets: GithubAsset[], platform: OsPlatform): GithubAsset | null {
 	if (!assets.length) return null
 
 	const ext = (name: string) => name.toLowerCase()
