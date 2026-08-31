@@ -48,22 +48,6 @@ export async function POST(req: Request) {
 	try {
 		const body = (await req.json()) as GithubReleasePayload
 
-		if (!body || !body.app) {
-			return NextResponse.json(
-				{ error: 'Invalid payload', message: 'app is required' },
-				{ status: 400 }
-			)
-		}
-
-		switch (body.app) {
-			case 'void-presence':
-			case 'void-installer':
-			case 'void-updates':
-				break
-			default:
-				return NextResponse.json({ error: 'Unknown app', app: body.app }, { status: 400 })
-		}
-
 		let platform: OsPlatform = 'windows'
 		if (body.platform === 'macos' || body.platform === 'linux') {
 			platform = body.platform
