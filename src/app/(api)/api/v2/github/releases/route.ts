@@ -47,11 +47,8 @@ export function selectAsset(assets: GithubAsset[], platform: OsPlatform): Github
 	}
 }
 
-async function fetchLatestReleaseFromGithub(
-	app: GithubApp,
-	platform: OsPlatform
-): Promise<LatestReleaseInfo> {
-	const url = `https://api.github.com/repos/Devollox/${app}/releases/latest`
+async function fetchLatestReleaseFromGithub(platform: OsPlatform): Promise<LatestReleaseInfo> {
+	const url = `https://api.github.com/repos/Devollox/void-presence/releases/latest`
 
 	const res = await fetch(url, {
 		method: 'GET',
@@ -87,23 +84,11 @@ export async function POST(req: Request) {
 	try {
 		const body = (await req.json()) as GithubReleasePayload
 
-		if (!body || !body.app) {
+		if (!body) {
 			return NextResponse.json(
 				{ error: 'Invalid payload', message: 'app is required' },
 				{ status: 400 }
 			)
-		}
-
-		let app: GithubApp
-
-		switch (body.app) {
-			case 'void-presence':
-			case 'void-installer':
-			case 'void-updates':
-				app = body.app
-				break
-			default:
-				return NextResponse.json({ error: 'Unknown app', app: body.app }, { status: 400 })
 		}
 
 		let platform: OsPlatform = 'windows'
@@ -111,7 +96,7 @@ export async function POST(req: Request) {
 			platform = body.platform
 		}
 
-		const info = await fetchLatestReleaseFromGithub(app, platform)
+		const info = await fetchLatestReleaseFromGithub(platform)
 
 		return NextResponse.json(info, { status: 200 })
 	} catch (err) {
