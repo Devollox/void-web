@@ -40,11 +40,15 @@ function pickAssetForPlatform(
 	}
 
 	if (platform === 'macos') {
-		const dmgAsset = appAssets.find(a => a.name.toLowerCase().endsWith('.dmg'))
+		const dmgAsset =
+			installerAssets.find(a => a.name.toLowerCase().endsWith('.dmg')) ||
+			appAssets.find(a => a.name.toLowerCase().endsWith('.dmg'))
 		return dmgAsset?.browser_download_url ?? null
 	}
 
-	const debAsset = appAssets.find(a => a.name.toLowerCase().endsWith('.deb'))
+	const debAsset =
+		installerAssets.find(a => a.name.toLowerCase().endsWith('.deb')) ||
+		appAssets.find(a => a.name.toLowerCase().endsWith('.deb'))
 	return debAsset?.browser_download_url ?? null
 }
 
