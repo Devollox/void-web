@@ -199,8 +199,8 @@ export function StatusDetailsClient({ statusId, initialPreviewTick }: Props) {
 								</div>
 							</div>
 						</div>
-						<div style={{ height: '160px' }} className={styles.addon_details_middle_column}>
-							<div style={{ height: '160px' }} className={styles.skel_rpc} />
+						<div style={{ height: '170px' }} className={styles.addon_details_middle_column}>
+							<div style={{ height: '170px' }} className={styles.skel_rpc} />
 						</div>
 						<div className={styles.addon_details_middle_column}>
 							<div className={styles.skel_actions_panel}>
