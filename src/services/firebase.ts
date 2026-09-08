@@ -16,7 +16,7 @@ export const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfi
 export const db = getDatabase(app, firebaseConfig.databaseURL)
 
 export interface ConfigData {
-	cycles: Array<{ details: string; state: string }>
+	cycles: Array<{ details: string; state: string; text?: string }>
 	imageCycles: Array<{
 		largeImage: string
 		largeText?: string
