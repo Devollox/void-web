@@ -103,9 +103,7 @@ export function PluginsClient({ initialPlugins }: Props) {
 					)}
 				</form>
 				<div className={styles.stats_summary}>
-					<span>
-						{filtered.length} plugin{filtered.length !== 1 ? 's' : ''}
-					</span>
+					<span>{filtered.length} plugins found</span>
 				</div>
 			</div>
 			<div className={styles.themes_right_side}>
