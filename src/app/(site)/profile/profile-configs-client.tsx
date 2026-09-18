@@ -15,7 +15,7 @@ type Props = {
 	loading?: boolean
 }
 
-export function filterConfigs<T extends BasicConfig>(configs: T[], searchTerm: string) {
+export function filterConfigs<T extends BasicConfig>(configs: T[], searchTerm: string): T[] {
 	const term = searchTerm.toLowerCase()
 	if (!term) return configs
 	return configs.filter(
