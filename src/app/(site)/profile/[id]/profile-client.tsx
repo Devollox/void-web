@@ -6,6 +6,7 @@ import { AuthorConfigsResponse, db, type Config, type Status } from '@/services/
 import { onValue, ref } from 'firebase/database'
 import { Search, X } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { filterConfigs } from '../profile-configs-client'
 import styles from './profile.module.scss'
 
 type Props = {
@@ -13,17 +14,6 @@ type Props = {
 	statusConfigs: Status[]
 	profileTag: string
 	username: string
-}
-
-function filterConfigs(configs: Config[], searchTerm: string) {
-	const term = searchTerm.toLowerCase()
-	if (!term) return configs
-	return configs.filter(
-		config =>
-			config.title.toLowerCase().includes(term) ||
-			config.author.toLowerCase().includes(term) ||
-			config.description.toLowerCase().includes(term)
-	)
 }
 
 function sortConfigs(configs: Config[]) {

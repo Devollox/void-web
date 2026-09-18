@@ -5,6 +5,7 @@ import { Config, db } from '@/services/firebase'
 import { onValue, ref } from 'firebase/database'
 import { Search, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { filterConfigs } from '../profile/profile-configs-client'
 import styles from './presence.module.scss'
 
 export type Props = {
@@ -12,17 +13,6 @@ export type Props = {
 	initialSearchTerm: string
 	initialTotal: number
 	initialLimit: number
-}
-
-export function filterConfigs(configs: Config[], searchTerm: string) {
-	const term = searchTerm.toLowerCase()
-	if (!term) return configs
-	return configs.filter(
-		config =>
-			config.title.toLowerCase().includes(term) ||
-			config.author.toLowerCase().includes(term) ||
-			config.description.toLowerCase().includes(term)
-	)
 }
 
 export function sortConfigs(configs: Config[]) {

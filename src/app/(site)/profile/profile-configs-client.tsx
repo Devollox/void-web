@@ -2,7 +2,7 @@
 
 import { PresenceGrid } from '@/components/activity-grid/presence'
 import { StatusesGrid } from '@/components/activity-grid/statuses'
-import type { Config, Status } from '@/services/firebase'
+import type { BasicConfig, Config, Status } from '@/services/firebase'
 import { Search, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import styles from './profile-configs.module.scss'
@@ -15,7 +15,7 @@ type Props = {
 	loading?: boolean
 }
 
-function filterConfigs(configs: Config[], searchTerm: string) {
+export function filterConfigs<T extends BasicConfig>(configs: T[], searchTerm: string) {
 	const term = searchTerm.toLowerCase()
 	if (!term) return configs
 	return configs.filter(
@@ -23,17 +23,6 @@ function filterConfigs(configs: Config[], searchTerm: string) {
 			config.title.toLowerCase().includes(term) ||
 			config.author.toLowerCase().includes(term) ||
 			config.description.toLowerCase().includes(term)
-	)
-}
-
-function filterStatuses(statuses: Status[], searchTerm: string) {
-	const term = searchTerm.toLowerCase()
-	if (!term) return statuses
-	return statuses.filter(
-		status =>
-			status.title.toLowerCase().includes(term) ||
-			status.author.toLowerCase().includes(term) ||
-			status.description.toLowerCase().includes(term)
 	)
 }
 
@@ -54,7 +43,7 @@ export function ProfileConfigsClient({
 	)
 
 	const filteredStatuses = useMemo(
-		() => filterStatuses(liveStatuses, searchTerm),
+		() => filterConfigs(liveStatuses, searchTerm),
 		[liveStatuses, searchTerm]
 	)
 
