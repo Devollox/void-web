@@ -12,7 +12,18 @@ export function middleware(req: NextRequest) {
 	const allowedOrigins = ['https://voidpresence.com', 'http://localhost:3000']
 
 	const isAllowedOrigin = origin ? allowedOrigins.includes(origin) : true
+
 	const isApiSubdomain = hostname.startsWith('api.')
+	const isWebhookSubdomain = hostname.startsWith('webhook.')
+	const isWebhookPath = url.pathname === '/webhook'
+
+	if (!isWebhookSubdomain && isWebhookPath) {
+		const webhookUrl = isDev
+			? new URL('http://webhook.localhost:3000/webhook')
+			: new URL('https://webhook.voidpresence.com/webhook')
+
+		return NextResponse.redirect(webhookUrl, 307)
+	}
 
 	if (isApiSubdomain) {
 		if (origin && !isAllowedOrigin) {
@@ -21,6 +32,7 @@ export function middleware(req: NextRequest) {
 
 		if (method === 'OPTIONS') {
 			const response = new NextResponse(null, { status: 204 })
+
 			if (origin) {
 				response.headers.set('Access-Control-Allow-Origin', origin)
 				response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
@@ -30,12 +42,14 @@ export function middleware(req: NextRequest) {
 				)
 				response.headers.set('Access-Control-Allow-Credentials', 'true')
 			}
+
 			return response
 		}
 
 		const path = url.pathname
 
 		url.pathname = `/api${path}`
+
 		const response = NextResponse.rewrite(url)
 
 		if (origin) {
@@ -47,6 +61,7 @@ export function middleware(req: NextRequest) {
 			)
 			response.headers.set('Access-Control-Allow-Credentials', 'true')
 		}
+
 		return response
 	}
 
@@ -59,7 +74,6 @@ export function middleware(req: NextRequest) {
 
 		const targetHost = isDev ? 'api.localhost:3000' : 'api.voidpresence.com'
 		const protocol = isDev ? 'http' : 'https'
-
 		const apiSubdomainUrl = `${protocol}://${targetHost}${cleanPath}${searchParams}`
 		const response = NextResponse.redirect(new URL(apiSubdomainUrl, req.url))
 
@@ -67,6 +81,7 @@ export function middleware(req: NextRequest) {
 			response.headers.set('Access-Control-Allow-Origin', origin)
 			response.headers.set('Access-Control-Allow-Credentials', 'true')
 		}
+
 		return response
 	}
 
