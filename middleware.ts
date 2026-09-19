@@ -19,8 +19,8 @@ export function middleware(req: NextRequest) {
 
 	if (!isWebhookSubdomain && isWebhookPath) {
 		const webhookUrl = isDev
-			? new URL('http://webhook.localhost:3000/webhook')
-			: new URL('https://webhook.voidpresence.com/webhook')
+			? new URL('https://localhost:3000/webhook')
+			: new URL('https://webhook.voidpresence.com')
 
 		return NextResponse.redirect(webhookUrl, 307)
 	}
