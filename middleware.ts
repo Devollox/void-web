@@ -14,13 +14,13 @@ export function middleware(req: NextRequest) {
 	const isAllowedOrigin = origin ? allowedOrigins.includes(origin) : true
 
 	const isApiSubdomain = hostname.startsWith('api.')
-	const isWebhookSubdomain = hostname.startsWith('webhook.')
-	const isWebhookPath = url.pathname === '/webhook'
+	const isWebhookSubdomain = hostname.startsWith('webhooks.')
+	const isWebhookPath = url.pathname === '/webhooks'
 
 	if (!isWebhookSubdomain && isWebhookPath) {
 		const webhookUrl = isDev
-			? new URL('https://localhost:3000/webhook')
-			: new URL('https://webhook.voidpresence.com')
+			? new URL('https://localhost:3000/webhooks')
+			: new URL('https://webhooks.voidpresence.com')
 
 		return NextResponse.redirect(webhookUrl, 307)
 	}
