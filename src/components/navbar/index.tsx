@@ -99,7 +99,7 @@ export default function Navbar({ isApiHost }: { isApiHost?: boolean }) {
 					<Link
 						className={`${styles.nav_link} ${styles.nav_link_blue}`}
 						target='_blank'
-						href='https://discord.gg/xHJrCNA8y5'
+						href='https://discord.gg/9FEkxGPPmu'
 						rel='noreferrer'
 					>
 						Discord

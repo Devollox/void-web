@@ -7,7 +7,7 @@ type Link = { label: string; href: string }
 const MAIN_SITE_ORIGIN = 'https://voidpresence.com'
 
 const SOCIAL: Link[] = [
-	{ label: 'Discord', href: 'https://discord.gg/xHJrCNA8y5' },
+	{ label: 'Discord', href: 'https://discord.gg/9FEkxGPPmu' },
 	{ label: 'GitHub', href: 'https://github.com/Devollox/void-presence' },
 ]
 
