@@ -174,11 +174,19 @@ export const metadata: Metadata = {
 		siteName: 'Void Presence',
 		description:
 			'Manage advanced Discord Rich Presence with profiles, buttons, status cycles, and custom images.',
+		images: [
+			{
+				url: '/preview.png',
+				width: 1200,
+				height: 630,
+				alt: 'Devollox',
+			},
+		],
 	},
 	twitter: {
 		card: 'summary_large_image',
-		site: '@devollox',
-		creator: '@devollox',
+		site: siteUrl,
+		creator: '@devollox_',
 		title: 'Void Presence – Discord Rich Presence Manager',
 		description:
 			'Advanced Discord Rich Presence manager with customizable profiles and status cycles.',
