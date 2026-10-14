@@ -20,7 +20,7 @@ const RESOURCES: Link[] = [
 	{ label: 'Docs', href: '/docs' },
 	{ label: 'Status', href: '/status' },
 	{ label: 'API', href: '/api' },
-	{ label: 'WebHooks', href: '/webhooks' },
+	{ label: 'Webhooks', href: '/webhooks' },
 ]
 
 const META: Link[] = [
