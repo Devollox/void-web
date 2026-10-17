@@ -28,6 +28,12 @@ export function middleware(req: NextRequest) {
 
 	if (isStatusSubdomain) {
 		const path = url.pathname
+		if (path.startsWith('/api/')) {
+			const cleanPath = path.replace(/^\/api/, '')
+			const targetHost = isDev ? 'api.localhost:3000' : 'api.voidpresence.com'
+			const protocol = isDev ? 'http' : 'https'
+			return NextResponse.rewrite(new URL(`${protocol}://${targetHost}${cleanPath}${url.search}`))
+		}
 		url.pathname = `/status${path === '/' ? '' : path}`
 		return NextResponse.rewrite(url)
 	}
