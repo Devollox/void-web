@@ -20,6 +20,7 @@ export type ApiGroupType =
 	| 'github'
 	| 'users'
 	| 'analytics'
+	| 'status'
 
 export interface ApiEndpoint {
 	id: string
@@ -310,6 +311,7 @@ function renderGroupedEndpoints(list: ApiEndpoint[]) {
 		github: [],
 		users: [],
 		analytics: [],
+		status: [],
 	}
 
 	for (const ep of list) {

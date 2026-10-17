@@ -673,6 +673,57 @@ const endpoints: ApiEndpoint[] = [
   .then(res => res.json())
   .then(user => console.log(user))`,
 	},
+	{
+		id: 'uptime-get',
+		method: 'GET',
+		path: '/v1/uptime',
+		title: 'Get service uptime history',
+		description:
+			'Returns 90-day uptime history for all Void Presence services (webhook and Discord bot). Each day includes uptime percentage and check counts.',
+		group: 'status',
+		hasExample: true,
+		samplePayload: {
+			responseBody: {
+				webhook: {
+					days: [{ date: '2026-10-17', uptime: 100, total: 288, ok: 288 }],
+					uptimeLast30: 100,
+					current: true,
+				},
+				bot: {
+					days: [{ date: '2026-10-17', uptime: 100, total: 288, ok: 288 }],
+					uptimeLast30: 100,
+					current: true,
+				},
+			},
+		},
+		fetchPayload: `fetch('https://voidpresence.com/api/v1/uptime')
+  .then(res => res.json())
+  .then(data => console.log(data))`,
+	},
+	{
+		id: 'cron-health-check',
+		method: 'GET',
+		path: '/v1/cron/health-check',
+		title: 'Health check cron',
+		description:
+			'Internal cron endpoint called every 5 minutes by Vercel. Pings webhook /health and checks Discord bot presence. Requires Bearer token authorization.',
+		group: 'status',
+		authRequired: true,
+		hasExample: true,
+		samplePayload: {
+			responseBody: {
+				ok: true,
+				webhook: true,
+				bot: true,
+				timestamp: '2026-10-17T18:00:00.000Z',
+			},
+		},
+		fetchPayload: `fetch('https://voidpresence.com/api/v1/cron/health-check', {
+  headers: { Authorization: 'Bearer YOUR_CRON_SECRET' },
+})
+  .then(res => res.json())
+  .then(result => console.log(result))`,
+	},
 ]
 
 export default function ApiDocsPage() {

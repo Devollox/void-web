@@ -4,9 +4,8 @@ import PageHeader from '@components/page-header'
 import { PanelLayout } from '@components/panel-layout'
 import layoutStyles from '@components/panel-layout/layout-panels.module.scss'
 import { InfoBox } from '@components/status-info/info-box'
-import config from '@data/config.json'
+import { UptimeChart } from '@components/uptime/uptime-chart'
 import type { Metadata } from 'next'
-import RpcPreviewClient from '../download/rpc-preview-client'
 import styles from './status.module.scss'
 
 export const metadata: Metadata = {
@@ -59,19 +58,9 @@ export default function StatusPage() {
 			<div className={layoutStyles.preview_card_wrap}>
 				<div className={layoutStyles.preview_card}>
 					<div className={layoutStyles.preview_header}>
-						<h3 className={layoutStyles.preview_title}>Live presence preview</h3>
+						<h3 className={layoutStyles.preview_title}>Service status</h3>
 					</div>
-
-					<div className={styles.rpc_card_preview}>
-						<RpcPreviewClient config={config} />
-					</div>
-
-					<div className={styles.preview_footer}>
-						<p className={styles.preview_note}>
-							This preview shows how your activity looks to others. Button visibility in your own
-							client may differ because of the current Discord bug.
-						</p>
-					</div>
+					<UptimeChart />
 				</div>
 			</div>
 		</section>

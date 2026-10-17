@@ -1,0 +1,199 @@
+.services {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	width: 100%;
+}
+
+/* Overall banner */
+.overall_banner {
+	border-radius: 12px;
+	padding: 10px 14px;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	font-size: 13px;
+	font-weight: 500;
+}
+
+.overall_operational {
+	background: rgba(34, 197, 94, 0.06);
+	border: 1px solid rgba(34, 197, 94, 0.12);
+	color: #86efac;
+}
+
+.overall_degraded {
+	background: rgba(245, 158, 11, 0.06);
+	border: 1px solid rgba(245, 158, 11, 0.12);
+	color: #fcd34d;
+}
+
+.overall_down {
+	background: rgba(239, 68, 68, 0.06);
+	border: 1px solid rgba(239, 68, 68, 0.12);
+	color: #fca5a5;
+}
+
+.overall_loading {
+	background: hsla(0, 0%, 9%, 0.9);
+	border: 1px solid hsla(0, 0%, 100%, 0.04);
+	color: #52525b;
+}
+
+/* Service row */
+.service_card {
+	background: hsla(0, 0%, 9%, 0.9);
+	border: 1px solid hsla(0, 0%, 100%, 0.04);
+	border-radius: 12px;
+	padding: 12px 14px;
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+
+.service_header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+}
+
+.service_meta {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.service_name {
+	font-size: 13px;
+	font-weight: 600;
+	color: #f1f1f1;
+	margin: 0;
+}
+
+.service_uptime {
+	font-size: 11px;
+	color: #52525b;
+	font-weight: 500;
+}
+
+.service_uptime_good {
+	color: #4ade80;
+}
+
+.service_uptime_warn {
+	color: #fbbf24;
+}
+
+.service_uptime_bad {
+	color: #f87171;
+}
+
+/* Status dot */
+.status_dot {
+	width: 7px;
+	height: 7px;
+	border-radius: 50%;
+	flex-shrink: 0;
+}
+
+.status_dot_operational {
+	background: #22c55e;
+	box-shadow: 0 0 5px rgba(34, 197, 94, 0.4);
+}
+
+.status_dot_down {
+	background: #ef4444;
+	box-shadow: 0 0 5px rgba(239, 68, 68, 0.4);
+}
+
+.status_dot_loading {
+	background: #3f3f46;
+}
+
+/* Badge — pill стиль из preview_badge */
+.status_badge {
+	background: hsla(0, 0%, 8%, 0.9);
+	border-radius: 999px;
+	padding: 3px 10px;
+	display: inline-flex;
+	align-items: center;
+	border: 1px solid hsla(0, 0%, 100%, 0.08);
+	font-size: 11px;
+	font-weight: 600;
+	color: #e4e4e7;
+}
+
+.status_badge_operational {
+	background: rgba(34, 197, 94, 0.08);
+	border-color: rgba(34, 197, 94, 0.15);
+	color: #4ade80;
+}
+
+.status_badge_down {
+	background: rgba(239, 68, 68, 0.08);
+	border-color: rgba(239, 68, 68, 0.15);
+	color: #f87171;
+}
+
+.status_badge_loading {
+	background: hsla(0, 0%, 8%, 0.9);
+	border-color: hsla(0, 0%, 100%, 0.08);
+	color: #3f3f46;
+}
+
+/* Bar chart */
+.bar_chart {
+	display: flex;
+	gap: 2px;
+	align-items: stretch;
+	height: 28px;
+}
+
+.bar {
+	flex: 1;
+	border-radius: 2px;
+	cursor: default;
+	transition: opacity 0.15s;
+}
+
+.bar:hover {
+	opacity: 0.7;
+}
+
+.bar_operational {
+	background: #22c55e;
+}
+
+.bar_degraded {
+	background: #f59e0b;
+}
+
+.bar_down {
+	background: #ef4444;
+}
+
+.bar_no_data {
+	background: #27272a;
+}
+
+.bar_loading {
+	background: #27272a;
+	animation: shimmer 1.5s infinite;
+}
+
+.bar_chart_footer {
+	display: flex;
+	justify-content: space-between;
+}
+
+.bar_chart_label {
+	font-size: 11px;
+	color: #3f3f46;
+}
+
+@keyframes shimmer {
+	0% { opacity: 0.3; }
+	50% { opacity: 0.6; }
+	100% { opacity: 0.3; }
+}
