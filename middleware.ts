@@ -98,6 +98,17 @@ export function middleware(req: NextRequest) {
 		return response
 	}
 
+	const isStatusPath = url.pathname === '/status' || url.pathname.startsWith('/status/')
+
+	if (isStatusPath) {
+		const subPath = url.pathname.replace(/^\/status/, '') || '/'
+		const statusUrl = isDev
+			? new URL(`http://localhost:3001${subPath}`)
+			: new URL(`https://status.voidpresence.com${subPath}`)
+
+		return NextResponse.redirect(statusUrl, 307)
+	}
+
 	return NextResponse.next()
 }
 
