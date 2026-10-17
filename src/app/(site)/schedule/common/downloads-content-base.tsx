@@ -90,13 +90,6 @@ export function DownloadsContentBase({
 								linkHref={downloadHref}
 								linkLabel='Open download page'
 							/>
-							<InfoBox
-								variant='secondary'
-								title='Installer docs'
-								lines={['Read the installer docs for platform-specific steps and troubleshooting.']}
-								linkHref={docsHref}
-								linkLabel='Read installer docs'
-							/>
 						</>
 					)}
 
@@ -110,15 +103,6 @@ export function DownloadsContentBase({
 								]}
 								linkHref='/schedule/updates'
 								linkLabel='Open updates schedule'
-							/>
-							<InfoBox
-								variant='secondary'
-								title='Need update details?'
-								lines={[
-									'Use the updates downloads analytics page to compare adoption and download counts across releases.',
-								]}
-								linkHref='/schedule/updates/downloads'
-								linkLabel='View updates analytics'
 							/>
 						</>
 					)}
