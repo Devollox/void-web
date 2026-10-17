@@ -15,6 +15,7 @@ export function middleware(req: NextRequest) {
 
 	const isApiSubdomain = hostname.startsWith('api.')
 	const isWebhookSubdomain = hostname.startsWith('webhooks.')
+	const isStatusSubdomain = hostname.startsWith('status.')
 	const isWebhookPath = url.pathname === '/webhooks'
 
 	if (!isWebhookSubdomain && isWebhookPath) {
@@ -23,6 +24,12 @@ export function middleware(req: NextRequest) {
 			: new URL('https://webhooks.voidpresence.com')
 
 		return NextResponse.redirect(webhookUrl, 307)
+	}
+
+	if (isStatusSubdomain) {
+		const path = url.pathname
+		url.pathname = `/status${path === '/' ? '' : path}`
+		return NextResponse.rewrite(url)
 	}
 
 	if (isApiSubdomain) {
@@ -83,17 +90,6 @@ export function middleware(req: NextRequest) {
 		}
 
 		return response
-	}
-
-	const isStatusPath = url.pathname === '/status' || url.pathname.startsWith('/status/')
-
-	if (isStatusPath) {
-		const subPath = url.pathname.replace(/^\/status/, '') || '/'
-		const statusUrl = isDev
-			? new URL(`http://localhost:3001${subPath}`)
-			: new URL(`https://status.voidpresence.com${subPath}`)
-
-		return NextResponse.redirect(statusUrl, 307)
 	}
 
 	return NextResponse.next()
