@@ -67,7 +67,7 @@ export default function StatusPage() {
 	)
 
 	return (
-		<Page>
+		<Page isApiHost={true}>
 			<PageHeader
 				title='Status'
 				subtitle='Void Presence is working normally; Discord may hide your own buttons, but others still see them.'
