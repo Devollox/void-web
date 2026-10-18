@@ -92,7 +92,7 @@ export default function StatusPage() {
 	return (
 		<Page isApiHost={true}>
 			<PageHeader
-				title='Status'
+				title='Void Presence Status'
 				subtitle='Void Presence is working normally; Discord may hide your own buttons, but others still see them.'
 			/>
 			<PanelLayout left={left} right={right} className={styles.status_panel} />
