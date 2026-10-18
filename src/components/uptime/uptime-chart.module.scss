@@ -5,7 +5,6 @@
 	width: 100%;
 }
 
-/* Overall banner */
 .overall_banner {
 	border-radius: 12px;
 	padding: 10px 14px;
@@ -40,7 +39,6 @@
 	color: #52525b;
 }
 
-/* Service row */
 .service_card {
 	background: hsla(0, 0%, 9%, 0.9);
 	border: 1px solid hsla(0, 0%, 100%, 0.04);
@@ -89,7 +87,6 @@
 	color: #f87171;
 }
 
-/* Status dot */
 .status_dot {
 	width: 7px;
 	height: 7px;
@@ -111,7 +108,6 @@
 	background: #3f3f46;
 }
 
-/* Badge — pill стиль из preview_badge */
 .status_badge {
 	background: hsla(0, 0%, 8%, 0.9);
 	border-radius: 999px;
@@ -142,7 +138,6 @@
 	color: #3f3f46;
 }
 
-/* Bar chart */
 .bar_chart {
 	display: flex;
 	gap: 2px;
@@ -193,7 +188,13 @@
 }
 
 @keyframes shimmer {
-	0% { opacity: 0.3; }
-	50% { opacity: 0.6; }
-	100% { opacity: 0.3; }
+	0% {
+		opacity: 0.3;
+	}
+	50% {
+		opacity: 0.6;
+	}
+	100% {
+		opacity: 0.3;
+	}
 }

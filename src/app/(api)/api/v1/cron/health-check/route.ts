@@ -2,9 +2,6 @@ import { redis } from '@/services/redis'
 import { NextRequest, NextResponse } from 'next/server'
 
 const WEBHOOK_HEALTH_URL = 'https://webhooks.voidpresence.com/health'
-const DISCORD_BOT_ID = process.env.DISCORD_BOT_ID ?? ''
-const DISCORD_GUILD_ID = process.env.DISCORD_GUILD_ID ?? ''
-const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN ?? ''
 
 async function checkWebhook() {
 	try {
@@ -20,15 +17,9 @@ async function checkWebhook() {
 
 async function checkBot() {
 	try {
-		const res = await fetch(
-			`https://discord.com/api/v10/guilds/${DISCORD_GUILD_ID}/members/${DISCORD_BOT_ID}`,
-			{
-				headers: { Authorization: `Bot ${DISCORD_BOT_TOKEN}` },
-				signal: AbortSignal.timeout(5000),
-				cache: 'no-store',
-			}
-		)
-		return res.ok
+		const heartbeat = await redis.get<number>('bot:heartbeat')
+		if (!heartbeat) return false
+		return Date.now() - heartbeat < 5 * 60 * 1000
 	} catch {
 		return false
 	}
