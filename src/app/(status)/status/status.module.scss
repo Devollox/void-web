@@ -1,3 +1,9 @@
+.page_section {
+	flex-direction: column;
+	gap: 18px;
+	display: flex;
+}
+
 .status_panel {
 	min-height: calc(100vh - 140px);
 }

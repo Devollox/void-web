@@ -63,6 +63,29 @@ export default function StatusPage() {
 					<UptimeChart />
 				</div>
 			</div>
+			<div className={layoutStyles.preview_card_wrap}>
+				<div className={layoutStyles.preview_card}>
+					<div className={layoutStyles.preview_header}>
+						<h3 className={layoutStyles.preview_title}>Server configuration</h3>
+					</div>
+					<div className={layoutStyles.secondary_box}>
+						<p className={layoutStyles.secondary_title}>CPU</p>
+						<p className={layoutStyles.secondary_text}>1× 2.2 GHz</p>
+					</div>
+					<div className={layoutStyles.secondary_box}>
+						<p className={layoutStyles.secondary_title}>RAM</p>
+						<p className={layoutStyles.secondary_text}>0.5 GB</p>
+					</div>
+					<div className={layoutStyles.secondary_box}>
+						<p className={layoutStyles.secondary_title}>Storage</p>
+						<p className={layoutStyles.secondary_text}>10 GB HDD RAID</p>
+					</div>
+					<div className={layoutStyles.secondary_box}>
+						<p className={layoutStyles.secondary_title}>Network</p>
+						<p className={layoutStyles.secondary_text}>1 dedicated IP · Moscow</p>
+					</div>
+				</div>
+			</div>
 		</section>
 	)
 
