@@ -24,7 +24,7 @@ export type ApiGroupType =
 
 export interface ApiEndpoint {
 	id: string
-	method: 'GET' | 'POST' | 'PUT' | 'DELETE'
+	method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH'
 	path: string
 	title: string
 	description: string
@@ -162,6 +162,7 @@ const methodStyles: Record<ApiEndpoint['method'], string | undefined> = {
 	GET: apiStyles.dot_stable,
 	DELETE: apiStyles.dot_broken,
 	PUT: apiStyles.dot_prerelease,
+	PATCH: apiStyles.dot_alpha,
 }
 
 function getDotClass(method: ApiEndpoint['method']): string {

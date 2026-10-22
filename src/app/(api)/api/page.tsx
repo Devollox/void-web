@@ -724,6 +724,117 @@ const endpoints: ApiEndpoint[] = [
   .then(res => res.json())
   .then(result => console.log(result))`,
 	},
+	{
+		id: 'incidents-get',
+		method: 'GET',
+		path: '/v1/incidents',
+		title: 'Get incidents',
+		description: 'Returns the last 20 incidents across all services.',
+		group: 'status',
+		hasExample: true,
+		samplePayload: {
+			responseBody: {
+				incidents: [
+					{
+						id: 'uuid',
+						ts: '2026-10-20T19:30:00.000Z',
+						resolvedAt: '2026-10-21T05:00:00.000Z',
+						service: 'all',
+						status: 'resolved',
+						description: 'NS server migration caused service unavailability.',
+					},
+				],
+			},
+		},
+		fetchPayload: `fetch('https://voidpresence.com/api/v1/incidents')
+    .then(res => res.json())
+    .then(data => console.log(data))`,
+	},
+	{
+		id: 'incidents-post',
+		method: 'POST',
+		path: '/v1/incidents',
+		title: 'Create incident',
+		description: 'Creates a new incident. Requires Bearer token authorization.',
+		group: 'status',
+		authRequired: true,
+		hasExample: true,
+		samplePayload: {
+			requestBody: {
+				service: 'webhook',
+				status: 'investigating',
+				description: 'Webhook service is experiencing elevated latency.',
+				ts: '2026-10-20T19:30:00.000Z',
+				resolvedAt: '2026-10-21T05:00:00.000Z',
+			},
+			responseBody: {
+				ok: true,
+				incident: {
+					id: 'uuid',
+					ts: '2026-10-20T19:30:00.000Z',
+					service: 'webhook',
+					status: 'investigating',
+					description: 'Webhook service is experiencing elevated latency.',
+				},
+			},
+		},
+		fetchPayload: `fetch('https://voidpresence.com/api/v1/incidents', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: 'Bearer YOUR_CRON_SECRET',
+    },
+    body: JSON.stringify({
+      service: 'webhook',
+      status: 'investigating',
+      description: 'Webhook service is experiencing elevated latency.',
+    }),
+  })
+    .then(res => res.json())
+    .then(result => console.log(result))`,
+	},
+	{
+		id: 'incidents-patch',
+		method: 'PATCH',
+		path: '/v1/incidents',
+		title: 'Update incident',
+		description: 'Updates an existing incident status. Requires Bearer token authorization.',
+		group: 'status',
+		authRequired: true,
+		hasExample: true,
+		samplePayload: {
+			requestBody: {
+				id: 'uuid',
+				status: 'resolved',
+				description: 'Issue resolved. All systems operational.',
+			},
+			responseBody: {
+				ok: true,
+				incident: {
+					id: 'uuid',
+					ts: '2026-10-20T19:30:00.000Z',
+					resolvedAt: '2026-10-21T05:00:00.000Z',
+					service: 'webhook',
+					status: 'resolved',
+					description: 'Issue resolved. All systems operational.',
+				},
+			},
+		},
+		fetchPayload: `fetch('https://voidpresence.com/api/v1/incidents', {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: 'Bearer YOUR_CRON_SECRET',
+    },
+    body: JSON.stringify({
+      id: 'uuid',
+      status: 'resolved',
+      description: 'Issue resolved. All systems operational.',
+    }),
+  })
+    .then(res => res.json())
+    .then(result => console.log(result))`,
+	},
 ]
 
 export default function ApiDocsPage() {

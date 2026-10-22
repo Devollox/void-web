@@ -1,16 +1,17 @@
 import { redis } from '@/services/redis'
 import { NextResponse } from 'next/server'
+import type { Incident } from '../incidents/route'
 
 export const revalidate = 60
 
-type DayData = {
+export type DayData = {
 	date: string
 	uptime: number
 	total: number
 	ok: number
 }
 
-type ServiceUptime = {
+export type ServiceUptime = {
 	days: DayData[]
 	uptimeLast30: number
 	current: boolean
@@ -82,7 +83,19 @@ async function getServiceUptime(service: string): Promise<ServiceUptime> {
 }
 
 export async function GET() {
-	const [webhook, bot] = await Promise.all([getServiceUptime('webhook'), getServiceUptime('bot')])
+	const [webhook, bot, rawIncidents] = await Promise.all([
+		getServiceUptime('webhook'),
+		getServiceUptime('bot'),
+		redis.lrange<string>('incidents', 0, 9),
+	])
 
-	return NextResponse.json({ webhook, bot })
+	const incidents: Incident[] = rawIncidents.map(e => {
+		try {
+			return typeof e === 'string' ? (JSON.parse(e) as Incident) : (e as Incident)
+		} catch {
+			return e as unknown as Incident
+		}
+	})
+
+	return NextResponse.json({ webhook, bot, incidents })
 }
