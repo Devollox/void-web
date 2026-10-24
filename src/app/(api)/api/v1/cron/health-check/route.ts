@@ -6,7 +6,7 @@ const WEBHOOK_HEALTH_URL = 'https://webhooks.voidpresence.com/health'
 async function checkWebhook() {
 	try {
 		const res = await fetch(WEBHOOK_HEALTH_URL, {
-			signal: AbortSignal.timeout(10000),
+			signal: AbortSignal.timeout(20000),
 			cache: 'no-store',
 		})
 		return res.ok
