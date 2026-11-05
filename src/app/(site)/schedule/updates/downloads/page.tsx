@@ -25,7 +25,7 @@ export default function PageComponent() {
 	return (
 		<Page>
 			<PageHeader
-				title='Void Presence Application Release'
+				title='Void Presence Updates Release'
 				subtitle='Track current and past releases, prereleases, and published builds.'
 			/>
 			<Suspense
