@@ -12,15 +12,23 @@ export function NotificationBanner() {
 			<div className={styles.notification_dot} />
 			<div className={styles.notification_content}>
 				<span className={styles.notification_title}>
-					Total downloads exceeded <strong>900</strong>!
+					On the way to <strong>1,000</strong> downloads.
 				</span>
 				<span className={styles.notification_subtitle}>
-					Thank you for your support! We appreciate every one of you. Wishing you an amazing
-					experience with Void Presence! <br /> Check out our new{' '}
-					<a href='/schedule/application/downloads' className={styles.notification_link}>
-						downloads schedule
+					Thank you for being here. To mark this milestone, I’m working on a fresh look for both the
+					app and the website.
+					<br />
+					With a lot on my plate right now, the redesign may arrive a little after we reach 1,000.
+					I’m taking the time to get the details right. <br />
+					<a
+						href='/post/new-redesign.png'
+						className={styles.notification_link}
+						target='_blank'
+						rel='noopener noreferrer'
+					>
+						Take a look at the preview
 					</a>
-					!
+					.
 				</span>
 			</div>
 		</div>
