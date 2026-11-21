@@ -15,11 +15,12 @@ export function NotificationBanner() {
 					On the way to <strong>1,000</strong> downloads.
 				</span>
 				<span className={styles.notification_subtitle}>
-					Thank you for being here. To mark this milestone, I’m working on a fresh look for both the
-					app and the website.
+					Thank you for being here. To mark this milestone, I’m working on a fresh look for the app,
+					website, installer, and updater.
 					<br />
 					With a lot on my plate right now, the redesign may arrive a little after we reach 1,000.
-					I’m taking the time to get the details right. <br />
+					I’m taking the time to get the details right.
+					<br />
 					<a
 						href='/post/new-redesign.png'
 						className={styles.notification_link}
