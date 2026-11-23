@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server'
 export const dynamic = 'force-dynamic'
 
 const SITE_URL = 'https://voidpresence.com'
-const DESKTOP_CONNECT_PATH = '/auth/desktop/connect'
+const DESKTOP_CONNECT_PATH = '/api/auth/desktop/connect'
 
 export async function GET() {
 	const session = await auth()

@@ -12,6 +12,8 @@ import styles from './signin.module.scss'
 
 type Provider = 'google' | 'discord' | 'steam' | 'github'
 
+const DESKTOP_CONNECT_PATH = '/api/auth/desktop/connect'
+
 function getRedirectTo(): string {
 	const params = new URLSearchParams(window.location.search)
 	const callbackUrl = params.get('callbackUrl')
@@ -29,6 +31,8 @@ function getRedirectTo(): string {
 		}
 
 		const isDesktopConnectPath = [
+			DESKTOP_CONNECT_PATH,
+			'/auth/desktop',
 			'/auth/desktop/connect',
 			'/desktop/connect',
 			'/api/desktop/connect',
@@ -41,7 +45,7 @@ function getRedirectTo(): string {
 			target.searchParams.get('desktop') === 'connect'
 
 		if (isDesktopConnectPath || isDesktopProfile) {
-			return '/auth/desktop/connect'
+			return DESKTOP_CONNECT_PATH
 		}
 	} catch {
 		return '/profile'
@@ -91,10 +95,8 @@ export function SignInPageClient() {
 	}, [])
 
 	const handleSignIn = (provider: Provider) => {
-		const redirectTo = getRedirectTo()
-
 		void signIn(provider, {
-			redirectTo,
+			redirectTo: getRedirectTo(),
 		})
 	}
 
