@@ -6,7 +6,8 @@ import PageHeader from '@components/page-header'
 import { PanelLayout } from '@components/panel-layout'
 import layoutStyles from '@components/panel-layout/layout-panels.module.scss'
 import { InfoBox } from '@components/status-info/info-box'
-import { signIn } from 'next-auth/react'
+import { getSession, signIn } from 'next-auth/react'
+import { useEffect } from 'react'
 import styles from './signin.module.scss'
 
 type Provider = 'google' | 'discord' | 'steam' | 'github'
@@ -49,6 +50,45 @@ function getRedirectTo(): string {
 }
 
 export function SignInPageClient() {
+	useEffect(() => {
+		let cancelled = false
+		let redirecting = false
+
+		const checkSession = async (): Promise<void> => {
+			try {
+				const session = await getSession()
+
+				if (cancelled || redirecting || !session?.user) return
+
+				redirecting = true
+				window.location.replace(getRedirectTo())
+			} catch (error) {
+				console.error('[signin:session]', error)
+			}
+		}
+
+		void checkSession()
+
+		const handleFocus = (): void => {
+			void checkSession()
+		}
+
+		const handleVisibility = (): void => {
+			if (document.visibilityState === 'visible') {
+				void checkSession()
+			}
+		}
+
+		window.addEventListener('focus', handleFocus)
+		document.addEventListener('visibilitychange', handleVisibility)
+
+		return () => {
+			cancelled = true
+			window.removeEventListener('focus', handleFocus)
+			document.removeEventListener('visibilitychange', handleVisibility)
+		}
+	}, [])
+
 	const handleSignIn = (provider: Provider) => {
 		const redirectTo = getRedirectTo()
 
