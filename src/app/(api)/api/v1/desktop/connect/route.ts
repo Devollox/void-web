@@ -1,17 +1,18 @@
 import { auth } from '@api/auth/[...nextauth]/route'
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET(req: NextRequest) {
+const SITE_URL = 'https://voidpresence.com/'
+
+export async function GET() {
 	const session = await auth()
 
-	const profileUrl = new URL('/profile', req.url)
+	const profileUrl = new URL('/profile', SITE_URL)
 	profileUrl.searchParams.set('desktop', 'connect')
 
 	if (!session?.user) {
-		const signInUrl = new URL('/signin', req.url)
-
+		const signInUrl = new URL('/signin', SITE_URL)
 		signInUrl.searchParams.set('callbackUrl', profileUrl.href)
 
 		return NextResponse.redirect(signInUrl, {
