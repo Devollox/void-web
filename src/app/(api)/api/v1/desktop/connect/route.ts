@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
 	profileUrl.searchParams.set('desktop', 'connect')
 
 	if (!session?.user) {
-		const signInUrl = new URL('/api/auth/signin', req.url)
+		const signInUrl = new URL('/auth/signin', req.url)
 
 		signInUrl.searchParams.set('callbackUrl', profileUrl.href)
 
