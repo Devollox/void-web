@@ -20,16 +20,26 @@ function getRedirectTo(): string {
 	try {
 		const target = new URL(callbackUrl, window.location.origin)
 
-		if (target.origin !== window.location.origin) {
+		const isSiteOrigin = target.origin === window.location.origin
+		const isApiOrigin = target.origin === 'https://api.voidpresence.com'
+
+		if (!isSiteOrigin && !isApiOrigin) {
 			return '/profile'
 		}
 
-		if (target.pathname === '/api/desktop/connect' || target.pathname === '/desktop/connect') {
-			return '/api/desktop/connect'
-		}
+		const isDesktopConnectPath = [
+			'/desktop/connect',
+			'/api/desktop/connect',
+			'/api/v1/desktop/connect',
+		].includes(target.pathname)
 
-		if (target.pathname === '/profile' && target.searchParams.get('desktop') === 'connect') {
-			return '/api/desktop/connect'
+		const isDesktopProfile =
+			isSiteOrigin &&
+			target.pathname === '/profile' &&
+			target.searchParams.get('desktop') === 'connect'
+
+		if (isDesktopConnectPath || isDesktopProfile) {
+			return '/desktop/connect'
 		}
 	} catch {
 		return '/profile'
