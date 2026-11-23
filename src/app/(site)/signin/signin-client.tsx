@@ -29,6 +29,7 @@ function getRedirectTo(): string {
 		}
 
 		const isDesktopConnectPath = [
+			'/auth/desktop/connect',
 			'/desktop/connect',
 			'/api/desktop/connect',
 			'/api/v1/desktop/connect',
@@ -40,7 +41,7 @@ function getRedirectTo(): string {
 			target.searchParams.get('desktop') === 'connect'
 
 		if (isDesktopConnectPath || isDesktopProfile) {
-			return '/desktop/connect'
+			return '/auth/desktop/connect'
 		}
 	} catch {
 		return '/profile'

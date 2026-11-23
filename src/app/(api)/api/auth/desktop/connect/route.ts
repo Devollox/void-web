@@ -4,7 +4,6 @@ import { NextResponse } from 'next/server'
 export const dynamic = 'force-dynamic'
 
 const SITE_URL = 'https://voidpresence.com'
-const DESKTOP_CONNECT_URL = 'https://api.voidpresence.com/desktop/connect'
 
 export async function GET() {
 	const session = await auth()
@@ -15,7 +14,7 @@ export async function GET() {
 	if (!session?.user) {
 		const signInUrl = new URL('/signin', SITE_URL)
 
-		signInUrl.searchParams.set('callbackUrl', DESKTOP_CONNECT_URL)
+		signInUrl.searchParams.set('callbackUrl', SITE_URL + '/desktop/connect')
 
 		return NextResponse.redirect(signInUrl, {
 			headers: {
