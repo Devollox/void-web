@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import styles from './desktop-connect.module.scss'
 
 type Props = {
@@ -14,6 +14,11 @@ type ConnectionParams = {
 	state: string
 	code_challenge: string
 	code_challenge_method: 'S256'
+}
+
+type PendingAttempt = {
+	id: string
+	deadline: number
 }
 
 function getInitials(value: string): string {
@@ -55,9 +60,8 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function readConnectionParams(params: URLSearchParams): ConnectionParams | null {
 	const keys = ['state', 'code_challenge', 'code_challenge_method']
 
-	if (keys.some(key => params.getAll(key).length !== 1)) {
-		return null
-	}
+	if (keys.some(key => params.getAll(key).length !== 1)) return null
+	if (params.getAll('desktop').length !== 1) return null
 
 	const state = params.get('state')
 	const challenge = params.get('code_challenge')
@@ -114,6 +118,17 @@ export default function DesktopConnect({ authorID, name, provider, avatar }: Pro
 	const [error, setError] = useState('')
 	const [deepLink, setDeepLink] = useState('')
 	const [expiresAt, setExpiresAt] = useState(0)
+	const [attempt, setAttempt] = useState<PendingAttempt | null>(null)
+	const [connected, setConnected] = useState(false)
+
+	const preparingRef = useRef(false)
+	const prepareControllerRef = useRef<AbortController | null>(null)
+
+	const displayName = name?.trim() || 'Void Presence'
+	const avatarUrl = getAvatarUrl(avatar)
+	const authorId = String(authorID ?? '').trim()
+	const providerName =
+		provider?.toLowerCase() === 'discord' ? 'Discord' : provider?.trim() || 'Connected profile'
 
 	useEffect(() => {
 		const params = new URLSearchParams(window.location.search)
@@ -132,11 +147,11 @@ export default function DesktopConnect({ authorID, name, provider, avatar }: Pro
 		}
 	}, [])
 
-	const displayName = name?.trim() || 'Void Presence'
-	const avatarUrl = getAvatarUrl(avatar)
-	const authorId = String(authorID ?? '').trim()
-	const providerName =
-		provider?.toLowerCase() === 'discord' ? 'Discord' : provider?.trim() || 'Connected profile'
+	useEffect(() => {
+		return () => {
+			prepareControllerRef.current?.abort()
+		}
+	}, [])
 
 	useEffect(() => {
 		setAvatarFailed(false)
@@ -153,20 +168,154 @@ export default function DesktopConnect({ authorID, name, provider, avatar }: Pro
 			Math.max(0, expiresAt - Date.now())
 		)
 
-		return () => {
-			window.clearTimeout(timer)
-		}
+		return () => window.clearTimeout(timer)
 	}, [deepLink, expiresAt])
 
-	const prepareConnection = async (): Promise<void> => {
-		if (loading || !connection || !authorId) return
+	useEffect(() => {
+		if (!attempt || connected) return
 
+		let stopped = false
+		let timer: number | undefined
+		let activeController: AbortController | null = null
+
+		const finishWithError = (message: string) => {
+			if (stopped) return
+
+			setAttempt(null)
+			setDeepLink('')
+			setExpiresAt(0)
+			setError(message)
+		}
+
+		const poll = async (): Promise<void> => {
+			if (stopped) return
+
+			const remaining = attempt.deadline - Date.now()
+
+			if (remaining <= 0) {
+				finishWithError(
+					'The connection could not be confirmed in time. Start login again from the desktop app.'
+				)
+				return
+			}
+
+			const controller = new AbortController()
+			activeController = controller
+
+			const requestTimeout = window.setTimeout(() => controller.abort(), Math.min(5_000, remaining))
+
+			try {
+				const response = await fetch('/api/auth/desktop/status', {
+					method: 'POST',
+					credentials: 'same-origin',
+					cache: 'no-store',
+					headers: {
+						'Content-Type': 'application/json',
+						Accept: 'application/json',
+					},
+					body: JSON.stringify({ attemptId: attempt.id }),
+					signal: controller.signal,
+				})
+
+				if (stopped) return
+
+				if (response.status === 401 || response.status === 403) {
+					finishWithError(
+						'Your connection session is no longer available. Start login again from the desktop app.'
+					)
+					return
+				}
+
+				if (response.status === 404 || response.status === 410) {
+					finishWithError(
+						'The connection attempt is unavailable or expired. Start login again from the desktop app.'
+					)
+					return
+				}
+
+				if (response.ok) {
+					const result: unknown = await response.json()
+
+					if (stopped) return
+
+					if (!isRecord(result)) {
+						finishWithError('The server returned an invalid connection status.')
+						return
+					}
+
+					switch (result.status) {
+						case 'exchanged':
+							setConnected(true)
+							setAttempt(null)
+							setDeepLink('')
+							setExpiresAt(0)
+							setError('')
+							return
+
+						case 'expired':
+							finishWithError(
+								'The connection attempt expired. Start login again from the desktop app.'
+							)
+							return
+
+						case 'failed':
+							finishWithError('The connection failed. Start login again from the desktop app.')
+							return
+
+						case 'pending':
+							break
+
+						default:
+							finishWithError('The server returned an invalid connection status.')
+							return
+					}
+				} else if (response.status !== 429 && response.status < 500) {
+					finishWithError('Could not check the connection status.')
+					return
+				}
+			} catch {
+			} finally {
+				window.clearTimeout(requestTimeout)
+
+				if (activeController === controller) {
+					activeController = null
+				}
+			}
+
+			if (!stopped) {
+				timer = window.setTimeout(() => {
+					void poll()
+				}, 1_500)
+			}
+		}
+
+		void poll()
+
+		return () => {
+			stopped = true
+
+			if (timer !== undefined) {
+				window.clearTimeout(timer)
+			}
+
+			activeController?.abort()
+		}
+	}, [attempt, connected])
+
+	const prepareConnection = async (): Promise<void> => {
+		if (preparingRef.current || attempt || connected || !connection || !authorId) {
+			return
+		}
+
+		preparingRef.current = true
 		setLoading(true)
 		setError('')
 		setDeepLink('')
 		setExpiresAt(0)
 
 		const controller = new AbortController()
+		prepareControllerRef.current = controller
+
 		const timeout = window.setTimeout(() => controller.abort(), 15_000)
 
 		try {
@@ -217,22 +366,45 @@ export default function DesktopConnect({ authorID, name, provider, avatar }: Pro
 				throw new Error('The server returned an invalid connection lifetime.')
 			}
 
+			if (typeof payload.attemptId !== 'string' || !/^[A-Za-z0-9_-]{43}$/.test(payload.attemptId)) {
+				throw new Error('The server returned an invalid connection attempt.')
+			}
+
+			if (controller.signal.aborted) return
+
+			const deadline = Date.now() + payload.expiresIn * 1000
+
 			setDeepLink(link)
-			setExpiresAt(Date.now() + payload.expiresIn * 1000)
+			setExpiresAt(deadline)
 			setAttempted(true)
+			setAttempt({
+				id: payload.attemptId,
+				deadline: deadline + 10_000,
+			})
 
 			window.location.assign(link)
 		} catch (caught) {
+			if (prepareControllerRef.current !== controller) return
+
+			setAttempt(null)
+			setDeepLink('')
+			setExpiresAt(0)
+
 			setError(
 				caught instanceof Error && caught.name === 'AbortError'
-					? 'The server took too long to respond. Please try again.'
+					? 'The connection request was interrupted or took too long. Please try again.'
 					: caught instanceof Error
 						? caught.message
 						: 'Could not connect to the desktop app.'
 			)
 		} finally {
 			window.clearTimeout(timeout)
-			setLoading(false)
+
+			if (prepareControllerRef.current === controller) {
+				prepareControllerRef.current = null
+				preparingRef.current = false
+				setLoading(false)
+			}
 		}
 	}
 
@@ -249,10 +421,14 @@ export default function DesktopConnect({ authorID, name, provider, avatar }: Pro
 				</div>
 
 				<h1 id='desktop-connect-title' className={styles.title}>
-					Connect to the desktop app
+					{connected ? 'Connected to Void Presence' : 'Connect to the desktop app'}
 				</h1>
 
-				<p className={styles.description}>Use this profile in Void Presence on your device.</p>
+				<p className={styles.description}>
+					{connected
+						? 'Your connection was verified by the server. You can return to the app.'
+						: 'Use this profile in Void Presence on your device.'}
+				</p>
 
 				<div className={styles.profile}>
 					<div className={styles.avatar} aria-hidden='true'>
@@ -274,7 +450,11 @@ export default function DesktopConnect({ authorID, name, provider, avatar }: Pro
 					</div>
 				</div>
 
-				{authorId && connection ? (
+				{connected ? (
+					<button type='button' className={styles.primary} onClick={() => window.close()}>
+						Close this tab
+					</button>
+				) : authorId && connection ? (
 					deepLink ? (
 						<a
 							href={deepLink}
@@ -284,7 +464,6 @@ export default function DesktopConnect({ authorID, name, provider, avatar }: Pro
 									event.preventDefault()
 									setDeepLink('')
 									setExpiresAt(0)
-									setError('The connection link expired. Generate a new one.')
 									return
 								}
 
@@ -297,13 +476,17 @@ export default function DesktopConnect({ authorID, name, provider, avatar }: Pro
 						<button
 							type='button'
 							className={styles.primary}
-							disabled={loading}
-							aria-busy={loading}
+							disabled={loading || Boolean(attempt)}
+							aria-busy={loading || Boolean(attempt)}
 							onClick={() => {
 								void prepareConnection()
 							}}
 						>
-							{loading ? 'Preparing connection…' : 'Open Void Presence'}
+							{loading
+								? 'Preparing connection…'
+								: attempt
+									? 'Waiting for the app…'
+									: 'Open Void Presence'}
 
 							<svg
 								width='15'
@@ -334,9 +517,13 @@ export default function DesktopConnect({ authorID, name, provider, avatar }: Pro
 				) : null}
 
 				<p className={styles.feedback} role='status' aria-live='polite'>
-					{attempted
-						? 'Confirm the browser prompt to open the app. If it did not appear, click Open Void Presence again. This page cannot confirm whether the app connected successfully.'
-						: 'Your browser may ask for permission to open Void Presence.'}
+					{connected
+						? 'You can close this tab manually if the Close button does not work.'
+						: attempt
+							? 'Waiting for Void Presence to confirm the connection. Allow your browser to open the app.'
+							: attempted
+								? 'If the connection was not completed, start login again from the desktop app.'
+								: 'Your browser may ask for permission to open Void Presence.'}
 				</p>
 
 				<div className={styles.footer}>
