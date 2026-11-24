@@ -16,12 +16,21 @@ const DESKTOP_CONNECT_PATH = '/api/auth/desktop/connect'
 
 function getRedirectTo(): string {
 	const params = new URLSearchParams(window.location.search)
+
+	if (params.getAll('callbackUrl').length !== 1) {
+		return '/profile'
+	}
+
 	const callbackUrl = params.get('callbackUrl')
 
 	if (!callbackUrl) return '/profile'
 
 	try {
 		const target = new URL(callbackUrl, window.location.origin)
+
+		if (target.username || target.password || target.hash) {
+			return '/profile'
+		}
 
 		const isSiteOrigin = target.origin === window.location.origin
 		const isApiOrigin = target.origin === 'https://api.voidpresence.com'
@@ -42,16 +51,45 @@ function getRedirectTo(): string {
 		const isDesktopProfile =
 			isSiteOrigin &&
 			target.pathname === '/profile' &&
+			target.searchParams.getAll('desktop').length === 1 &&
 			target.searchParams.get('desktop') === 'connect'
 
-		if (isDesktopConnectPath || isDesktopProfile) {
-			return DESKTOP_CONNECT_PATH
+		if (!isDesktopConnectPath && !isDesktopProfile) {
+			return '/profile'
 		}
+
+		const keys = ['state', 'code_challenge', 'code_challenge_method']
+
+		if (keys.some(key => target.searchParams.getAll(key).length !== 1)) {
+			return '/profile'
+		}
+
+		const state = target.searchParams.get('state')
+		const challenge = target.searchParams.get('code_challenge')
+		const method = target.searchParams.get('code_challenge_method')
+
+		if (!state || !/^[A-Za-z0-9_-]{43,128}$/.test(state)) {
+			return '/profile'
+		}
+
+		if (!challenge || !/^[A-Za-z0-9_-]{43}$/.test(challenge)) {
+			return '/profile'
+		}
+
+		if (method !== 'S256') {
+			return '/profile'
+		}
+
+		const destination = new URL(DESKTOP_CONNECT_PATH, window.location.origin)
+
+		destination.searchParams.set('state', state)
+		destination.searchParams.set('code_challenge', challenge)
+		destination.searchParams.set('code_challenge_method', 'S256')
+
+		return `${destination.pathname}${destination.search}`
 	} catch {
 		return '/profile'
 	}
-
-	return '/profile'
 }
 
 export function SignInPageClient() {
