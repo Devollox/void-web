@@ -82,7 +82,10 @@ function PluginCard({ plugin, previewIndex }: { plugin: Plugin; previewIndex: nu
 
 			const data = (await res.json()) as { deepLink?: unknown; expiresIn?: unknown }
 
-			if (typeof data.deepLink !== 'string' || !data.deepLink.startsWith('voidpresence://action?')) {
+			if (
+				typeof data.deepLink !== 'string' ||
+				!data.deepLink.startsWith('voidpresence://action?')
+			) {
 				throw new Error('The server returned an invalid link.')
 			}
 
@@ -139,50 +142,50 @@ function PluginCard({ plugin, previewIndex }: { plugin: Plugin; previewIndex: nu
 				<PluginCardPreview plugin={plugin} previewIndex={previewIndex} />
 
 				<div className={gridStyles.card_actions}>
-				<div className={gridStyles.card_buttons}>
-					{installState === 'ready' && installLink ? (
-						<button
-							className={gridStyles.btn_primary}
-							onClick={() => {
-								if (Date.now() >= installExpiresAt) {
-									setInstallLink('')
-									setInstallExpiresAt(0)
-									setInstallState('idle')
-									return
-								}
-								window.location.assign(installLink)
-							}}
+					<div className={gridStyles.card_buttons}>
+						{installState === 'ready' && installLink ? (
+							<button
+								className={gridStyles.btn_primary}
+								onClick={() => {
+									if (Date.now() >= installExpiresAt) {
+										setInstallLink('')
+										setInstallExpiresAt(0)
+										setInstallState('idle')
+										return
+									}
+									window.location.assign(installLink)
+								}}
+							>
+								Open Void Presence again
+							</button>
+						) : (
+							<button
+								className={gridStyles.btn_primary}
+								disabled={installState === 'loading'}
+								aria-busy={installState === 'loading'}
+								onClick={() => void handleInstall()}
+							>
+								{installState === 'loading' ? 'Preparing…' : 'Install in app'}
+							</button>
+						)}
+						<a
+							className={gridStyles.btn_secondary}
+							href={plugin.sourceUrl}
+							target='_blank'
+							rel='noopener noreferrer'
 						>
-							Open Void Presence again
-						</button>
-					) : (
-						<button
-							className={gridStyles.btn_primary}
-							disabled={installState === 'loading'}
-							aria-busy={installState === 'loading'}
-							onClick={() => void handleInstall()}
+							Source
+						</a>
+					</div>
+					{installState === 'error' && installError && (
+						<p
+							role='alert'
+							style={{ fontSize: '11px', color: 'var(--color-error, #f87171)', marginTop: '6px' }}
 						>
-							{installState === 'loading' ? 'Preparing…' : 'Install in app'}
-						</button>
+							{installError}
+						</p>
 					)}
-					<a
-						className={gridStyles.btn_secondary}
-						href={plugin.sourceUrl}
-						target='_blank'
-						rel='noopener noreferrer'
-					>
-						Source
-					</a>
 				</div>
-				{installState === 'error' && installError && (
-					<p
-						role='alert'
-						style={{ fontSize: '11px', color: 'var(--color-error, #f87171)', marginTop: '6px' }}
-					>
-						{installError}
-					</p>
-				)}
-			</div>
 			</div>
 		</div>
 	)

@@ -15,6 +15,7 @@ import {
 	type ActionTicketRecord,
 } from '@/services/action-ticket'
 import { NextRequest, NextResponse } from 'next/server'
+import { getCataloguePlugin } from '@/services/plugin-catalog'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -93,12 +94,18 @@ export async function POST(request: NextRequest) {
 			const raw = snap.val() as Record<string, unknown>
 			payload = readImportStatusPayload(configId, raw)
 		} else if (kind === 'install-plugin') {
-			const snap = await db.ref(`plugin-configs/${configId}`).get()
-			if (!snap.exists()) {
+			const plugin = getCataloguePlugin(configId)
+
+			if (!plugin) {
 				return NextResponse.json({ error: 'not_found' }, { status: 404, headers: ACTION_HEADERS })
 			}
-			const raw = snap.val() as Record<string, unknown>
-			payload = readInstallPluginPayload(configId, raw)
+
+			payload = readInstallPluginPayload(plugin.id, {
+				title: plugin.title,
+				version: plugin.version,
+				sourceUrl: plugin.sourceUrl,
+				folder: plugin.folder,
+			})
 		}
 	} catch {
 		return NextResponse.json(
