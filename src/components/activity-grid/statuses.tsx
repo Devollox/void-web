@@ -113,7 +113,7 @@ export function StatusesGrid({
 		setOpenInAppStates(s => ({ ...s, [id]: 'loading' }))
 
 		const controller = new AbortController()
-		const timeout = window.setTimeout(() => controller.abort(), 15_000)
+		const timeout = window.setTimeout(() => controller.abort(), 15000)
 
 		try {
 			const res = await fetch('/api/action/ticket', {

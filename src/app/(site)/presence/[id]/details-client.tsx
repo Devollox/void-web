@@ -281,9 +281,9 @@ export function ConfigDetailsClient({ configId, initialPreviewTick }: Props) {
 		)
 	}
 
-	const [openInAppState, setOpenInAppState] = useState<
-		'idle' | 'loading' | 'ready' | 'error'
-	>('idle')
+	const [openInAppState, setOpenInAppState] = useState<'idle' | 'loading' | 'ready' | 'error'>(
+		'idle'
+	)
 	const [openInAppError, setOpenInAppError] = useState('')
 	const [openInAppLink, setOpenInAppLink] = useState('')
 	const [openInAppExpiresAt, setOpenInAppExpiresAt] = useState(0)
@@ -307,7 +307,7 @@ export function ConfigDetailsClient({ configId, initialPreviewTick }: Props) {
 		setOpenInAppError('')
 
 		const controller = new AbortController()
-		const timeout = window.setTimeout(() => controller.abort(), 15_000)
+		const timeout = window.setTimeout(() => controller.abort(), 15000)
 
 		try {
 			const res = await fetch('/api/action/ticket', {
@@ -329,7 +329,10 @@ export function ConfigDetailsClient({ configId, initialPreviewTick }: Props) {
 
 			const data = (await res.json()) as { deepLink?: unknown; expiresIn?: unknown }
 
-			if (typeof data.deepLink !== 'string' || !data.deepLink.startsWith('voidpresence://action?')) {
+			if (
+				typeof data.deepLink !== 'string' ||
+				!data.deepLink.startsWith('voidpresence://action?')
+			) {
 				throw new Error('The server returned an invalid link.')
 			}
 

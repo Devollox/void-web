@@ -202,7 +202,7 @@ export default function DesktopConnect({ authorID, name, provider, avatar }: Pro
 			const controller = new AbortController()
 			activeController = controller
 
-			const requestTimeout = window.setTimeout(() => controller.abort(), Math.min(5_000, remaining))
+			const requestTimeout = window.setTimeout(() => controller.abort(), Math.min(5000, remaining))
 
 			try {
 				const response = await fetch('/api/auth/desktop/status', {
@@ -285,7 +285,7 @@ export default function DesktopConnect({ authorID, name, provider, avatar }: Pro
 			if (!stopped) {
 				timer = window.setTimeout(() => {
 					void poll()
-				}, 1_500)
+				}, 1500)
 			}
 		}
 
@@ -302,6 +302,16 @@ export default function DesktopConnect({ authorID, name, provider, avatar }: Pro
 		}
 	}, [attempt, connected])
 
+	useEffect(() => {
+		if (!connected) return
+
+		const timer = window.setTimeout(() => {
+			window.close()
+		}, 1000)
+
+		return () => window.clearTimeout(timer)
+	}, [connected])
+
 	const prepareConnection = async (): Promise<void> => {
 		if (preparingRef.current || attempt || connected || !connection || !authorId) {
 			return
@@ -316,7 +326,7 @@ export default function DesktopConnect({ authorID, name, provider, avatar }: Pro
 		const controller = new AbortController()
 		prepareControllerRef.current = controller
 
-		const timeout = window.setTimeout(() => controller.abort(), 15_000)
+		const timeout = window.setTimeout(() => controller.abort(), 15000)
 
 		try {
 			const response = await fetch('/api/auth/desktop/ticket', {
@@ -379,7 +389,7 @@ export default function DesktopConnect({ authorID, name, provider, avatar }: Pro
 			setAttempted(true)
 			setAttempt({
 				id: payload.attemptId,
-				deadline: deadline + 10_000,
+				deadline: deadline + 10000,
 			})
 
 			window.location.assign(link)
