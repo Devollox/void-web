@@ -11,21 +11,27 @@ import {
 	isSameSiteRequest,
 	readBinding,
 	readJsonBody,
-	type DesktopTicketRecord,
 } from '@/services/desktop-auth'
+import {
+	DESKTOP_ATTEMPT_TTL,
+	getAttemptKey,
+	type DesktopAttemptRecord,
+	type TrackedDesktopTicketRecord,
+} from '@/services/desktop-attempt'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
 
+function respond(body: unknown, status = 200) {
+	return NextResponse.json(body, {
+		status,
+		headers: DESKTOP_AUTH_HEADERS,
+	})
+}
+
 export async function POST(request: NextRequest) {
 	if (!isSameSiteRequest(request)) {
-		return NextResponse.json(
-			{ error: 'forbidden' },
-			{
-				status: 403,
-				headers: DESKTOP_AUTH_HEADERS,
-			}
-		)
+		return respond({ error: 'forbidden' }, 403)
 	}
 
 	let body: unknown
@@ -33,62 +39,50 @@ export async function POST(request: NextRequest) {
 	try {
 		body = await readJsonBody(request)
 	} catch {
-		return NextResponse.json(
-			{ error: 'invalid_request' },
-			{
-				status: 400,
-				headers: DESKTOP_AUTH_HEADERS,
-			}
-		)
+		return respond({ error: 'invalid_request' }, 400)
 	}
 
 	const binding = readBinding(body)
 
 	if (!binding) {
-		return NextResponse.json(
-			{ error: 'invalid_request' },
-			{
-				status: 400,
-				headers: DESKTOP_AUTH_HEADERS,
-			}
-		)
+		return respond({ error: 'invalid_request' }, 400)
 	}
 
 	try {
 		const session = await auth()
 
 		if (!session?.user) {
-			return NextResponse.json(
-				{ error: 'unauthorized' },
-				{
-					status: 401,
-					headers: DESKTOP_AUTH_HEADERS,
-				}
-			)
+			return respond({ error: 'unauthorized' }, 401)
 		}
 
 		const user = session.user
+
 		const authorId =
 			typeof user.id === 'string' || typeof user.id === 'number' ? String(user.id).trim() : ''
 
 		if (!authorId) {
-			return NextResponse.json(
-				{ error: 'profile_unavailable' },
-				{
-					status: 403,
-					headers: DESKTOP_AUTH_HEADERS,
-				}
-			)
+			return respond({ error: 'profile_unavailable' }, 403)
 		}
 
 		const ticket = createTicket()
+		const attemptId = createTicket()
+		const expiresAt = Date.now() + DESKTOP_TICKET_TTL * 1000
 
-		const record: DesktopTicketRecord = {
+		const attempt: DesktopAttemptRecord = {
+			version: 1,
+			purpose: 'desktop-connect-status',
+			authorId,
+			status: 'pending',
+			expiresAt,
+		}
+
+		const record: TrackedDesktopTicketRecord = {
 			version: 1,
 			purpose: 'desktop-connect',
 			state: binding.state,
 			codeChallenge: binding.codeChallenge,
-			expiresAt: Date.now() + DESKTOP_TICKET_TTL * 1000,
+			expiresAt,
+			attemptId,
 			profile: {
 				authorId,
 				authorName: cleanText(user.name),
@@ -97,19 +91,22 @@ export async function POST(request: NextRequest) {
 			},
 		}
 
-		const result = await redis.set(getTicketKey(ticket), JSON.stringify(record), {
+		const attemptResult = await redis.set(getAttemptKey(attemptId), JSON.stringify(attempt), {
+			ex: DESKTOP_ATTEMPT_TTL,
+			nx: true,
+		})
+
+		if (attemptResult !== 'OK') {
+			return respond({ error: 'temporarily_unavailable' }, 503)
+		}
+
+		const ticketResult = await redis.set(getTicketKey(ticket), JSON.stringify(record), {
 			ex: DESKTOP_TICKET_TTL,
 			nx: true,
 		})
 
-		if (result !== 'OK') {
-			return NextResponse.json(
-				{ error: 'temporarily_unavailable' },
-				{
-					status: 503,
-					headers: DESKTOP_AUTH_HEADERS,
-				}
-			)
+		if (ticketResult !== 'OK') {
+			return respond({ error: 'temporarily_unavailable' }, 503)
 		}
 
 		const deepLink = new URL('voidpresence://auth')
@@ -117,24 +114,14 @@ export async function POST(request: NextRequest) {
 		deepLink.searchParams.set('ticket', ticket)
 		deepLink.searchParams.set('state', binding.state)
 
-		return NextResponse.json(
-			{
-				ticket,
-				state: binding.state,
-				deepLink: deepLink.toString(),
-				expiresIn: DESKTOP_TICKET_TTL,
-			},
-			{
-				headers: DESKTOP_AUTH_HEADERS,
-			}
-		)
+		return respond({
+			ticket,
+			state: binding.state,
+			deepLink: deepLink.toString(),
+			expiresIn: DESKTOP_TICKET_TTL,
+			attemptId,
+		})
 	} catch {
-		return NextResponse.json(
-			{ error: 'temporarily_unavailable' },
-			{
-				status: 503,
-				headers: DESKTOP_AUTH_HEADERS,
-			}
-		)
+		return respond({ error: 'temporarily_unavailable' }, 503)
 	}
 }
