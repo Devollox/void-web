@@ -129,7 +129,10 @@ export function StatusesGrid({
 
 			const data = (await res.json()) as { deepLink?: unknown; expiresIn?: unknown }
 
-			if (typeof data.deepLink !== 'string' || !data.deepLink.startsWith('voidpresence://action?')) {
+			if (
+				typeof data.deepLink !== 'string' ||
+				!data.deepLink.startsWith('voidpresence://action?')
+			) {
 				throw new Error('Invalid link from server.')
 			}
 
@@ -143,10 +146,13 @@ export function StatusesGrid({
 
 			window.location.assign(data.deepLink as string)
 
-			window.setTimeout(() => {
-				setOpenInAppLinks(l => ({ ...l, [id]: '' }))
-				setOpenInAppStates(s => ({ ...s, [id]: 'idle' }))
-			}, Math.max(0, expiry - Date.now()))
+			window.setTimeout(
+				() => {
+					setOpenInAppLinks(l => ({ ...l, [id]: '' }))
+					setOpenInAppStates(s => ({ ...s, [id]: 'idle' }))
+				},
+				Math.max(0, expiry - Date.now())
+			)
 		} catch {
 			setOpenInAppStates(s => ({ ...s, [id]: 'error' }))
 			window.setTimeout(() => setOpenInAppStates(s => ({ ...s, [id]: 'idle' })), 3000)

@@ -122,7 +122,7 @@ export function PresenceGrid({
 		Record<string, 'idle' | 'loading' | 'ready' | 'error'>
 	>({})
 	const [openInAppLinks, setOpenInAppLinks] = useState<Record<string, string>>({})
-	const [openInAppExpiry, setOpenInAppExpiry] = useState<Record<string, number>>({})
+	const [, setOpenInAppExpiry] = useState<Record<string, number>>({})
 
 	const handleOpenInApp = async (config: Config) => {
 		const id = config.id
@@ -148,7 +148,10 @@ export function PresenceGrid({
 
 			const data = (await res.json()) as { deepLink?: unknown; expiresIn?: unknown }
 
-			if (typeof data.deepLink !== 'string' || !data.deepLink.startsWith('voidpresence://action?')) {
+			if (
+				typeof data.deepLink !== 'string' ||
+				!data.deepLink.startsWith('voidpresence://action?')
+			) {
 				throw new Error('Invalid link from server.')
 			}
 
@@ -163,10 +166,13 @@ export function PresenceGrid({
 
 			window.location.assign(data.deepLink as string)
 
-			window.setTimeout(() => {
-				setOpenInAppLinks(l => ({ ...l, [id]: '' }))
-				setOpenInAppStates(s => ({ ...s, [id]: 'idle' }))
-			}, Math.max(0, expiry - Date.now()))
+			window.setTimeout(
+				() => {
+					setOpenInAppLinks(l => ({ ...l, [id]: '' }))
+					setOpenInAppStates(s => ({ ...s, [id]: 'idle' }))
+				},
+				Math.max(0, expiry - Date.now())
+			)
 		} catch {
 			setOpenInAppStates(s => ({ ...s, [id]: 'error' }))
 			window.setTimeout(() => setOpenInAppStates(s => ({ ...s, [id]: 'idle' })), 3000)
