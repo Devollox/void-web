@@ -36,10 +36,82 @@ function PluginCardPreview({ plugin, previewIndex }: { plugin: Plugin; previewIn
 }
 
 function PluginCard({ plugin, previewIndex }: { plugin: Plugin; previewIndex: number }) {
-	const handleInstall = () => {
-		const isFolder = (plugin as any).folder === true
-		const param = isFolder ? 'zip' : 'url'
-		window.location.href = `voidpresence://install-plugin?${param}=${encodeURIComponent(plugin.sourceUrl)}`
+	const [installState, setInstallState] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle')
+	const [installLink, setInstallLink] = useState('')
+	const [installExpiresAt, setInstallExpiresAt] = useState(0)
+	const [installError, setInstallError] = useState('')
+
+	useEffect(() => {
+		if (!installLink || !installExpiresAt) return
+		const timer = window.setTimeout(
+			() => {
+				setInstallLink('')
+				setInstallExpiresAt(0)
+				setInstallState('idle')
+			},
+			Math.max(0, installExpiresAt - Date.now())
+		)
+		return () => window.clearTimeout(timer)
+	}, [installLink, installExpiresAt])
+
+	const handleInstall = async () => {
+		if (installState === 'loading') return
+		setInstallState('loading')
+		setInstallError('')
+
+		const controller = new AbortController()
+		const timeout = window.setTimeout(() => controller.abort(), 15_000)
+
+		try {
+			const res = await fetch('/api/action/ticket', {
+				method: 'POST',
+				credentials: 'same-origin',
+				cache: 'no-store',
+				headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+				body: JSON.stringify({ kind: 'install-plugin', id: plugin.id }),
+				signal: controller.signal,
+			})
+
+			if (!res.ok) {
+				throw new Error(
+					res.status === 404
+						? 'Plugin not found on the server.'
+						: 'Could not prepare the install link. Please try again.'
+				)
+			}
+
+			const data = (await res.json()) as { deepLink?: unknown; expiresIn?: unknown }
+
+			if (typeof data.deepLink !== 'string' || !data.deepLink.startsWith('voidpresence://action?')) {
+				throw new Error('The server returned an invalid link.')
+			}
+
+			if (
+				typeof data.expiresIn !== 'number' ||
+				!Number.isFinite(data.expiresIn) ||
+				data.expiresIn <= 0
+			) {
+				throw new Error('The server returned an invalid expiry.')
+			}
+
+			setInstallLink(data.deepLink)
+			setInstallExpiresAt(Date.now() + data.expiresIn * 1000)
+			setInstallState('ready')
+
+			window.location.assign(data.deepLink)
+		} catch (err) {
+			setInstallError(
+				err instanceof Error && err.name === 'AbortError'
+					? 'The server took too long to respond. Please try again.'
+					: err instanceof Error
+						? err.message
+						: 'Could not start installation.'
+			)
+			setInstallState('error')
+		} finally {
+			window.clearTimeout(timeout)
+		}
+
 		fetch('/api/v1/analytics/configs', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
@@ -67,20 +139,50 @@ function PluginCard({ plugin, previewIndex }: { plugin: Plugin; previewIndex: nu
 				<PluginCardPreview plugin={plugin} previewIndex={previewIndex} />
 
 				<div className={gridStyles.card_actions}>
-					<div className={gridStyles.card_buttons}>
-						<button className={gridStyles.btn_primary} onClick={handleInstall}>
-							Install in app
-						</button>
-						<a
-							className={gridStyles.btn_secondary}
-							href={plugin.sourceUrl}
-							target='_blank'
-							rel='noopener noreferrer'
+				<div className={gridStyles.card_buttons}>
+					{installState === 'ready' && installLink ? (
+						<button
+							className={gridStyles.btn_primary}
+							onClick={() => {
+								if (Date.now() >= installExpiresAt) {
+									setInstallLink('')
+									setInstallExpiresAt(0)
+									setInstallState('idle')
+									return
+								}
+								window.location.assign(installLink)
+							}}
 						>
-							Source
-						</a>
-					</div>
+							Open Void Presence again
+						</button>
+					) : (
+						<button
+							className={gridStyles.btn_primary}
+							disabled={installState === 'loading'}
+							aria-busy={installState === 'loading'}
+							onClick={() => void handleInstall()}
+						>
+							{installState === 'loading' ? 'Preparing…' : 'Install in app'}
+						</button>
+					)}
+					<a
+						className={gridStyles.btn_secondary}
+						href={plugin.sourceUrl}
+						target='_blank'
+						rel='noopener noreferrer'
+					>
+						Source
+					</a>
 				</div>
+				{installState === 'error' && installError && (
+					<p
+						role='alert'
+						style={{ fontSize: '11px', color: 'var(--color-error, #f87171)', marginTop: '6px' }}
+					>
+						{installError}
+					</p>
+				)}
+			</div>
 			</div>
 		</div>
 	)

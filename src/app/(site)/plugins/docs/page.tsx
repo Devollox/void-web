@@ -930,16 +930,18 @@ If nothing returned a payload → Discord presence is cleared`}</pre>
 			<section className={styles.docs_card}>
 				<h3 className={styles.docs_subtitle}>Install deep link</h3>
 				<p className={styles.docs_text}>
-					Plugins can be installed directly from a URL via the custom protocol. The app handles the
-					link, downloads the file or folder, and hot-loads it — no manual file copying needed.
+					Plugins are installed through a server-issued one-time link. When a user clicks{' '}
+					<strong>Install in app</strong> on the Plugins page, the site requests a signed ticket
+					from the server and opens:
 				</p>
-				<pre className={styles.docs_code}>{`# Single .js file
-voidpresence://install-plugin?url=https://raw.githubusercontent.com/you/repo/main/plugins/my-plugin.js
-
-# Folder plugin (GitHub tree URL — app uses GitHub API to download all files)
-voidpresence://install-plugin?url=https://github.com/you/repo/tree/main/plugins/my-plugin`}</pre>
+				<pre className={styles.docs_code}>{`voidpresence://action?ticket=<one-time-token>`}</pre>
 				<p className={styles.docs_text}>
-					The Plugins page on this site generates these links automatically from{' '}
+					The app exchanges the ticket with the server, which returns the verified plugin source URL
+					and metadata. The user sees a confirmation prompt before anything is downloaded. Direct{' '}
+					<code>voidpresence://install-plugin?url=…</code> links are no longer accepted.
+				</p>
+				<p className={styles.docs_text}>
+					The Plugins page on this site generates install buttons automatically from{' '}
 					<code>plugins-manifest.json</code>. If you publish via PR, the install button appears for
 					free once your plugin is merged.
 				</p>
@@ -1087,8 +1089,8 @@ const url   = readState(ctx, 'steamUrl', 'https://steamcommunity.com/id/me')`}</
 						<code>plugins-manifest.json</code> from your source, including slides and metadata.
 					</li>
 					<li className={styles.docs_list_item}>
-						Your plugin appears on the Plugins page and can be installed with one click via the deep
-						link <code>voidpresence://install-plugin?url=…</code>.
+						Your plugin appears on the Plugins page and can be installed with one click via the
+						server-issued install link.
 					</li>
 				</ol>
 			</section>

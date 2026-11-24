@@ -281,10 +281,83 @@ export function ConfigDetailsClient({ configId, initialPreviewTick }: Props) {
 		)
 	}
 
+	const [openInAppState, setOpenInAppState] = useState<
+		'idle' | 'loading' | 'ready' | 'error'
+	>('idle')
+	const [openInAppError, setOpenInAppError] = useState('')
+	const [openInAppLink, setOpenInAppLink] = useState('')
+	const [openInAppExpiresAt, setOpenInAppExpiresAt] = useState(0)
+
+	useEffect(() => {
+		if (!openInAppLink || !openInAppExpiresAt) return
+		const timer = window.setTimeout(
+			() => {
+				setOpenInAppLink('')
+				setOpenInAppExpiresAt(0)
+				setOpenInAppState('idle')
+			},
+			Math.max(0, openInAppExpiresAt - Date.now())
+		)
+		return () => window.clearTimeout(timer)
+	}, [openInAppLink, openInAppExpiresAt])
+
 	const handleOpenInApp = async () => {
-		window.location.href = `voidpresence://import-config?title=${encodeURIComponent(
-			config.title
-		)}&data=${encodeURIComponent(JSON.stringify(config.configData))}`
+		if (openInAppState === 'loading') return
+		setOpenInAppState('loading')
+		setOpenInAppError('')
+
+		const controller = new AbortController()
+		const timeout = window.setTimeout(() => controller.abort(), 15_000)
+
+		try {
+			const res = await fetch('/api/action/ticket', {
+				method: 'POST',
+				credentials: 'same-origin',
+				cache: 'no-store',
+				headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+				body: JSON.stringify({ kind: 'import-config', id: config.id }),
+				signal: controller.signal,
+			})
+
+			if (!res.ok) {
+				throw new Error(
+					res.status === 404
+						? 'Config not found on the server.'
+						: 'Could not prepare the app link. Please try again.'
+				)
+			}
+
+			const data = (await res.json()) as { deepLink?: unknown; expiresIn?: unknown }
+
+			if (typeof data.deepLink !== 'string' || !data.deepLink.startsWith('voidpresence://action?')) {
+				throw new Error('The server returned an invalid link.')
+			}
+
+			if (
+				typeof data.expiresIn !== 'number' ||
+				!Number.isFinite(data.expiresIn) ||
+				data.expiresIn <= 0
+			) {
+				throw new Error('The server returned an invalid expiry.')
+			}
+
+			setOpenInAppLink(data.deepLink)
+			setOpenInAppExpiresAt(Date.now() + data.expiresIn * 1000)
+			setOpenInAppState('ready')
+
+			window.location.assign(data.deepLink)
+		} catch (err) {
+			setOpenInAppError(
+				err instanceof Error && err.name === 'AbortError'
+					? 'The server took too long to respond. Please try again.'
+					: err instanceof Error
+						? err.message
+						: 'Could not open in app.'
+			)
+			setOpenInAppState('error')
+		} finally {
+			window.clearTimeout(timeout)
+		}
 
 		try {
 			await fetch('/api/v1/analytics/configs', {
@@ -356,10 +429,39 @@ export function ConfigDetailsClient({ configId, initialPreviewTick }: Props) {
 									Export or share this Discord Rich Presence config.
 								</p>
 								<div className={styles.actions_buttons}>
-									<a className={styles.action_btn_primary} onClick={handleOpenInApp}>
-										Open in app
-										<span className={styles.action_btn_hint}>import .json</span>
-									</a>
+									{openInAppState === 'ready' && openInAppLink ? (
+										<a
+											href={openInAppLink}
+											className={styles.action_btn_primary}
+											onClick={e => {
+												if (Date.now() >= openInAppExpiresAt) {
+													e.preventDefault()
+													setOpenInAppLink('')
+													setOpenInAppExpiresAt(0)
+													setOpenInAppState('idle')
+												}
+											}}
+										>
+											Open Void Presence again
+											<span className={styles.action_btn_hint}>import .json</span>
+										</a>
+									) : (
+										<button
+											type='button'
+											className={styles.action_btn_primary}
+											disabled={openInAppState === 'loading'}
+											aria-busy={openInAppState === 'loading'}
+											onClick={() => void handleOpenInApp()}
+										>
+											{openInAppState === 'loading' ? 'Preparing…' : 'Open in app'}
+											<span className={styles.action_btn_hint}>import .json</span>
+										</button>
+									)}
+									{openInAppState === 'error' && openInAppError && (
+										<p className={styles.error} role='alert' style={{ marginTop: '4px' }}>
+											{openInAppError}
+										</p>
+									)}
 									<DownloadJsonButton configId={config.id} />
 									<CopyJsonButton configId={config.id} />
 									{isOwn && (

@@ -100,20 +100,67 @@ export function StatusesGrid({
 
 	const showSkeletonFirst = loading && !localStatuses.length
 
+	const [openInAppStates, setOpenInAppStates] = useState<
+		Record<string, 'idle' | 'loading' | 'ready' | 'error'>
+	>({})
+	const [openInAppLinks, setOpenInAppLinks] = useState<Record<string, string>>({})
+
 	const handleOpenInApp = async (config: Status) => {
-		window.location.href = `voidpresence://import-status-config?title=${encodeURIComponent(
-			config.title
-		)}&data=${encodeURIComponent(JSON.stringify(config.configData ?? {}))}`
+		const id = config.id
+		const current = openInAppStates[id] ?? 'idle'
+		if (current === 'loading') return
+
+		setOpenInAppStates(s => ({ ...s, [id]: 'loading' }))
+
+		const controller = new AbortController()
+		const timeout = window.setTimeout(() => controller.abort(), 15_000)
+
+		try {
+			const res = await fetch('/api/action/ticket', {
+				method: 'POST',
+				credentials: 'same-origin',
+				cache: 'no-store',
+				headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+				body: JSON.stringify({ kind: 'import-status', id }),
+				signal: controller.signal,
+			})
+
+			if (!res.ok) throw new Error('Could not prepare link.')
+
+			const data = (await res.json()) as { deepLink?: unknown; expiresIn?: unknown }
+
+			if (typeof data.deepLink !== 'string' || !data.deepLink.startsWith('voidpresence://action?')) {
+				throw new Error('Invalid link from server.')
+			}
+
+			if (typeof data.expiresIn !== 'number' || data.expiresIn <= 0) {
+				throw new Error('Invalid expiry from server.')
+			}
+
+			const expiry = Date.now() + (data.expiresIn as number) * 1000
+			setOpenInAppLinks(l => ({ ...l, [id]: data.deepLink as string }))
+			setOpenInAppStates(s => ({ ...s, [id]: 'ready' }))
+
+			window.location.assign(data.deepLink as string)
+
+			window.setTimeout(() => {
+				setOpenInAppLinks(l => ({ ...l, [id]: '' }))
+				setOpenInAppStates(s => ({ ...s, [id]: 'idle' }))
+			}, Math.max(0, expiry - Date.now()))
+		} catch {
+			setOpenInAppStates(s => ({ ...s, [id]: 'error' }))
+			window.setTimeout(() => setOpenInAppStates(s => ({ ...s, [id]: 'idle' })), 3000)
+		} finally {
+			window.clearTimeout(timeout)
+		}
 
 		try {
 			await fetch('/api/v1/analytics/configs', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ type: 'status_download', id: config.id }),
+				body: JSON.stringify({ type: 'status_download', id }),
 			})
-		} catch {
-			return
-		}
+		} catch {}
 	}
 
 	const handleDelete = async (config: Status) => {
@@ -212,9 +259,20 @@ export function StatusesGrid({
 
 									<div className={styles.card_actions}>
 										<div className={styles.card_buttons}>
-											<a className={styles.btn_primary} onClick={() => handleOpenInApp(config)}>
-												Open in app
-											</a>
+											<button
+												type='button'
+												className={styles.btn_primary}
+												disabled={(openInAppStates[config.id] ?? 'idle') === 'loading'}
+												onClick={() => void handleOpenInApp(config)}
+											>
+												{(openInAppStates[config.id] ?? 'idle') === 'loading'
+													? 'Preparing…'
+													: (openInAppStates[config.id] ?? 'idle') === 'error'
+														? 'Try again'
+														: openInAppLinks[config.id]
+															? 'Open again'
+															: 'Open in app'}
+											</button>
 											<a className={styles.btn_secondary} href={`/statuses/${config.id}`}>
 												Show details
 											</a>
