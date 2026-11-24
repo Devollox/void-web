@@ -67,7 +67,7 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
 	const session = await auth()
 
 	if (isDesktopConnect && !session?.user) {
-		redirect('/api/desktop/connect')
+		redirect('/api/auth/desktop/connect')
 	}
 
 	if (!session || !session.user) {
