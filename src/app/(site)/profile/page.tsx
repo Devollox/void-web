@@ -2,12 +2,9 @@ import { auth } from '@api/auth/[...nextauth]/route'
 import Page from '@components/page'
 import PageHeader from '@components/page-header'
 import type { Metadata } from 'next'
-import { redirect } from 'next/navigation'
 import { ProfileContainerClient } from './profile-container-client'
 import styles from './profile-details.module.scss'
 import { SaveUserOnMount } from './save-user-on-mount'
-import DesktopConnect from '../desktop/connect/connect-client'
-import { readBinding, appendBinding, DESKTOP_CONNECT_PATH, SITE_URL } from '@/services/desktop-auth'
 
 export const metadata: Metadata = {
 	title: 'Your profile',
@@ -25,12 +22,7 @@ export const metadata: Metadata = {
 }
 
 type ProfilePageProps = {
-	searchParams: Promise<{
-		desktop?: string | string[]
-		state?: string | string[]
-		code_challenge?: string | string[]
-		code_challenge_method?: string | string[]
-	}>
+	searchParams: Promise<Record<string, string | string[] | undefined>>
 }
 
 type AuthorConfigsResponse = {
@@ -66,32 +58,7 @@ async function fetchSelfConfigs(userId: string): Promise<AuthorConfigsResponse |
 }
 
 export default async function ProfilePage({ searchParams }: ProfilePageProps) {
-	const params = await searchParams
-	const isDesktopConnect = params.desktop === 'connect'
 	const session = await auth()
-
-	if (isDesktopConnect && !session?.user) {
-		const binding = readBinding({
-			state: params.state,
-			code_challenge: params.code_challenge,
-			code_challenge_method: params.code_challenge_method,
-		})
-
-		if (!binding) {
-			return (
-				<Page>
-					<PageHeader
-						title='Invalid connection link'
-						subtitle='Start the connection again from the desktop app.'
-					/>
-				</Page>
-			)
-		}
-
-		const connectUrl = appendBinding(new URL(DESKTOP_CONNECT_PATH, SITE_URL), binding)
-
-		redirect(connectUrl.toString())
-	}
 
 	if (!session || !session.user) {
 		return (
@@ -150,22 +117,6 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
 
 	const user = session.user
 	const userId = String(user.id ?? '')
-
-	if (isDesktopConnect) {
-		return (
-			<>
-				<SaveUserOnMount />
-
-				<DesktopConnect
-					authorID={userId}
-					name={user.name}
-					provider={user.provider}
-					avatar={user.image}
-				/>
-			</>
-		)
-	}
-
 	const configsData = await fetchSelfConfigs(userId)
 
 	return (
