@@ -1,7 +1,6 @@
 import { createHash, timingSafeEqual } from 'node:crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { redis } from '@/services/redis'
-import { auth } from '@/app/(api)/api/auth/[...nextauth]/route'
 import {
 	DESKTOP_AUTH_HEADERS,
 	isRecord,
@@ -71,18 +70,6 @@ export async function POST(request: NextRequest) {
 	if (!isLoopbackRedirect(body.redirect_uri)) return invalidGrant()
 
 	try {
-		const session = await auth()
-
-		if (!session?.user) {
-			return respond({ error: 'unauthorized' }, 401)
-		}
-
-		const authorId = String(session.user.id ?? '').trim()
-
-		if (!authorId) {
-			return respond({ error: 'forbidden' }, 403)
-		}
-
 		const ticketHash = createHash('sha256').update(body.ticket).digest('hex')
 
 		const ticketKey = `desktop:connect:ticket:${ticketHash}`
@@ -104,10 +91,12 @@ export async function POST(request: NextRequest) {
 			attempt.version !== 1 ||
 			attempt.purpose !== 'desktop-connect' ||
 			attempt.status !== 'pending' ||
-			attempt.authorId !== authorId ||
+			typeof attempt.authorId !== 'string' ||
+			!attempt.authorId ||
 			!isState(attempt.state) ||
 			typeof attempt.codeChallenge !== 'string' ||
-			!isLoopbackRedirect(attempt.redirectUri)
+			!isLoopbackRedirect(attempt.redirectUri) ||
+			!isRecord(attempt.profile)
 		) {
 			return invalidGrant()
 		}
@@ -126,14 +115,24 @@ export async function POST(request: NextRequest) {
 			return invalidGrant()
 		}
 
-		await redis.del(ticketKey)
+		const storedProfile = attempt.profile
+
+		if (
+			typeof storedProfile.authorId !== 'string' ||
+			!storedProfile.authorId ||
+			storedProfile.authorId !== attempt.authorId
+		) {
+			return invalidGrant()
+		}
 
 		const profile: DesktopProfile = {
-			authorId,
-			authorName: String(session.user.name ?? '').trim(),
-			provider: 'discord',
-			avatar: String(session.user.image ?? '').trim(),
+			authorId: storedProfile.authorId,
+			authorName: typeof storedProfile.authorName === 'string' ? storedProfile.authorName : '',
+			provider: typeof storedProfile.provider === 'string' ? storedProfile.provider : '',
+			avatar: typeof storedProfile.avatar === 'string' ? storedProfile.avatar : '',
 		}
+
+		await redis.del(ticketKey)
 
 		return respond({ profile })
 	} catch {

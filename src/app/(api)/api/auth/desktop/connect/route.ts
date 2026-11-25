@@ -79,6 +79,13 @@ export async function GET(request: NextRequest) {
 		)
 	}
 
+	const profile = {
+		authorId,
+		authorName: String(session.user.name ?? '').trim(),
+		provider: 'discord',
+		avatar: String(session.user.image ?? '').trim(),
+	}
+
 	const ticket = randomBytes(32).toString('base64url')
 	const ticketHash = createHash('sha256').update(ticket).digest('hex')
 
@@ -90,6 +97,7 @@ export async function GET(request: NextRequest) {
 		codeChallenge,
 		redirectUri: validatedRedirectUri,
 		status: 'pending',
+		profile,
 		expiresAt: Date.now() + DESKTOP_ATTEMPT_TTL * 1000,
 	}
 
