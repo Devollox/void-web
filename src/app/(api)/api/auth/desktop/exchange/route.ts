@@ -55,21 +55,6 @@ function safeEqual(left: string, right: string): boolean {
 	return timingSafeEqual(leftBuffer, rightBuffer)
 }
 
-function readProfile(value: unknown): DesktopProfile | null {
-	if (!isRecord(value)) return null
-	if (typeof value.authorId !== 'string' || !value.authorId) return null
-	if (typeof value.authorName !== 'string') return null
-	if (typeof value.provider !== 'string') return null
-	if (typeof value.avatar !== 'string') return null
-
-	return {
-		authorId: value.authorId,
-		authorName: value.authorName,
-		provider: value.provider,
-		avatar: value.avatar,
-	}
-}
-
 export async function POST(request: NextRequest) {
 	let body: unknown
 
