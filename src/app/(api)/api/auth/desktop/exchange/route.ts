@@ -73,16 +73,16 @@ export async function POST(request: NextRequest) {
 		const ticketHash = createHash('sha256').update(body.ticket).digest('hex')
 
 		const ticketKey = `desktop:connect:ticket:${ticketHash}`
-		const raw = await redis.get<string>(ticketKey)
+		const raw = await redis.get<unknown>(ticketKey)
 
-		if (typeof raw !== 'string' || !raw) return invalidGrant()
+		let attempt: unknown = raw
 
-		let attempt: unknown
-
-		try {
-			attempt = JSON.parse(raw)
-		} catch {
-			return invalidGrant()
+		if (typeof raw === 'string') {
+			try {
+				attempt = JSON.parse(raw)
+			} catch {
+				return invalidGrant()
+			}
 		}
 
 		if (!isRecord(attempt)) return invalidGrant()
