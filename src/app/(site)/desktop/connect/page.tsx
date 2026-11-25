@@ -10,7 +10,7 @@ export default async function DesktopConnectPage({ searchParams }: Props) {
 	const params = await searchParams
 	const query = new URLSearchParams()
 
-	for (const key of ['state', 'code_challenge', 'code_challenge_method']) {
+	for (const key of ['state', 'code_challenge', 'code_challenge_method', 'redirect_uri']) {
 		const value = params[key]
 
 		if (typeof value === 'string') {
