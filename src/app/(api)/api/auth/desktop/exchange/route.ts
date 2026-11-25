@@ -1,9 +1,9 @@
+import { createHash, timingSafeEqual } from 'node:crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { redis } from '@/services/redis'
+import { auth } from '@/app/(api)/api/auth/[...nextauth]/route'
 import {
 	DESKTOP_AUTH_HEADERS,
-	getCodeChallenge,
-	getTicketKey,
 	isRecord,
 	isState,
 	isTicket,
@@ -11,110 +11,9 @@ import {
 	readJsonBody,
 	type DesktopProfile,
 } from '@/services/desktop-auth'
-import {
-	DESKTOP_ATTEMPT_TTL,
-	getAttemptKey,
-	parseStoredJson,
-	readTicketAttemptId,
-} from '@/services/desktop-attempt'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
-
-const EXCHANGE_SCRIPT = `
-local raw = redis.call('GET', KEYS[1])
-
-if not raw then
-  return nil
-end
-
-local ok, record = pcall(cjson.decode, raw)
-
-if not ok or type(record) ~= 'table' then
-  return nil
-end
-
-if record.version ~= 1 or record.purpose ~= 'desktop-connect' then
-  return nil
-end
-
-if record.state ~= ARGV[1] then
-  return nil
-end
-
-if record.codeChallenge ~= ARGV[2] then
-  return nil
-end
-
-if record.attemptId ~= ARGV[3] then
-  return nil
-end
-
-local now = redis.call('TIME')
-local nowMs = tonumber(now[1]) * 1000 + math.floor(tonumber(now[2]) / 1000)
-
-if type(record.expiresAt) ~= 'number' or record.expiresAt <= nowMs then
-  return nil
-end
-
-if type(record.profile) ~= 'table' then
-  return nil
-end
-
-if type(record.profile.authorId) ~= 'string' or record.profile.authorId == '' then
-  return nil
-end
-
-if type(record.profile.authorName) ~= 'string' then
-  return nil
-end
-
-if type(record.profile.provider) ~= 'string' then
-  return nil
-end
-
-if type(record.profile.avatar) ~= 'string' then
-  return nil
-end
-
-local attemptRaw = redis.call('GET', KEYS[2])
-
-if not attemptRaw then
-  return nil
-end
-
-local attemptOk, attempt = pcall(cjson.decode, attemptRaw)
-
-if not attemptOk or type(attempt) ~= 'table' then
-  return nil
-end
-
-if attempt.version ~= 1 or attempt.purpose ~= 'desktop-connect-status' then
-  return nil
-end
-
-if attempt.authorId ~= record.profile.authorId then
-  return nil
-end
-
-if attempt.status ~= 'pending' then
-  return nil
-end
-
-if type(attempt.expiresAt) ~= 'number' or attempt.expiresAt <= nowMs then
-  return nil
-end
-
-attempt.status = 'exchanged'
-
-local profile = cjson.encode(record.profile)
-local updatedAttempt = cjson.encode(attempt)
-
-redis.call('SET', KEYS[2], updatedAttempt, 'EX', ARGV[4])
-redis.call('DEL', KEYS[1])
-
-return profile
-`
 
 function respond(body: unknown, status = 200) {
 	return NextResponse.json(body, {
@@ -127,20 +26,47 @@ function invalidGrant() {
 	return respond({ error: 'invalid_grant' }, 400)
 }
 
-function readProfile(value: unknown): DesktopProfile | null {
-	const parsed = parseStoredJson(value)
+function isLoopbackRedirect(value: unknown): value is string {
+	if (typeof value !== 'string') return false
 
-	if (!isRecord(parsed)) return null
-	if (typeof parsed.authorId !== 'string' || !parsed.authorId) return null
-	if (typeof parsed.authorName !== 'string') return null
-	if (typeof parsed.provider !== 'string') return null
-	if (typeof parsed.avatar !== 'string') return null
+	try {
+		const url = new URL(value)
+
+		return (
+			url.protocol === 'http:' &&
+			url.hostname === '127.0.0.1' &&
+			url.pathname === '/callback' &&
+			!url.search &&
+			!url.hash &&
+			!url.username &&
+			!url.password
+		)
+	} catch {
+		return false
+	}
+}
+
+function safeEqual(left: string, right: string): boolean {
+	const leftBuffer = Buffer.from(left, 'utf8')
+	const rightBuffer = Buffer.from(right, 'utf8')
+
+	if (leftBuffer.length !== rightBuffer.length) return false
+
+	return timingSafeEqual(leftBuffer, rightBuffer)
+}
+
+function readProfile(value: unknown): DesktopProfile | null {
+	if (!isRecord(value)) return null
+	if (typeof value.authorId !== 'string' || !value.authorId) return null
+	if (typeof value.authorName !== 'string') return null
+	if (typeof value.provider !== 'string') return null
+	if (typeof value.avatar !== 'string') return null
 
 	return {
-		authorId: parsed.authorId,
-		authorName: parsed.authorName,
-		provider: parsed.provider,
-		avatar: parsed.avatar,
+		authorId: value.authorId,
+		authorName: value.authorName,
+		provider: value.provider,
+		avatar: value.avatar,
 	}
 }
 
@@ -157,23 +83,72 @@ export async function POST(request: NextRequest) {
 	if (!isTicket(body.ticket)) return invalidGrant()
 	if (!isState(body.state)) return invalidGrant()
 	if (!isVerifier(body.code_verifier)) return invalidGrant()
+	if (!isLoopbackRedirect(body.redirect_uri)) return invalidGrant()
 
 	try {
-		const ticketKey = getTicketKey(body.ticket)
-		const rawRecord = await redis.get(ticketKey)
-		const attemptId = readTicketAttemptId(rawRecord)
+		const session = await auth()
 
-		if (!attemptId) return invalidGrant()
+		if (!session?.user) {
+			return respond({ error: 'unauthorized' }, 401)
+		}
 
-		const result = await redis.eval(
-			EXCHANGE_SCRIPT,
-			[ticketKey, getAttemptKey(attemptId)],
-			[body.state, getCodeChallenge(body.code_verifier), attemptId, String(DESKTOP_ATTEMPT_TTL)]
-		)
+		const authorId = String(session.user.id ?? '').trim()
 
-		const profile = readProfile(result)
+		if (!authorId) {
+			return respond({ error: 'forbidden' }, 403)
+		}
 
-		if (!profile) return invalidGrant()
+		const ticketHash = createHash('sha256').update(body.ticket).digest('hex')
+
+		const ticketKey = `desktop:connect:ticket:${ticketHash}`
+		const raw = await redis.get<string>(ticketKey)
+
+		if (typeof raw !== 'string' || !raw) return invalidGrant()
+
+		let attempt: unknown
+
+		try {
+			attempt = JSON.parse(raw)
+		} catch {
+			return invalidGrant()
+		}
+
+		if (!isRecord(attempt)) return invalidGrant()
+
+		if (
+			attempt.version !== 1 ||
+			attempt.purpose !== 'desktop-connect' ||
+			attempt.status !== 'pending' ||
+			attempt.authorId !== authorId ||
+			!isState(attempt.state) ||
+			typeof attempt.codeChallenge !== 'string' ||
+			!isLoopbackRedirect(attempt.redirectUri)
+		) {
+			return invalidGrant()
+		}
+
+		if (!safeEqual(body.state, attempt.state)) {
+			return invalidGrant()
+		}
+
+		if (attempt.redirectUri !== body.redirect_uri) {
+			return invalidGrant()
+		}
+
+		const expectedChallenge = createHash('sha256').update(body.code_verifier).digest('base64url')
+
+		if (!safeEqual(expectedChallenge, attempt.codeChallenge)) {
+			return invalidGrant()
+		}
+
+		await redis.del(ticketKey)
+
+		const profile: DesktopProfile = {
+			authorId,
+			authorName: String(session.user.name ?? '').trim(),
+			provider: 'discord',
+			avatar: String(session.user.image ?? '').trim(),
+		}
 
 		return respond({ profile })
 	} catch {
