@@ -21,10 +21,6 @@ export const metadata: Metadata = {
 	},
 }
 
-type ProfilePageProps = {
-	searchParams: Promise<Record<string, string | string[] | undefined>>
-}
-
 type AuthorConfigsResponse = {
 	user: {
 		id: string
@@ -57,7 +53,7 @@ async function fetchSelfConfigs(userId: string): Promise<AuthorConfigsResponse |
 	return (await res.json()) as AuthorConfigsResponse
 }
 
-export default async function ProfilePage({ searchParams }: ProfilePageProps) {
+export default async function ProfilePage() {
 	const session = await auth()
 
 	if (!session || !session.user) {
