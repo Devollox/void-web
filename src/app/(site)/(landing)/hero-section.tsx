@@ -7,16 +7,22 @@ import styles from './hero-section.module.scss'
 
 export function NotificationBanner() {
 	return (
-		<div className={styles.notification_banner}>
+		<div className={styles.notification_banner} role='status'>
 			<div className={styles.notification_glow} />
 			<div className={styles.notification_dot} />
+
 			<div className={styles.notification_content}>
 				<span className={styles.notification_title}>
 					On the way to <strong>1,000</strong> downloads.
 				</span>
+
 				<span className={styles.notification_subtitle}>
-					Thank you for being here. To mark this milestone, I’m working on a fresh look for the app,
-					website, installer, and updater.
+					The <strong>Configs</strong> and <strong>Plugins</strong> tabs are temporarily unavailable
+					while I rework the app’s authorization system. They’ll be back once the new authentication
+					flow is ready.
+					<br />
+					Thank you for being here. To mark this milestone, I’m also working on a fresh look for the
+					app, website, installer, and updater.
 					<br />
 					With a lot on my plate right now, the redesign may arrive a little after we reach 1,000.
 					I’m taking the time to get the details right.
